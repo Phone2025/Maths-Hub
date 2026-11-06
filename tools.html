@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maths Tools</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap">
+<style>
+*{box-sizing:border-box}
+:root{--bg:#f5f7fb;--card:#fff;--line:#dde4ef;--ink:#14213d;--soft:#4f5d75;--accent:#2f6fdf;--gold:#e8a800;--h:#5b9bff;--t:#3dbb7c;--o:#f2b400;--font:'Lexend','Segoe UI',Verdana,sans-serif}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:17px;padding:14px max(14px,env(safe-area-inset-left,0px)) 40px}
+.wrap{max-width:820px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+h1{margin:0;font-size:22px}
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+.tabs button,.btn{font:600 15px var(--font);border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:10px 14px;cursor:pointer;min-height:44px}
+.tabs button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn.p{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn:disabled{opacity:.4;cursor:default}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.big{font-size:34px;font-weight:700;text-align:center}
+.sub{color:var(--soft);text-align:center;font-size:16px}
+svg{display:block;width:100%;height:auto;max-width:100%;touch-action:none}
+.hint{font-size:14px;color:var(--soft)}
+.wb{gap:10px;padding:12px}
+.wbbar{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
+.wbg{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.btn.sm{min-height:40px;padding:7px 11px;font-size:14px}
+select.btn.sm{padding-right:8px}
+.sw{width:32px;height:32px;border-radius:50%;border:2px solid var(--line);cursor:pointer;padding:0}
+.sw.on{outline:3px solid var(--gold);outline-offset:2px}
+.wbwrap{position:relative;height:max(380px,calc(100vh - 220px));border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fff}
+.wb:fullscreen{background:var(--bg);border-radius:0}
+.wb:fullscreen .wbwrap{height:calc(100vh - 110px)}
+.wbwrap canvas{position:absolute;inset:0;touch-action:none}
+.wbtxt{position:absolute;z-index:2;font:600 22px var(--font);border:2px solid var(--accent);border-radius:8px;padding:4px 8px;min-width:200px;background:#fff}
+.mat{min-height:150px;border:2px dashed var(--line);border-radius:14px;padding:10px;display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start;background:#fbfcfe}
+.coin{border:0;border-radius:50%;font:700 14px var(--font);color:#14213d;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;box-shadow:inset 0 -3px 0 rgba(0,0,0,.15)}
+.note{border:0;border-radius:8px;font:700 16px var(--font);color:#14213d;cursor:pointer;width:84px;height:48px}
+.step{display:inline-flex;align-items:center;gap:6px}
+.step b{min-width:2ch;text-align:center;font-size:22px}
+.seg2{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.seg2 span{font-weight:600;font-size:15px;color:var(--soft);margin-right:4px}
+.clockrow{display:flex;flex-wrap:wrap;gap:18px;align-items:center;justify-content:center}.clockrow svg{flex:1 1 280px}
+.dig{display:flex;flex-direction:column;align-items:center;gap:8px;flex:0 1 240px}
+.lcd{background:#14213d;color:#7ef0b0;font:700 54px var(--font);letter-spacing:.04em;padding:14px 22px;border-radius:16px;font-variant-numeric:tabular-nums;display:flex;align-items:baseline;gap:8px;box-shadow:inset 0 0 0 3px #26365a}
+.lcd small{font-size:22px;color:#b8f5d3}
+body.low{--bg:#fbf6e9;--card:#fffdf7;--line:#d8cfb8;--ink:#000;--soft:#222;--tint:#f3eddc;background:#fbf6e9}
+body.low *{box-shadow:none!important;animation:none!important;transition:none!important}
+.tfw{display:flex;flex-direction:column;gap:12px;align-items:center}
+.tfr{display:grid;grid-template-columns:repeat(5,1fr);border:3px solid #14213d;border-radius:8px;overflow:hidden;width:min(100%,380px)}
+.tfc{aspect-ratio:1;border:1.5px solid #14213d;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.ctr{display:inline-block;width:70%;aspect-ratio:1;border-radius:50%;box-shadow:inset 0 -3px 0 rgba(0,0,0,.18)}
+.ctr.r{background:#e0485f}.ctr.y{background:#f5c451}
+.mat .ctr,.buckets .ctr{width:26px}
+.tcc{width:52px;height:52px;border-radius:50%;border:0;cursor:pointer;box-shadow:inset 0 -4px 0 rgba(0,0,0,.18)}
+.tcc.r{background:#e0485f}.tcc.y{background:#f5c451}
+.pvm{display:grid;gap:8px}.pvc{border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;gap:6px;padding:6px;min-height:200px}
+.pvh{border-radius:8px;text-align:center;font-weight:700;font-size:14px;padding:6px}
+.pvb{display:flex;flex-wrap:wrap;gap:4px;align-content:flex-start;justify-content:center;flex:1}
+.disk{width:40px;height:40px;border-radius:50%;border:0;color:#fff;font:700 12px var(--font);cursor:pointer;box-shadow:inset 0 -3px 0 rgba(0,0,0,.2)}
+.hgrid{display:grid;grid-template-columns:repeat(10,1fr);gap:3px;max-width:520px;margin:0 auto;width:100%}
+.hsq{aspect-ratio:1;border:1px solid var(--line);border-radius:6px;background:#fff;font:600 clamp(11px,2.6vw,16px) var(--font);color:var(--ink);cursor:pointer;padding:0}
+.hsq.on{background:#ffe08a;border-color:#e8a800}.hsq.cur{outline:3px solid var(--accent)}
+.die6{width:84px;height:84px;border-radius:16px;background:#fff;border:3px solid #14213d;display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:10px;box-shadow:0 4px 0 #c9d3e3}
+.die6 i{width:14px;height:14px;border-radius:50%;background:#14213d;place-self:center}
+.die6.num{display:flex;align-items:center;justify-content:center;font:700 38px var(--font)}
+.pcard{width:78px;height:110px;border-radius:10px;border:2px solid #c9d3e3;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font:700 30px var(--font);box-shadow:0 4px 0 #c9d3e3}
+.pcard span{font-size:34px}
+.tally{padding:6px 12px;border-radius:999px;background:var(--bg);font-size:15px}
+.buckets{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+.bucket{display:flex;flex-direction:column;align-items:center;gap:4px}
+.bk{width:110px;min-height:110px;border-radius:50%;border:3px solid #5b9bff;background:#eef4ff;display:flex;flex-wrap:wrap;gap:3px;align-content:center;justify-content:center;padding:14px}
+.frac{display:inline-flex;flex-direction:column;align-items:center;font:700 30px var(--font);line-height:1.1}
+.frac b{border-bottom:3px solid #14213d;padding:0 8px}.frac i{font-style:normal}
+.tray{display:flex;gap:14px;justify-content:center;padding:10px;border-radius:14px;background:var(--bg);border:1px dashed var(--line)}
+.src{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:grab;touch-action:none;user-select:none;padding:6px;border-radius:10px;font-weight:700}
+.src:hover{background:#fff}
+.src.ghost{position:fixed;z-index:50;pointer-events:none;opacity:.85;background:transparent}
+.b100{width:60px;height:60px}.b10{width:12px;height:60px}.b1{width:14px;height:14px}
+.bmat{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:8px}
+.bcol{border:2px solid var(--line);border-radius:12px;padding:6px;display:flex;flex-direction:column;gap:6px;min-height:220px}
+.bcol.over{border-color:var(--accent);background:#eef4ff}
+.bbody{display:flex;flex-wrap:wrap;gap:4px;align-content:flex-start;flex:1}
+.blk{border:0;background:none;padding:0;cursor:pointer;line-height:0}
+.blk .b1{width:16px;height:16px}
+body.drawer{padding:8px 10px 30px}body.drawer .tabs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:6px;-webkit-overflow-scrolling:touch}body.drawer .tabs button{flex:none}body.drawer h1{display:none}body.drawer .wrap{max-width:none}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Maths tools</h1>
+  <div class="tabs" id="tabs"></div>
+  <div id="tool"></div>
+</div>
+<script id="mh-voice">/* Maths Hub voice: picks the most natural English voice on this device and applies the reader's settings */
+(function(){var ss=window.speechSynthesis;if(!ss||ss.__mh)return;ss.__mh=1;var orig=ss.speak.bind(ss);
+function A(){try{return JSON.parse(localStorage.getItem('mh-a11y')||'{}')||{};}catch(e){return {};}}
+var BAD=/compact|espeak|robot|novelty|bad news|bells|whisper|zarvox|trinoids|albert|jester|organ|cellos|bubbles|boing|deranged|hysterical|superstar|wobble|grandma|grandpa|eddy|flo\b|reed|rocko|sandy|shelley|good news|junior|ralph|fred|kathy|vicki|victoria/;
+function rank(v){var n=v.name.toLowerCase(),l=(v.lang||'').toLowerCase().replace('_','-'),s=0;if(l.indexOf('en')!==0)return -1;
+  if(l==='en-gb')s+=30;else if(l==='en-ie'||l==='en-au'||l==='en-nz')s+=16;else s+=10;
+  if(/natural|neural/.test(n))s+=45;if(/online/.test(n))s+=8;if(/premium/.test(n))s+=42;if(/enhanced/.test(n))s+=36;if(/siri/.test(n))s+=30;
+  if(/google uk english female/.test(n))s+=26;else if(/google uk english/.test(n))s+=22;else if(/google/.test(n))s+=12;
+  if(/sonia|libby|maisie|abbi|bella|hollie|olivia|serena|kate|stephanie|martha|daniel|arthur|oliver|jamie/.test(n))s+=12;
+  if(BAD.test(n))s-=80;return s;}
+function list(){return ss.getVoices().filter(function(v){return rank(v)>=0;}).sort(function(a,b){return rank(b)-rank(a);});}
+function best(){var a=A(),vs=ss.getVoices();if(a.voice){var f=vs.filter(function(v){return v.name===a.voice;})[0];if(f)return f;}return list()[0]||null;}
+ss.speak=function(u){try{var v=best();if(v){u.voice=v;u.lang=v.lang;}var a=A();u.rate=a.slow?0.8:0.97;u.pitch=1;
+  if(u.text)u.text=u.text.replace(/\s*\n+\s*/g,'. ').replace(/\s{2,}/g,' ');}catch(e){}return orig(u);};
+window.MH_VOICES=list;window.MH_VOICE_RANK=rank;
+try{ss.getVoices();if(typeof ss.addEventListener==='function')ss.addEventListener('voiceschanged',function(){});}catch(e){}
+})();
+</script>
+<script>
+(function(){
+var A={};try{A=JSON.parse(localStorage.getItem('mh-a11y')||'{}')||{};}catch(e){}
+if(A.big)document.body.style.zoom='1.15';document.body.classList.toggle('low',!!A.low);
+if(/drawer/.test(location.search))document.body.classList.add('drawer');
+var T=document.getElementById('tool'),NS='http://www.w3.org/2000/svg';
+function say(t){try{var u=new SpeechSynthesisUtterance(t);u.lang='en-GB';u.rate=A.slow?.7:.9;speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}}
+var TOOLS={base10:'Base-10 mat',dienes:'Dienes blocks',tenframe:'Ten frames',counters:'Two-colour counters',pvdisks:'Place value counters',hundred:'Hundred square',numberline:'Number line',arrays:'Array builder',sharing:'Sharing and grouping',fractions:'Fraction wall',pizzas:'Fraction pizzas',coins:'Coins',clock:'Clock',randoms:'Dice, cards and spinners',whiteboard:'Whiteboard'};
+function tabs(cur){document.getElementById('tabs').innerHTML=Object.keys(TOOLS).map(function(k){return '<button type="button" data-k="'+k+'" class="'+(k===cur?'on':'')+'">'+TOOLS[k]+'</button>';}).join('');
+  document.querySelectorAll('#tabs button').forEach(function(b){b.onclick=function(){location.hash=b.dataset.k;};});}
+function readBtn(fn){return '<button class="btn" type="button" id="rd">Read aloud</button>';}
+function wireRead(fn){var b=document.getElementById('rd');if(b)b.onclick=function(){say(fn());};}
+
+/* ---------- Dienes ---------- */
+var D={h:2,t:4,o:3};
+function dienes(){var v=D.h*100+D.t*10+D.o,s='';var y0=20;
+  function col(x,lbl,c){s+='<rect x="'+x+'" y="0" width="250" height="34" rx="8" fill="'+c+'33"/><text x="'+(x+125)+'" y="23" text-anchor="middle" font-family="Lexend" font-weight="700" font-size="16" fill="'+c+'">'+lbl+'</text>';}
+  col(0,'Hundreds','#5b9bff');col(270,'Tens','#3dbb7c');col(540,'Ones','#f2b400');
+  for(var i=0;i<D.h;i++){var x=10+(i%3)*80,y=46+Math.floor(i/3)*80;s+='<rect x="'+x+'" y="'+y+'" width="70" height="70" fill="#5b9bff55" stroke="#5b9bff"/>';for(var k=1;k<10;k++)s+='<path d="M'+(x+k*7)+' '+y+'v70M'+x+' '+(y+k*7)+'h70" stroke="#5b9bff" stroke-width=".6"/>';}
+  for(i=0;i<D.t;i++){x=280+(i%10)*24;y=46+Math.floor(i/10)*80;s+='<rect x="'+x+'" y="'+y+'" width="12" height="70" fill="#3dbb7c66" stroke="#3dbb7c"/>';for(k=1;k<10;k++)s+='<path d="M'+x+' '+(y+k*7)+'h12" stroke="#3dbb7c" stroke-width=".6"/>';}
+  for(i=0;i<D.o;i++){x=552+(i%5)*24;y=50+Math.floor(i/5)*24;s+='<rect x="'+x+'" y="'+y+'" width="14" height="14" fill="#f2b400"/>';}
+  var H=Math.max(140,46+Math.ceil(Math.max(D.h/3,D.t/10,D.o/5*24/80))*84);
+  T.innerHTML='<div class="card"><svg viewBox="0 0 790 '+H+'" role="img" aria-label="Dienes blocks">'+s+'</svg><div class="big">'+v+'</div><div class="sub">'+[D.h*100,D.t*10,D.o].filter(function(x){return x;}).join(' + ')+(v?' = '+v:'')+'</div>'+
+   '<div class="row">'+[['h','100'],['t','10'],['o','1']].map(function(p){return '<span class="step"><button class="btn" data-a="-'+p[0]+'" type="button">− '+p[1]+'</button><button class="btn p" data-a="+'+p[0]+'" type="button">+ '+p[1]+'</button></span>';}).join('')+'</div>'+
+   '<div class="row"><button class="btn" data-a="xo" type="button" '+(D.o>=10?'':'disabled')+'>Exchange 10 ones for 1 ten</button><button class="btn" data-a="xt" type="button" '+(D.t>=10?'':'disabled')+'>Exchange 10 tens for 1 hundred</button><button class="btn" data-a="bt" type="button" '+(D.t?'':'disabled')+'>Break 1 ten into 10 ones</button><button class="btn" data-a="bh" type="button" '+(D.h?'':'disabled')+'>Break 1 hundred into 10 tens</button></div><div class="row">'+readBtn()+'<button class="btn" data-a="clr" type="button">Clear</button></div></div>';
+  T.querySelectorAll('[data-a]').forEach(function(b){b.onclick=function(){var a=b.dataset.a;
+    if(a[0]==='+'){if(D[a[1]]<20)D[a[1]]++;}else if(a[0]==='-'){if(D[a[1]]>0)D[a[1]]--;}else if(a==='xo'){D.o-=10;D.t++;}else if(a==='xt'){D.t-=10;D.h++;}else if(a==='bt'&&D.o<=10){D.t--;D.o+=10;}else if(a==='bh'&&D.t<=10){D.h--;D.t+=10;}else if(a==='clr')D={h:0,t:0,o:0};dienes();};});
+  wireRead(function(){return D.h+' hundreds, '+D.t+' tens and '+D.o+' ones make '+v;});}
+
+/* ---------- Clock ---------- */
+var CT=195,show5=true,drag=false,DIG=0;try{DIG=+(localStorage.getItem('mh-tool-dig')||0)||0;}catch(e){}
+function words(h,m){var nh=h%12+1;if(m===0)return h+" o'clock";if(m===15)return 'quarter past '+h;if(m===30)return 'half past '+h;if(m===45)return 'quarter to '+nh;return m<30?m+(m===1?' minute':' minutes')+' past '+h:(60-m)+((60-m)===1?' minute':' minutes')+' to '+nh;}
+function clock(){var m=((CT%60)+60)%60,H24=Math.floor(((CT%1440)+1440)%1440/60),h=Math.floor(((CT%720)+720)%720/60);h=h===0?12:h;var ap=H24<12?'am':'pm',mm=String(m).padStart(2,'0'),dtxt=DIG===2?String(H24).padStart(2,'0')+':'+mm:h+':'+mm,part=H24<5?'at night':H24<12?'in the morning':H24<17?'in the afternoon':H24<21?'in the evening':'at night';var s='<circle cx="160" cy="160" r="150" fill="#f4f1e8" stroke="#14213d" stroke-width="6"/>';
+  for(var i=0;i<60;i++){var a=i/60*Math.PI*2,r1=i%5?138:128;s+='<path d="M'+(160+r1*Math.sin(a)).toFixed(1)+' '+(160-r1*Math.cos(a)).toFixed(1)+'L'+(160+145*Math.sin(a)).toFixed(1)+' '+(160-145*Math.cos(a)).toFixed(1)+'" stroke="#14213d" stroke-width="'+(i%5?1.2:3)+'"/>';}
+  for(i=1;i<=12;i++){a=i/12*Math.PI*2;s+='<text x="'+(160+108*Math.sin(a)).toFixed(1)+'" y="'+(168-108*Math.cos(a)).toFixed(1)+'" text-anchor="middle" font-family="Lexend" font-weight="700" font-size="24" fill="#14213d">'+i+'</text>';if(show5)s+='<text x="'+(160+172*Math.sin(a)).toFixed(1)+'" y="'+(165-172*Math.cos(a)).toFixed(1)+'" text-anchor="middle" font-family="Lexend" font-weight="700" font-size="14" fill="#c48a00">'+(i*5%60||'00')+'</text>';}
+  var ha=((h%12)+m/60)/12*Math.PI*2,ma=m/60*Math.PI*2;s+='<path d="M160 160L'+(160+75*Math.sin(ha)).toFixed(1)+' '+(160-75*Math.cos(ha)).toFixed(1)+'" stroke="#2f6fdf" stroke-width="12" stroke-linecap="round"/><path d="M160 160L'+(160+122*Math.sin(ma)).toFixed(1)+' '+(160-122*Math.cos(ma)).toFixed(1)+'" stroke="#e0485f" stroke-width="7" stroke-linecap="round"/><circle cx="'+(160+122*Math.sin(ma)).toFixed(1)+'" cy="'+(160-122*Math.cos(ma)).toFixed(1)+'" r="14" fill="#e0485f" opacity=".35"/><circle cx="160" cy="160" r="9" fill="#14213d"/>';
+  var dig=DIG?'<div class="dig"><div class="lcd">'+dtxt+(DIG===1?'<small>'+ap+'</small>':'')+'</div><div class="sub">'+(DIG===1?'12-hour clock':'24-hour clock')+' · '+part+'</div></div>':'';
+  T.innerHTML='<div class="card"><div class="seg2" role="group" aria-label="Digital clock"><span>Digital clock:</span>'+['Off','12-hour','24-hour'].map(function(l,i){return '<button type="button" class="btn'+(DIG===i?' p':'')+'" data-dig="'+i+'" aria-pressed="'+(DIG===i)+'">'+l+'</button>';}).join('')+'</div><div class="clockrow"><svg id="cs" viewBox="-30 -30 380 380" role="img" aria-label="Clock" style="max-width:420px;margin:0 auto">'+s+'</svg>'+dig+'</div>'+(DIG?'':'<div class="big">'+h+':'+mm+'</div>')+'<div class="sub">'+words(h,m)+(DIG?' '+part:'')+'</div><p class="hint"><span style="display:inline-block;width:22px;height:6px;border-radius:3px;background:#2f6fdf;vertical-align:middle"></span> <b style="color:#2f6fdf">hour hand</b> (short) &nbsp; <span style="display:inline-block;width:34px;height:5px;border-radius:3px;background:#e0485f;vertical-align:middle"></span> <b style="color:#e0485f">minute hand</b> (long). Drag the minute hand round the clock. The hour hand moves with it.</p>'+
+   '<div class="row"><button class="btn" data-c="-60" type="button">− 1 hour</button><button class="btn" data-c="-5" type="button">− 5 min</button><button class="btn" data-c="-1" type="button">− 1 min</button><button class="btn p" data-c="1" type="button">+ 1 min</button><button class="btn p" data-c="5" type="button">+ 5 min</button><button class="btn p" data-c="60" type="button">+ 1 hour</button></div><div class="row"><button class="btn" id="s5" type="button">'+(show5?'Hide':'Show')+' the 5s</button>'+readBtn()+'</div></div>';
+  T.querySelectorAll('[data-c]').forEach(function(b){b.onclick=function(){CT+=+b.dataset.c;clock();};});
+  T.querySelectorAll('[data-dig]').forEach(function(b){b.onclick=function(){DIG=+b.dataset.dig;try{localStorage.setItem('mh-tool-dig',String(DIG));}catch(e){}clock();};});document.getElementById('s5').onclick=function(){show5=!show5;clock();};
+  wireRead(function(){return 'The time is '+words(h,m)+(DIG?' '+part+'. On a '+(DIG===1?'12-hour clock it is '+h+' '+(m?mm:"o'clock")+' '+ap.split('').join(' '):'24-hour clock it is '+String(H24).padStart(2,'0')+' '+(m?mm:'hundred')):'');});
+  var sv=document.getElementById('cs');function pt(e){var r=sv.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*380-30-160,y=(e.clientY-r.top)/r.height*380-30-160;var a=Math.atan2(x,-y);if(a<0)a+=Math.PI*2;return Math.round(a/(Math.PI*2)*60)%60;}
+  sv.onpointerdown=function(e){drag=true;try{sv.setPointerCapture(e.pointerId);}catch(_){}};sv.onpointerup=sv.onpointercancel=function(){drag=false;};
+  sv.onpointermove=function(e){if(!drag)return;var nm=pt(e),om=((CT%60)+60)%60,d=nm-om;if(d<-30)d+=60;if(d>30)d-=60;if(d){CT+=d;var id=e.pointerId;clock();var s2=document.getElementById('cs');drag=true;try{s2.setPointerCapture(id);}catch(_){}}};}
+
+/* ---------- Coins ---------- */
+var MAT=[],CV=[[1,'1p','#d9884f',38],[2,'2p','#d9884f',46],[5,'5p','#c9ccd3',36],[10,'10p','#c9ccd3',48],[20,'20p','#c9ccd3',44],[50,'50p','#c9ccd3',54],[100,'£1','#f2c14a',48],[200,'£2','#e9c46a',56],[500,'£5','#8fd1a8',0],[1000,'£10','#e3a07f',0]];
+function money(p){return p<100?p+'p':(p%100?'£'+Math.floor(p/100)+' and '+(p%100)+'p':'£'+p/100);}
+function cbtn(c,i,where){return c[3]?'<button type="button" class="coin" data-'+where+'="'+i+'" style="width:'+c[3]+'px;height:'+c[3]+'px;background:'+c[2]+'">'+c[1]+'</button>':'<button type="button" class="note" data-'+where+'="'+i+'" style="background:'+c[2]+'">'+c[1]+'</button>';}
+function coins(){var tot=MAT.reduce(function(a,i){return a+CV[i][0];},0);
+  T.innerHTML='<div class="card"><p class="hint">Tap a coin or note to put it on the mat. Tap it on the mat to take it off.</p><div class="row">'+CV.map(function(c,i){return cbtn(c,i,'add');}).join('')+'</div><div class="mat" id="mat">'+MAT.map(function(i,k){return cbtn(CV[i],k,'rm');}).join('')+'</div><div class="big">'+money(tot)+'</div><div class="sub">'+(tot>=100?'= '+tot+'p':'')+'</div><div class="row">'+readBtn()+'<button class="btn" id="clr" type="button">Clear the mat</button></div></div>';
+  T.querySelectorAll('[data-add]').forEach(function(b){b.onclick=function(){if(MAT.length<30){MAT.push(+b.dataset.add);MAT.sort(function(a,b){return CV[b][0]-CV[a][0];});coins();}};});
+  T.querySelectorAll('[data-rm]').forEach(function(b){b.onclick=function(){MAT.splice(+b.dataset.rm,1);coins();};});document.getElementById('clr').onclick=function(){MAT=[];coins();};
+  wireRead(function(){return 'There is '+money(tot)+' on the mat.';});}
+
+/* ---------- Fraction wall ---------- */
+var FD=[1,2,3,4,5,6,8,10],FS={},showL=true;
+function fname(n,d){var nm={1:'whole',2:'half',3:'third',4:'quarter',5:'fifth',6:'sixth',8:'eighth',10:'tenth'}[d];if(d===1)return n?'one whole':'nothing';return n+' '+(n===1?nm:(d===2?'halves':nm+'s'));}
+function fractions(){var s='',W=600,h=40;FD.forEach(function(d,r){var y=r*(h+6),n=(FS[d]||[]).length;for(var i=0;i<d;i++){var on=(FS[d]||[]).indexOf(i)>=0;s+='<g data-f="'+d+','+i+'" style="cursor:pointer"><rect x="'+(i*W/d)+'" y="'+y+'" width="'+(W/d)+'" height="'+h+'" fill="'+(on?'#f2b400':'#eef3fb')+'" stroke="#14213d" stroke-width="2"/>'+(showL?'<text x="'+(i*W/d+W/d/2)+'" y="'+(y+26)+'" text-anchor="middle" font-family="Lexend" font-weight="600" font-size="'+(d>8?13:15)+'" fill="#14213d">'+(d===1?'1':'1/'+d)+'</text>':'')+'</g>';}
+    s+='<text x="'+(W+14)+'" y="'+(y+26)+'" font-family="Lexend" font-weight="700" font-size="16" fill="'+(n?'#c48a00':'#9aa6ba')+'">'+(n?n+'/'+d:'')+'</text>';});
+  T.innerHTML='<div class="card"><p class="hint">Tap the pieces to shade them. Compare the rows: which fractions are the same size?</p><svg viewBox="0 0 680 '+(FD.length*(h+6))+'" role="img" aria-label="Fraction wall">'+s+'</svg><div class="row"><button class="btn" id="lb" type="button">'+(showL?'Hide':'Show')+' labels</button>'+readBtn()+'<button class="btn" id="clr" type="button">Clear</button></div></div>';
+  T.querySelectorAll('[data-f]').forEach(function(g){g.onclick=function(){var p=g.dataset.f.split(','),d=+p[0],i=+p[1],a=FS[d]=FS[d]||[],k=a.indexOf(i);if(k>=0)a.splice(k,1);else a.push(i);fractions();};});
+  document.getElementById('lb').onclick=function(){showL=!showL;fractions();};document.getElementById('clr').onclick=function(){FS={};fractions();};
+  wireRead(function(){var p=FD.filter(function(d){return (FS[d]||[]).length;}).map(function(d){return fname(FS[d].length,d);});return p.length?'You have shaded '+p.join(', and ')+'.':'Tap a piece to shade it.';});}
+
+/* ---------- Number line ---------- */
+var NP=[['0 to 10',0,10,1,1],['0 to 20',0,20,1,2],['0 to 100',0,100,10,1],['0 to 1000',0,1000,100,1],['quarters',0,4,1,0,4],['tenths',0,10,1,0,10]],NI=0,NM=null,NJ=[];
+function nlab(v){var p=NP[NI];if(p[5])return v===0?'0':v===p[5]?'1':v+'/'+p[5];return String(v);}
+function numberline(){var p=NP[NI],a=p[1],b=p[2],st=p[3],X=function(v){return 40+(v-a)/(b-a)*640;},s='<path d="M24 120H696" stroke="#14213d" stroke-width="4"/>';
+  for(var v=a;v<=b;v+=st){var big=p[5]||(v-a)%(st*(p[4]>1?5:1))===0||v===b;s+='<path d="M'+X(v)+' '+(big?104:110)+'V'+(big?136:130)+'" stroke="#14213d" stroke-width="'+(big?3:2)+'"/>';if(big||(b-a)/st<=10)s+='<text x="'+X(v)+'" y="162" text-anchor="middle" font-family="Lexend" font-weight="600" font-size="16" fill="#4f5d75">'+nlab(v)+'</text>';}
+  NJ.forEach(function(j){var x1=X(j[0]),x2=X(j[1]),m=(x1+x2)/2;s+='<path d="M'+x1+' 112Q'+m+' '+(60)+' '+x2+' 112" stroke="'+(j[1]>j[0]?'#2f6fdf':'#e0661c')+'" stroke-width="3" fill="none"/>';});
+  if(NM!=null)s+='<path d="M'+X(NM)+' 64V100" stroke="#e8a800" stroke-width="5"/><path d="M'+(X(NM)-9)+' 92L'+X(NM)+' 106L'+(X(NM)+9)+' 92" fill="#e8a800"/><text x="'+X(NM)+'" y="54" text-anchor="middle" font-family="Lexend" font-weight="700" font-size="22" fill="#14213d">'+nlab(NM)+'</text>';
+  T.innerHTML='<div class="card"><div class="row">'+NP.map(function(q,i){return '<button class="btn'+(i===NI?' p':'')+'" data-p="'+i+'" type="button">'+q[0]+'</button>';}).join('')+'</div><p class="hint">Tap the line to put a marker on it. Then jump forwards or backwards.</p><svg id="nl" viewBox="0 0 720 180" role="img" aria-label="Number line">'+s+'</svg>'+
+   '<div class="big">'+(NM==null?'–':nlab(NM))+'</div><div class="row"><button class="btn" data-j="-1" type="button">Jump back</button><button class="btn p" data-j="1" type="button">Jump on</button>'+readBtn()+'<button class="btn" id="clr" type="button">Clear jumps</button></div></div>';
+  T.querySelectorAll('[data-p]').forEach(function(bt){bt.onclick=function(){NI=+bt.dataset.p;NM=null;NJ=[];numberline();};});
+  document.getElementById('nl').onclick=function(e){var r=this.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*720,v=a+Math.round(((x-40)/640*(b-a))/st)*st;NM=Math.max(a,Math.min(b,v));NJ=[];numberline();};
+  T.querySelectorAll('[data-j]').forEach(function(bt){bt.onclick=function(){var d=+bt.dataset.j;if(NM==null)NM=d<0?b:a;var n=NM+d*st;if(n<a-1e-9||n>b+1e-9){var h=T.querySelector('.hint');h.innerHTML='<b>'+(d<0?'You are at the start of the line.':'You are at the end of the line.')+'</b> Tap the line to move the marker.';h.style.color='#d2570f';return;}NJ.push([NM,n]);NM=n;numberline();};});
+  document.getElementById('clr').onclick=function(){NJ=[];numberline();};wireRead(function(){return NM==null?'Tap the line to put a marker on it.':'The marker is on '+(NP[NI][5]?fname(NM,NP[NI][5]).replace('nothing','zero'):NM);});}
+
+/* ---------- Arrays ---------- */
+var AR={r:3,c:4},rowC=false;
+function arrays(){var r=AR.r,c=AR.c,sp=Math.min(560/c,300/r,56),s='';for(var i=0;i<r;i++){for(var j=0;j<c;j++)s+='<circle cx="'+(40+j*sp+sp/2)+'" cy="'+(20+i*sp+sp/2)+'" r="'+sp*.34+'" fill="'+(rowC&&i%2?'#5b9bff':'#f2b400')+'"/>';if(rowC)s+='<text x="'+(48+c*sp)+'" y="'+(26+i*sp+sp/2)+'" font-family="Lexend" font-weight="700" font-size="16" fill="#c48a00">'+(i+1)*c+'</text>';}
+  T.innerHTML='<div class="card"><svg viewBox="0 0 680 '+(40+r*sp)+'" role="img" aria-label="Array">'+s+'</svg><div class="big">'+r+' × '+c+' = '+r*c+'</div><div class="sub">'+c+' × '+r+' = '+r*c+' &nbsp;·&nbsp; '+r*c+' ÷ '+r+' = '+c+' &nbsp;·&nbsp; '+r*c+' ÷ '+c+' = '+r+'</div>'+
+   '<div class="row"><span class="step">Rows <button class="btn" data-x="r-" type="button">−</button><b>'+r+'</b><button class="btn p" data-x="r+" type="button">+</button></span><span class="step">Columns <button class="btn" data-x="c-" type="button">−</button><b>'+c+'</b><button class="btn p" data-x="c+" type="button">+</button></span></div><div class="row"><button class="btn" id="rc" type="button">'+(rowC?'Hide':'Count')+' the rows</button><button class="btn" id="sw" type="button">Turn it round</button>'+readBtn()+'</div></div>';
+  T.querySelectorAll('[data-x]').forEach(function(b){b.onclick=function(){var k=b.dataset.x[0],d=b.dataset.x[1]==='+'?1:-1;AR[k]=Math.max(1,Math.min(12,AR[k]+d));arrays();};});
+  document.getElementById('rc').onclick=function(){rowC=!rowC;arrays();};document.getElementById('sw').onclick=function(){AR={r:AR.c,c:AR.r};arrays();};
+  wireRead(function(){return r+' rows of '+c+'. '+r+' times '+c+' equals '+r*c+'.';});}
+
+/* ---------- Whiteboard ---------- */
+var WB={strokes:[],redo:[],tool:'pen',col:'#14213d',size:4,bg:'blank',clr:0};
+var WCOLS=['#14213d','#e0485f','#2f6fdf','#1f9d63','#e8a800','#8a4fd6','#e0661c','#ffffff'];
+var WBG={blank:'Blank',squares:'Squares',lines:'Lines',dots:'Dots',pv:'Place value',nline:'Number line',frame:'Ten frames',clock:'Clock'};
+var WTOOLS=[['pen','Pen'],['hi','Highlighter'],['eraser','Eraser'],['line','Line'],['arrow','Arrow'],['rect','Box'],['circle','Circle'],['text','Text']];
+function whiteboard(){
+  T.innerHTML='<div class="card wb"><div class="wbbar">'+
+   '<div class="wbg" role="group" aria-label="Tools">'+WTOOLS.map(function(t){return '<button type="button" class="btn sm'+(WB.tool===t[0]?' p':'')+'" data-wt="'+t[0]+'" aria-pressed="'+(WB.tool===t[0])+'">'+t[1]+'</button>';}).join('')+'</div>'+
+   '<div class="wbg" role="group" aria-label="Colours">'+WCOLS.map(function(c){return '<button type="button" class="sw'+(WB.col===c?' on':'')+'" data-wc="'+c+'" style="background:'+c+'" aria-label="Colour '+c+'"></button>';}).join('')+'</div>'+
+   '<div class="wbg" role="group" aria-label="Size">'+[[2,'Thin'],[4,'Medium'],[9,'Thick']].map(function(s){return '<button type="button" class="btn sm'+(WB.size===s[0]?' p':'')+'" data-ws="'+s[0]+'">'+s[1]+'</button>';}).join('')+'</div>'+
+   '<div class="wbg"><label class="hint" for="wbbg">Background</label><select id="wbbg" class="btn sm">'+Object.keys(WBG).map(function(k){return '<option value="'+k+'"'+(WB.bg===k?' selected':'')+'>'+WBG[k]+'</option>';}).join('')+'</select>'+
+   '<button type="button" class="btn sm" id="wbu">Undo</button><button type="button" class="btn sm" id="wbr">Redo</button><button type="button" class="btn sm" id="wbclr">'+(WB.clr?'Tap again to clear':'Clear')+'</button><button type="button" class="btn sm" id="wbf">Full screen</button></div></div>'+
+   '<div class="wbwrap" id="wbwrap"><canvas id="wbbgc" aria-hidden="true"></canvas><canvas id="wbc" aria-label="Whiteboard. Draw with your finger or a pencil."></canvas><input id="wbtxt" class="wbtxt" type="text" placeholder="Type, then press Enter" hidden></div></div>';
+  var wrap=document.getElementById('wbwrap'),cv=document.getElementById('wbc'),bgc=document.getElementById('wbbgc'),ctx=cv.getContext('2d'),bx=bgc.getContext('2d'),W=0,H=0,DPR=Math.min(2,window.devicePixelRatio||1),cur=null,tin=document.getElementById('wbtxt');
+  function size(){var r=wrap.getBoundingClientRect();W=r.width;H=r.height;[cv,bgc].forEach(function(c){c.width=W*DPR;c.height=H*DPR;c.style.width=W+'px';c.style.height=H+'px';c.getContext('2d').setTransform(DPR,0,0,DPR,0,0);});drawBg();redraw();}
+  function drawBg(){bx.fillStyle='#fff';bx.fillRect(0,0,W,H);bx.lineWidth=1;var g=28;
+    if(WB.bg==='squares'){bx.strokeStyle='#d6e2f3';for(var x=g;x<W;x+=g){bx.beginPath();bx.moveTo(x,0);bx.lineTo(x,H);bx.stroke();}for(var y=g;y<H;y+=g){bx.beginPath();bx.moveTo(0,y);bx.lineTo(W,y);bx.stroke();}}
+    else if(WB.bg==='lines'){bx.strokeStyle='#c9d8ee';for(y=48;y<H;y+=40){bx.beginPath();bx.moveTo(0,y);bx.lineTo(W,y);bx.stroke();}bx.strokeStyle='#f2b8c0';bx.beginPath();bx.moveTo(60,0);bx.lineTo(60,H);bx.stroke();}
+    else if(WB.bg==='dots'){bx.fillStyle='#a9b8cf';for(x=g;x<W;x+=g)for(y=g;y<H;y+=g){bx.beginPath();bx.arc(x,y,1.6,0,6.3);bx.fill();}}
+    else if(WB.bg==='pv'){var cols=[['Hundreds','#5b9bff'],['Tens','#3dbb7c'],['Ones','#f2b400']],cw=W/3;cols.forEach(function(c,i){bx.fillStyle=c[1]+'22';bx.fillRect(i*cw,0,cw,H);bx.fillStyle=c[1]+'55';bx.fillRect(i*cw,0,cw,44);bx.fillStyle='#14213d';bx.font='700 18px Lexend, sans-serif';bx.textAlign='center';bx.fillText(c[0],i*cw+cw/2,29);bx.strokeStyle='#14213d';bx.lineWidth=2;bx.beginPath();bx.moveTo(i*cw,0);bx.lineTo(i*cw,H);bx.stroke();});}
+    else if(WB.bg==='nline'){var y0=H*.6,x0=40,x1=W-40;bx.strokeStyle='#14213d';bx.lineWidth=3;bx.beginPath();bx.moveTo(x0-10,y0);bx.lineTo(x1+10,y0);bx.stroke();for(var i=0;i<=10;i++){var xx=x0+i*(x1-x0)/10;bx.beginPath();bx.moveTo(xx,y0-14);bx.lineTo(xx,y0+14);bx.stroke();}}
+    else if(WB.bg==='frame'){var s=Math.min(60,(W-80)/11);[[40,60],[40+6*s,60]].forEach(function(p){for(var r=0;r<2;r++)for(var c=0;c<5;c++){bx.strokeStyle='#14213d';bx.lineWidth=2.5;bx.strokeRect(p[0]+c*s,p[1]+r*s,s,s);}});}
+    else if(WB.bg==='clock'){var R=Math.min(W,H)*.38,cx=W/2,cy=H/2;bx.strokeStyle='#14213d';bx.lineWidth=5;bx.beginPath();bx.arc(cx,cy,R,0,6.3);bx.stroke();for(i=0;i<60;i++){var a=i/60*6.283,r1=i%5?R-10:R-20;bx.lineWidth=i%5?1.5:3.5;bx.beginPath();bx.moveTo(cx+r1*Math.sin(a),cy-r1*Math.cos(a));bx.lineTo(cx+(R-3)*Math.sin(a),cy-(R-3)*Math.cos(a));bx.stroke();}bx.fillStyle='#14213d';bx.font='700 '+Math.round(R/6)+'px Lexend, sans-serif';bx.textAlign='center';bx.textBaseline='middle';for(i=1;i<=12;i++){a=i/12*6.283;bx.fillText(i,cx+(R-R/3.6)*Math.sin(a),cy-(R-R/3.6)*Math.cos(a));}bx.beginPath();bx.arc(cx,cy,6,0,6.3);bx.fill();}}
+  function paint(s,c){c.save();if(s.t==='eraser')c.globalCompositeOperation='destination-out';c.strokeStyle=s.t==='eraser'?'#000':s.c;c.fillStyle=s.c;c.lineWidth=s.t==='hi'?s.w*4:s.t==='eraser'?s.w*5:s.w;c.lineCap='round';c.lineJoin='round';if(s.t==='hi')c.globalAlpha=.32;
+    var p=s.p,a=p[0],b=p[p.length-1];
+    if(s.t==='pen'||s.t==='hi'||s.t==='eraser'){c.beginPath();c.moveTo(a[0],a[1]);if(p.length===1)c.lineTo(a[0]+.1,a[1]+.1);for(var i=1;i<p.length-1;i++){var mx=(p[i][0]+p[i+1][0])/2,my=(p[i][1]+p[i+1][1])/2;c.quadraticCurveTo(p[i][0],p[i][1],mx,my);}if(p.length>1)c.lineTo(b[0],b[1]);c.stroke();}
+    else if(s.t==='line'||s.t==='arrow'){c.beginPath();c.moveTo(a[0],a[1]);c.lineTo(b[0],b[1]);c.stroke();if(s.t==='arrow'){var an=Math.atan2(b[1]-a[1],b[0]-a[0]),L=10+s.w*2.5;c.beginPath();c.moveTo(b[0],b[1]);c.lineTo(b[0]-L*Math.cos(an-.45),b[1]-L*Math.sin(an-.45));c.moveTo(b[0],b[1]);c.lineTo(b[0]-L*Math.cos(an+.45),b[1]-L*Math.sin(an+.45));c.stroke();}}
+    else if(s.t==='rect'){c.strokeRect(Math.min(a[0],b[0]),Math.min(a[1],b[1]),Math.abs(b[0]-a[0]),Math.abs(b[1]-a[1]));}
+    else if(s.t==='circle'){c.beginPath();c.ellipse((a[0]+b[0])/2,(a[1]+b[1])/2,Math.abs(b[0]-a[0])/2+.1,Math.abs(b[1]-a[1])/2+.1,0,0,6.3);c.stroke();}
+    else if(s.t==='text'){c.font='600 '+(14+s.w*3)+'px Lexend, sans-serif';c.textBaseline='middle';c.fillText(s.s,a[0],a[1]);}
+    c.restore();}
+  function redraw(){ctx.clearRect(0,0,W,H);WB.strokes.forEach(function(s){paint(s,ctx);});if(cur)paint(cur,ctx);}
+  function pos(e){var r=cv.getBoundingClientRect();return [e.clientX-r.left,e.clientY-r.top];}
+  var activeId=null;
+  cv.addEventListener('pointerdown',function(e){if(activeId!==null)return;if(WB.tool==='text'){var p=pos(e);tin.hidden=false;tin.style.left=p[0]+'px';tin.style.top=(p[1]-18)+'px';tin.value='';tin.dataset.x=p[0];tin.dataset.y=p[1];setTimeout(function(){tin.focus();},0);return;}
+    activeId=e.pointerId;try{cv.setPointerCapture(e.pointerId);}catch(_){}cur={t:WB.tool,c:WB.col,w:WB.size,p:[pos(e)]};e.preventDefault();redraw();});
+  cv.addEventListener('pointermove',function(e){if(e.pointerId!==activeId||!cur)return;var p=pos(e);if(['pen','hi','eraser'].indexOf(cur.t)>=0)cur.p.push(p);else cur.p=[cur.p[0],p];redraw();});
+  function end(e){if(e.pointerId!==activeId)return;activeId=null;if(cur){WB.strokes.push(cur);WB.redo=[];cur=null;redraw();}}
+  cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',end);
+  function commitText(){if(tin.hidden)return;var v=tin.value.trim();tin.hidden=true;if(v){WB.strokes.push({t:'text',c:WB.col,w:WB.size,s:v,p:[[+tin.dataset.x,+tin.dataset.y]]});WB.redo=[];redraw();}}
+  tin.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();commitText();}if(e.key==='Escape'){tin.hidden=true;}});tin.addEventListener('blur',commitText);
+  T.querySelectorAll('[data-wt]').forEach(function(b){b.onclick=function(){WB.tool=b.dataset.wt;whiteboard();};});
+  T.querySelectorAll('[data-wc]').forEach(function(b){b.onclick=function(){WB.col=b.dataset.wc;if(WB.tool==='eraser')WB.tool='pen';whiteboard();};});
+  T.querySelectorAll('[data-ws]').forEach(function(b){b.onclick=function(){WB.size=+b.dataset.ws;whiteboard();};});
+  document.getElementById('wbbg').onchange=function(){WB.bg=this.value;drawBg();};
+  document.getElementById('wbu').onclick=function(){if(WB.strokes.length){WB.redo.push(WB.strokes.pop());redraw();}};
+  document.getElementById('wbr').onclick=function(){if(WB.redo.length){WB.strokes.push(WB.redo.pop());redraw();}};
+  document.getElementById('wbclr').onclick=function(){if(WB.clr){WB.redo=WB.strokes.slice().reverse();WB.strokes=[];WB.clr=0;whiteboard();return;}WB.clr=1;this.textContent='Tap again to clear';var me=this;setTimeout(function(){WB.clr=0;if(document.body.contains(me))me.textContent='Clear';},2500);};
+  document.getElementById('wbf').onclick=function(){var el=document.querySelector('.wb');try{if(document.fullscreenElement)document.exitFullscreen();else if(el.requestFullscreen)el.requestFullscreen();else if(el.webkitRequestFullscreen)el.webkitRequestFullscreen();}catch(_){} };
+  if(window.__wbro)window.__wbro.disconnect();try{window.__wbro=new ResizeObserver(function(){size();});window.__wbro.observe(wrap);}catch(_){window.onresize=size;}
+  size();
+}
+
+/*TOOLS2*/
+/* ---------- shared colour-coded digits (Th purple, H blue, T green, O gold) ---------- */
+var PVC=['#8a4fd6','#2f6fdf','#1f9d63','#c48a00'];
+function cdig(n){var s=String(n),L=s.length;return s.split('').map(function(d,i){var p=L-1-i;return '<span style="color:'+(PVC[3-p]||'#14213d')+'">'+d+'</span>';}).join('');}
+
+/* ---------- Ten frames ---------- */
+var TF={dbl:false,cells:{},col:'r',hide:false};
+function tenframe(){var n=TF.dbl?20:10,cnt=0,red=0;for(var i=0;i<n;i++)if(TF.cells[i]){cnt++;if(TF.cells[i]==='r')red++;}
+  var fr=function(o){var h='<div class="tfr">';for(var i=o;i<o+10;i++){var c=TF.cells[i];h+='<button type="button" class="tfc" data-t="'+i+'" aria-label="Square '+(i+1)+(c?', counter':', empty')+'">'+(c?'<i class="ctr '+c+'"></i>':'')+'</button>';}return h+'</div>';};
+  var tens=Math.floor(cnt/10),ones=cnt%10;
+  T.innerHTML='<div class="card"><p class="hint">Tap a square to add or remove a counter. Ten frames show numbers next to 5 and 10.</p><div class="row"><button class="btn'+(!TF.dbl?' p':'')+'" data-m="1" type="button">One ten frame</button><button class="btn'+(TF.dbl?' p':'')+'" data-m="2" type="button">Double ten frame</button><span class="hint">Counter colour:</span><button class="btn'+(TF.col==='r'?' p':'')+'" data-c="r" type="button">Red</button><button class="btn'+(TF.col==='y'?' p':'')+'" data-c="y" type="button">Yellow</button></div>'+
+   '<div class="tfw">'+fr(0)+(TF.dbl?fr(10):'')+'</div>'+
+   '<div class="big">'+(TF.hide?'?':cnt)+'</div><div class="sub">'+(TF.hide?'How many? Look, don\'t count!':(cnt<=10?(10-cnt)+' more to make 10':'10 and '+(cnt-10)+' make '+cnt+' · '+(20-cnt)+' more to make 20')+(red&&red<cnt?' · '+red+' red + '+(cnt-red)+' yellow = '+cnt:''))+'</div>'+
+   '<div class="row"><button class="btn" id="tfFill" type="button">Fill</button><button class="btn" id="tfRand" type="button">Flash a number</button><button class="btn" id="tfHide" type="button">'+(TF.hide?'Show the number':'Hide the number')+'</button>'+readBtn()+'<button class="btn" id="tfClr" type="button">Clear</button></div></div>';
+  T.querySelectorAll('[data-t]').forEach(function(b){b.onclick=function(){var i=+b.dataset.t;if(TF.cells[i])delete TF.cells[i];else TF.cells[i]=TF.col;tenframe();};});
+  T.querySelectorAll('[data-m]').forEach(function(b){b.onclick=function(){TF.dbl=b.dataset.m==='2';tenframe();};});
+  T.querySelectorAll('[data-c]').forEach(function(b){b.onclick=function(){TF.col=b.dataset.c;tenframe();};});
+  document.getElementById('tfFill').onclick=function(){for(var i=0;i<n;i++)if(!TF.cells[i])TF.cells[i]=TF.col;tenframe();};
+  document.getElementById('tfClr').onclick=function(){TF.cells={};tenframe();};
+  document.getElementById('tfHide').onclick=function(){TF.hide=!TF.hide;tenframe();};
+  document.getElementById('tfRand').onclick=function(){TF.cells={};var k=1+Math.floor(Math.random()*(TF.dbl?20:10));for(var i=0;i<k;i++)TF.cells[i]=TF.col;TF.hide=true;tenframe();};
+  wireRead(function(){return TF.hide?'How many counters? Look, do not count.':'There are '+cnt+' counters. '+(cnt<=10?(10-cnt)+' more make ten.':'Ten and '+(cnt-10)+' make '+cnt+'.');});}
+
+/* ---------- Two-colour counters ---------- */
+var TC={c:['r','r','r','y','y']};
+function counters(){var r=TC.c.filter(function(x){return x==='r';}).length,y=TC.c.length-r;
+  T.innerHTML='<div class="card"><p class="hint">Tap a counter to flip it. Use red and yellow to show the two parts of a number.</p><div class="mat" style="min-height:120px">'+TC.c.map(function(c,i){return '<button type="button" class="tcc '+c+'" data-f="'+i+'" aria-label="'+(c==='r'?'red':'yellow')+' counter"></button>';}).join('')+'</div>'+
+   '<div class="big"><span style="color:#d6334b">'+r+'</span> + <span style="color:#b88400">'+y+'</span> = '+TC.c.length+'</div>'+
+   '<div class="row"><button class="btn p" id="tcAdd" type="button">Add a counter</button><button class="btn" id="tcRem" type="button">Take one away</button><button class="btn" id="tcShake" type="button">Shake and spill</button>'+readBtn()+'</div><p class="hint">Shake and spill drops every counter at random. What totals of red and yellow can you make with '+TC.c.length+' counters?</p></div>';
+  T.querySelectorAll('[data-f]').forEach(function(b){b.onclick=function(){var i=+b.dataset.f;TC.c[i]=TC.c[i]==='r'?'y':'r';counters();};});
+  document.getElementById('tcAdd').onclick=function(){if(TC.c.length<20)TC.c.push('r');counters();};document.getElementById('tcRem').onclick=function(){TC.c.pop();counters();};
+  document.getElementById('tcShake').onclick=function(){TC.c=TC.c.map(function(){return Math.random()<.5?'r':'y';});TC.c.sort();counters();};
+  wireRead(function(){return r+' red and '+y+' yellow make '+TC.c.length;});}
+
+/* ---------- Place value counters ---------- */
+var PD={v:{1000:0,100:2,10:4,1:3},th:false};
+function pvdisks(){var cols=PD.th?[1000,100,10,1]:[100,10,1],nm={1000:'Thousands',100:'Hundreds',10:'Tens',1:'Ones'},cc={1000:PVC[0],100:PVC[1],10:PVC[2],1:PVC[3]},tot=cols.reduce(function(a,c){return a+c*PD.v[c];},0);
+  T.innerHTML='<div class="card"><p class="hint">Place value counters work like Dienes, but each counter has its value written on it.</p><div class="pvm" style="grid-template-columns:repeat('+cols.length+',1fr)">'+cols.map(function(c){var h='<div class="pvc"><div class="pvh" style="background:'+cc[c]+'22;color:'+cc[c]+'">'+nm[c]+'</div><div class="pvb">';for(var i=0;i<PD.v[c];i++)h+='<button type="button" class="disk" data-rm="'+c+'" style="background:'+cc[c]+'" aria-label="Remove a '+c+'">'+c+'</button>';return h+'</div><div class="row" style="justify-content:center"><button class="btn sm" data-a="'+c+'" type="button">+ '+c+'</button>'+(c>1?'<button class="btn sm" data-x="'+c+'" type="button" '+(PD.v[c]?'':'disabled')+'>Exchange 1 for 10 × '+c/10+'</button>':'')+'</div></div>';}).join('')+'</div>'+
+   '<div class="big">'+cdig(tot)+'</div><div class="sub">'+cols.filter(function(c){return PD.v[c];}).map(function(c){return '<span style="color:'+cc[c]+'">'+PD.v[c]*c+'</span>';}).join(' + ')+'</div>'+
+   '<div class="row">'+cols.slice(0,-1).map(function(c){var lo=c/10;return '<button class="btn" data-g="'+lo+'" type="button" '+(PD.v[lo]>=10?'':'disabled')+'>Make 10 × '+lo+' into 1 × '+c+'</button>';}).join('')+'<button class="btn" id="pdTh" type="button">'+(PD.th?'Hide':'Show')+' thousands</button>'+readBtn()+'<button class="btn" id="pdClr" type="button">Clear</button></div></div>';
+  T.querySelectorAll('[data-a]').forEach(function(b){b.onclick=function(){var c=+b.dataset.a;if(PD.v[c]<20)PD.v[c]++;pvdisks();};});
+  T.querySelectorAll('[data-rm]').forEach(function(b){b.onclick=function(){PD.v[+b.dataset.rm]--;pvdisks();};});
+  T.querySelectorAll('[data-x]').forEach(function(b){b.onclick=function(){var c=+b.dataset.x;if(PD.v[c]&&PD.v[c/10]<=10){PD.v[c]--;PD.v[c/10]+=10;}pvdisks();};});
+  T.querySelectorAll('[data-g]').forEach(function(b){b.onclick=function(){var lo=+b.dataset.g;PD.v[lo]-=10;PD.v[lo*10]++;pvdisks();};});
+  document.getElementById('pdTh').onclick=function(){PD.th=!PD.th;pvdisks();};document.getElementById('pdClr').onclick=function(){PD.v={1000:0,100:0,10:0,1:0};pvdisks();};
+  wireRead(function(){return cols.map(function(c){return PD.v[c]+' '+nm[c].toLowerCase();}).join(', ')+' make '+tot;});}
+
+/* ---------- Hundred square ---------- */
+var HS={on:{},hide:false,step:0,cur:null};
+function hundred(){var h='';for(var i=1;i<=100;i++){var on=HS.on[i];h+='<button type="button" class="hsq'+(on?' on':'')+(HS.cur===i?' cur':'')+'" data-n="'+i+'">'+(HS.hide&&!on&&HS.cur!==i?'':i)+'</button>';}
+  T.innerHTML='<div class="card"><p class="hint">Tap numbers to colour them. Use the buttons to find patterns, or hide the numbers and work out what is missing.</p><div class="row"><span class="hint">Count in:</span>'+[2,3,4,5,8,10].map(function(s){return '<button class="btn sm'+(HS.step===s?' p':'')+'" data-s="'+s+'" type="button">'+s+'s</button>';}).join('')+'</div>'+
+   '<div class="hgrid">'+h+'</div>'+
+   (HS.cur?'<div class="row" style="justify-content:center"><button class="btn" data-mv="-10" type="button">↑ 10 less</button><button class="btn" data-mv="-1" type="button">← 1 less</button><b style="font-size:28px;min-width:3ch;text-align:center">'+HS.cur+'</b><button class="btn" data-mv="1" type="button">1 more →</button><button class="btn" data-mv="10" type="button">10 more ↓</button></div>':'')+
+   '<div class="row"><button class="btn" id="hsHide" type="button">'+(HS.hide?'Show':'Hide')+' the numbers</button>'+readBtn()+'<button class="btn" id="hsClr" type="button">Clear</button></div></div>';
+  T.querySelectorAll('[data-n]').forEach(function(b){b.onclick=function(){var n=+b.dataset.n;if(HS.on[n])delete HS.on[n];else HS.on[n]=1;HS.cur=n;hundred();};});
+  T.querySelectorAll('[data-s]').forEach(function(b){b.onclick=function(){var s=+b.dataset.s;HS.step=s;HS.on={};for(var i=s;i<=100;i+=s)HS.on[i]=1;hundred();};});
+  T.querySelectorAll('[data-mv]').forEach(function(b){b.onclick=function(){var n=HS.cur+(+b.dataset.mv);if(n>=1&&n<=100){HS.cur=n;HS.on[n]=1;}hundred();};});
+  document.getElementById('hsHide').onclick=function(){HS.hide=!HS.hide;hundred();};document.getElementById('hsClr').onclick=function(){HS.on={};HS.step=0;HS.cur=null;hundred();};
+  wireRead(function(){var L=Object.keys(HS.on).map(Number).sort(function(a,b){return a-b;});return L.length?'Coloured numbers: '+L.slice(0,20).join(', '):'Tap a number to colour it.';});}
+
+/* ---------- Dice, cards and spinners ---------- */
+var RN={mode:'dice',dice:'6',n:2,last:[],log:[],spin:4,ang:0};
+var PIPS={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
+function rdie(v,max){if(max===6)return '<div class="die6" aria-label="'+v+'">'+[0,1,2,3,4,5,6,7,8].map(function(i){return '<i style="visibility:'+(PIPS[v].indexOf(i)>=0?'visible':'hidden')+'"></i>';}).join('')+'</div>';return '<div class="die6 num" aria-label="'+v+'">'+v+'</div>';}
+var SUITS=[['♥','#d6334b'],['♦','#d6334b'],['♣','#14213d'],['♠','#14213d']];
+function randoms(){var body='',info='';
+  if(RN.mode==='dice'){var max=RN.dice==='9'?9:RN.dice==='12'?12:6,lo=RN.dice==='9'?0:1;body='<div class="row" style="justify-content:center;gap:16px;min-height:110px">'+(RN.last.length?RN.last.map(function(v){return rdie(v,max===6?6:0);}).join(''):'<p class="hint">Press Roll.</p>')+'</div>';if(RN.last.length>1)info='Total: '+RN.last.reduce(function(a,b){return a+b;},0);}
+  else if(RN.mode==='cards'){body='<div class="row" style="justify-content:center;gap:12px;min-height:130px">'+(RN.last.length?RN.last.map(function(c){var s=SUITS[c[1]];return '<div class="pcard" style="color:'+s[1]+'"><b>'+(c[0]===1?'A':c[0])+'</b><span>'+s[0]+'</span></div>';}).join(''):'<p class="hint">Press Draw.</p>')+'</div>';if(RN.last.length>1)info='Total: '+RN.last.reduce(function(a,c){return a+c[0];},0);}
+  else{var k=RN.spin,cols=['#f2b400','#5b9bff','#3dbb7c','#e0485f','#8a4fd6','#ff8a3d','#9aa6ba','#38c7c7'],sv='';for(var i=0;i<k;i++){var a1=i/k*Math.PI*2-Math.PI/2,a2=(i+1)/k*Math.PI*2-Math.PI/2;sv+='<path d="M100 100L'+(100+90*Math.cos(a1)).toFixed(1)+' '+(100+90*Math.sin(a1)).toFixed(1)+'A90 90 0 0 1 '+(100+90*Math.cos(a2)).toFixed(1)+' '+(100+90*Math.sin(a2)).toFixed(1)+'Z" fill="'+cols[i]+'" stroke="#fff" stroke-width="2"/><text x="'+(100+58*Math.cos((a1+a2)/2)).toFixed(1)+'" y="'+(106+58*Math.sin((a1+a2)/2)).toFixed(1)+'" text-anchor="middle" font-family="Lexend" font-weight="700" font-size="20" fill="#14213d">'+(i+1)+'</text>';}
+    body='<svg viewBox="0 0 200 200" style="max-width:280px;margin:0 auto">'+sv+'<g style="transform-origin:100px 100px;transform:rotate('+RN.ang+'deg);transition:transform 1.2s cubic-bezier(.2,.8,.2,1)" id="needle"><path d="M100 100L100 22" stroke="#14213d" stroke-width="6" stroke-linecap="round"/><path d="M92 30L100 14L108 30Z" fill="#14213d"/></g><circle cx="100" cy="100" r="9" fill="#14213d"/></svg>';if(RN.last.length)info='Landed on '+RN.last[0];}
+  var tal={};RN.log.forEach(function(v){tal[v]=(tal[v]||0)+1;});
+  T.innerHTML='<div class="card"><div class="row">'+[['dice','Dice'],['cards','Playing cards'],['spinner','Spinner']].map(function(m){return '<button class="btn'+(RN.mode===m[0]?' p':'')+'" data-md="'+m[0]+'" type="button">'+m[1]+'</button>';}).join('')+'</div>'+
+   (RN.mode==='dice'?'<div class="row"><span class="hint">Dice:</span>'+[['6','1–6 dots'],['9','0–9'],['12','1–12']].map(function(d){return '<button class="btn sm'+(RN.dice===d[0]?' p':'')+'" data-d="'+d[0]+'" type="button">'+d[1]+'</button>';}).join('')+'<span class="hint">How many:</span>'+[1,2,3].map(function(n){return '<button class="btn sm'+(RN.n===n?' p':'')+'" data-k="'+n+'" type="button">'+n+'</button>';}).join('')+'</div>':
+    RN.mode==='cards'?'<div class="row"><span class="hint">Cards (A to 10):</span>'+[1,2,3].map(function(n){return '<button class="btn sm'+(RN.n===n?' p':'')+'" data-k="'+n+'" type="button">'+n+'</button>';}).join('')+'</div>':
+    '<div class="row"><span class="hint">Sections:</span>'+[2,3,4,5,6,8].map(function(n){return '<button class="btn sm'+(RN.spin===n?' p':'')+'" data-sp="'+n+'" type="button">'+n+'</button>';}).join('')+'</div>')+
+   body+(info?'<div class="big" style="font-size:26px">'+info+'</div>':'')+
+   '<div class="row" style="justify-content:center"><button class="btn p" id="rnGo" type="button" style="min-width:140px">'+(RN.mode==='dice'?'Roll':RN.mode==='cards'?'Draw':'Spin')+'</button>'+readBtn()+'<button class="btn" id="rnClr" type="button">Clear tally</button></div>'+
+   (RN.log.length?'<div><p class="hint">Results so far ('+RN.log.length+'):</p><div class="row">'+Object.keys(tal).sort(function(a,b){return a-b;}).map(function(k){return '<span class="tally"><b>'+k+'</b> '+tal[k]+'</span>';}).join('')+'</div></div>':'')+'</div>';
+  T.querySelectorAll('[data-md]').forEach(function(b){b.onclick=function(){RN.mode=b.dataset.md;RN.last=[];RN.log=[];randoms();};});
+  T.querySelectorAll('[data-d]').forEach(function(b){b.onclick=function(){RN.dice=b.dataset.d;RN.last=[];RN.log=[];randoms();};});
+  T.querySelectorAll('[data-k]').forEach(function(b){b.onclick=function(){RN.n=+b.dataset.k;RN.last=[];randoms();};});
+  T.querySelectorAll('[data-sp]').forEach(function(b){b.onclick=function(){RN.spin=+b.dataset.sp;RN.last=[];RN.log=[];randoms();};});
+  document.getElementById('rnClr').onclick=function(){RN.log=[];randoms();};
+  document.getElementById('rnGo').onclick=function(){var r=function(n){return Math.floor(Math.random()*n);};
+    if(RN.mode==='dice'){var max=RN.dice==='9'?10:RN.dice==='12'?12:6,lo=RN.dice==='9'?0:1;RN.last=[];for(var i=0;i<RN.n;i++)RN.last.push(lo+r(RN.dice==='9'?10:max));RN.log.push(RN.last.length>1?RN.last.reduce(function(a,b){return a+b;},0):RN.last[0]);}
+    else if(RN.mode==='cards'){RN.last=[];for(var i=0;i<RN.n;i++)RN.last.push([1+r(10),r(4)]);RN.log.push(RN.last.reduce(function(a,c){return a+c[0];},0));}
+    else{var s=r(RN.spin);RN.ang+=720+((s+.5)/RN.spin*360-((RN.ang%360)+360)%360);RN.last=[s+1];RN.log.push(s+1);}
+    randoms();say(info||'');};
+  wireRead(function(){return info||'Press the button to start.';});}
+
+/* ---------- Sharing and grouping ---------- */
+var SG={mode:'share',total:12,g:3,size:4,dealt:[],left:12};
+function sgReset(){SG.dealt=[];var k=SG.mode==='share'?SG.g:0;for(var i=0;i<k;i++)SG.dealt.push(0);SG.left=SG.total;}
+function sharing(){if(SG.dealt.length===0&&SG.left===SG.total&&SG.mode==='share')sgReset();
+  var circles=SG.dealt.map(function(n,i){var h='<div class="bucket"><div class="bk">';for(var k=0;k<n;k++)h+='<i class="ctr r"></i>';return h+'</div><b>'+n+'</b></div>';}).join('');
+  var pile='';for(var i=0;i<SG.left;i++)pile+='<i class="ctr y"></i>';
+  var done=SG.mode==='share'?(SG.left<SG.g&&SG.dealt.some(function(x){return x;})):(SG.left<SG.size&&SG.dealt.length>0),rem=SG.left;
+  T.innerHTML='<div class="card"><div class="row"><button class="btn'+(SG.mode==='share'?' p':'')+'" data-md="share" type="button">Sharing</button><button class="btn'+(SG.mode==='group'?' p':'')+'" data-md="group" type="button">Grouping</button></div>'+
+   '<p class="hint">'+(SG.mode==='share'?'<b>Sharing:</b> we know how many groups. Share the counters one at a time until they are all gone.':'<b>Grouping:</b> we know how many go in each group. Keep making groups until you cannot make another.')+'</p>'+
+   '<div class="row"><span class="step">Counters <button class="btn sm" data-x="t-" type="button">−</button><b>'+SG.total+'</b><button class="btn sm" data-x="t+" type="button">+</button></span>'+(SG.mode==='share'?'<span class="step">Groups <button class="btn sm" data-x="g-" type="button">−</button><b>'+SG.g+'</b><button class="btn sm" data-x="g+" type="button">+</button></span>':'<span class="step">In each group <button class="btn sm" data-x="s-" type="button">−</button><b>'+SG.size+'</b><button class="btn sm" data-x="s+" type="button">+</button></span>')+'</div>'+
+   '<div class="mat" style="min-height:60px" aria-label="Counters still to share">'+(pile||'<span class="hint">All shared!</span>')+'</div>'+
+   '<div class="row" style="justify-content:center">'+(SG.mode==='share'?'<button class="btn p" id="sgOne" type="button" '+(SG.left?'':'disabled')+'>Give one to each group</button>':'<button class="btn p" id="sgOne" type="button" '+(SG.left>=SG.size?'':'disabled')+'>Make a group of '+SG.size+'</button>')+'<button class="btn" id="sgAll" type="button">Do it all</button><button class="btn" id="sgReset" type="button">Start again</button>'+readBtn()+'</div>'+
+   '<div class="buckets">'+circles+'</div>'+
+   (done?'<div class="big" style="font-size:26px">'+SG.total+' ÷ '+(SG.mode==='share'?SG.g:SG.size)+' = '+(SG.mode==='share'?SG.dealt[0]:SG.dealt.length)+(rem?' remainder '+rem:'')+'</div><div class="sub">'+(SG.mode==='share'?SG.g+' groups with '+SG.dealt[0]+' in each':SG.dealt.length+' groups of '+SG.size)+(rem?', and '+rem+' left over':'')+'</div>':'')+'</div>';
+  T.querySelectorAll('[data-md]').forEach(function(b){b.onclick=function(){SG.mode=b.dataset.md;sgReset();sharing();};});
+  T.querySelectorAll('[data-x]').forEach(function(b){b.onclick=function(){var k=b.dataset.x[0],d=b.dataset.x[1]==='+'?1:-1;if(k==='t')SG.total=Math.max(1,Math.min(40,SG.total+d));if(k==='g')SG.g=Math.max(1,Math.min(8,SG.g+d));if(k==='s')SG.size=Math.max(1,Math.min(10,SG.size+d));sgReset();sharing();};});
+  function one(){if(SG.mode==='share'){if(SG.left<SG.g){/* not enough for every group: stop */return false;}for(var i=0;i<SG.g;i++){SG.dealt[i]++;}SG.left-=SG.g;return true;}if(SG.left<SG.size)return false;SG.dealt.push(SG.size);SG.left-=SG.size;return true;}
+  document.getElementById('sgOne').onclick=function(){one();sharing();};document.getElementById('sgAll').onclick=function(){while(one());sharing();};document.getElementById('sgReset').onclick=function(){sgReset();sharing();};
+  wireRead(function(){return SG.total+' counters. '+(SG.mode==='share'?'Share them into '+SG.g+' equal groups.':'Put them into groups of '+SG.size+'.');});}
+
+/* ---------- Fraction pizzas ---------- */
+var PZ={d:[4,8],s:[{},{}],two:false};
+function pizzaSVG(k){var d=PZ.d[k],sv='<circle cx="100" cy="100" r="92" fill="#e9b45a"/><circle cx="100" cy="100" r="82" fill="#f8d77c"/>';
+  for(var i=0;i<d;i++){var a1=i/d*Math.PI*2-Math.PI/2,a2=(i+1)/d*Math.PI*2-Math.PI/2,on=PZ.s[k][i];sv+='<path data-pz="'+k+','+i+'" d="M100 100L'+(100+82*Math.cos(a1)).toFixed(1)+' '+(100+82*Math.sin(a1)).toFixed(1)+'A82 82 0 0 1 '+(100+82*Math.cos(a2)).toFixed(1)+' '+(100+82*Math.sin(a2)).toFixed(1)+'Z" fill="'+(on?'#e0485f':'transparent')+'" stroke="#9a5b1f" stroke-width="2.5" style="cursor:pointer"/>';if(on)sv+='<circle cx="'+(100+50*Math.cos((a1+a2)/2)).toFixed(1)+'" cy="'+(100+50*Math.sin((a1+a2)/2)).toFixed(1)+'" r="'+Math.min(9,90/d)+'" fill="#a3203a" pointer-events="none"/>';}
+  return '<svg viewBox="0 0 200 200" style="max-width:260px" role="img" aria-label="Pizza cut into '+d+' equal slices">'+sv+'</svg>';}
+function pizzas(){var n=[0,1].map(function(k){return Object.keys(PZ.s[k]).length;}),ks=PZ.two?[0,1]:[0];
+  var cmp='';if(PZ.two){var v0=n[0]/PZ.d[0],v1=n[1]/PZ.d[1];cmp=Math.abs(v0-v1)<1e-9?'They are <b>equal</b>!':v0>v1?'The first pizza has <b>more</b> shaded.':'The second pizza has <b>more</b> shaded.';}
+  T.innerHTML='<div class="card"><p class="hint">Choose how many equal slices (the <b>denominator</b>). Tap slices to shade them (the <b>numerator</b>).</p>'+
+   '<div class="row" style="justify-content:space-around;align-items:flex-start">'+ks.map(function(k){return '<div style="display:flex;flex-direction:column;align-items:center;gap:8px">'+pizzaSVG(k)+'<div class="frac"><b>'+n[k]+'</b><i>'+PZ.d[k]+'</i></div><div class="row" style="justify-content:center">'+[2,3,4,5,6,8,10].map(function(d){return '<button class="btn sm'+(PZ.d[k]===d?' p':'')+'" data-d="'+k+','+d+'" type="button">'+d+'</button>';}).join('')+'</div></div>';}).join('')+'</div>'+
+   (cmp?'<div class="sub" style="font-size:18px">'+cmp+'</div>':'')+
+   '<div class="row"><button class="btn" id="pzTwo" type="button">'+(PZ.two?'One pizza':'Compare two pizzas')+'</button>'+readBtn()+'<button class="btn" id="pzClr" type="button">Clear</button></div></div>';
+  T.querySelectorAll('[data-pz]').forEach(function(p){p.onclick=function(){var a=p.dataset.pz.split(','),k=+a[0],i=+a[1];if(PZ.s[k][i])delete PZ.s[k][i];else PZ.s[k][i]=1;pizzas();};});
+  T.querySelectorAll('[data-d]').forEach(function(b){b.onclick=function(){var a=b.dataset.d.split(',');PZ.d[+a[0]]=+a[1];PZ.s[+a[0]]={};pizzas();};});
+  document.getElementById('pzTwo').onclick=function(){PZ.two=!PZ.two;pizzas();};document.getElementById('pzClr').onclick=function(){PZ.s=[{},{}];pizzas();};
+  wireRead(function(){return ks.map(function(k){return n[k]+' out of '+PZ.d[k]+' slices are shaded: '+fname(n[k],PZ.d[k]);}).join('. ');});}
+
+/* ---------- Base-10 mat with dragging ---------- */
+var BM={v:{100:0,10:3,1:4}};
+function blockSVG(c,big){if(c===100)return '<svg viewBox="0 0 60 60" class="b100"><rect x="1" y="1" width="58" height="58" fill="#5b9bff66" stroke="#2f6fdf" stroke-width="2"/>'+Array.from({length:9},function(_,i){return '<path d="M'+(1+(i+1)*5.8)+' 1V59M1 '+(1+(i+1)*5.8)+'H59" stroke="#2f6fdf" stroke-width=".6"/>';}).join('')+'</svg>';
+  if(c===10)return '<svg viewBox="0 0 12 60" class="b10"><rect x="1" y="1" width="10" height="58" fill="#3dbb7c88" stroke="#1f9d63" stroke-width="1.5"/>'+Array.from({length:9},function(_,i){return '<path d="M1 '+(1+(i+1)*5.8)+'H11" stroke="#1f9d63" stroke-width=".6"/>';}).join('')+'</svg>';
+  return '<svg viewBox="0 0 12 12" class="b1"><rect x="1" y="1" width="10" height="10" fill="#f2b400" stroke="#c48a00" stroke-width="1.2"/></svg>';}
+function base10(){var tot=BM.v[100]*100+BM.v[10]*10+BM.v[1],cols=[[100,'Hundreds',PVC[1]],[10,'Tens',PVC[2]],[1,'Ones',PVC[3]]];
+  T.innerHTML='<div class="card"><p class="hint"><b>Drag</b> a block from the tray into its column (or tap it). Tap a block on the mat to take it away. When you have 10 in a column, exchange them!</p>'+
+   '<div class="tray">'+cols.map(function(c){return '<div class="src" data-src="'+c[0]+'" tabindex="0" role="button" aria-label="Add a '+c[1].toLowerCase().slice(0,-1)+' block">'+blockSVG(c[0])+'<span style="color:'+c[2]+'">'+c[0]+'</span></div>';}).join('')+'</div>'+
+   '<div class="bmat">'+cols.map(function(c){var h='<div class="bcol" data-col="'+c[0]+'"><div class="pvh" style="background:'+c[2]+'22;color:'+c[2]+'">'+c[1]+'</div><div class="bbody">';for(var i=0;i<BM.v[c[0]];i++)h+='<button type="button" class="blk" data-rm="'+c[0]+'" aria-label="Remove">'+blockSVG(c[0])+'</button>';return h+'</div>'+(c[0]<100&&BM.v[c[0]]>=10?'<button class="btn sm p" data-ex="'+c[0]+'" type="button">Exchange 10 '+c[1].toLowerCase()+' for 1 '+(c[0]===1?'ten':'hundred')+'</button>':'')+(c[0]>1&&BM.v[c[0]]?'<button class="btn sm" data-br="'+c[0]+'" type="button">Break 1 into 10</button>':'')+'</div>';}).join('')+'</div>'+
+   '<div class="big">'+cdig(tot)+'</div><div class="sub">'+cols.filter(function(c){return BM.v[c[0]];}).map(function(c){return '<span style="color:'+c[2]+'">'+BM.v[c[0]]*c[0]+'</span>';}).join(' + ')+(tot?' = '+cdig(tot):'')+'</div>'+
+   '<div class="row">'+readBtn()+'<button class="btn" id="bmClr" type="button">Clear the mat</button></div></div>';
+  T.querySelectorAll('[data-rm]').forEach(function(b){b.onclick=function(){BM.v[+b.dataset.rm]--;base10();};});
+  T.querySelectorAll('[data-ex]').forEach(function(b){b.onclick=function(){var c=+b.dataset.ex;BM.v[c]-=10;BM.v[c*10]++;base10();say('Exchanged ten for one');};});
+  T.querySelectorAll('[data-br]').forEach(function(b){b.onclick=function(){var c=+b.dataset.br;BM.v[c]--;BM.v[c/10]+=10;base10();};});
+  document.getElementById('bmClr').onclick=function(){BM.v={100:0,10:0,1:0};base10();};
+  T.querySelectorAll('[data-src]').forEach(function(src){var c=+src.dataset.src,ghost=null,sx=0,sy=0,moved=false;
+    src.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();if(BM.v[c]<19){BM.v[c]++;base10();}}};
+    src.addEventListener('pointerdown',function(e){e.preventDefault();sx=e.clientX;sy=e.clientY;moved=false;ghost=src.cloneNode(true);ghost.className='src ghost';document.body.appendChild(ghost);var r=src.getBoundingClientRect();ghost.style.width=r.width+'px';mv(e);try{src.setPointerCapture(e.pointerId);}catch(_){}});
+    function mv(e){if(!ghost)return;if(Math.abs(e.clientX-sx)+Math.abs(e.clientY-sy)>6)moved=true;ghost.style.left=(e.clientX-30)+'px';ghost.style.top=(e.clientY-30)+'px';T.querySelectorAll('.bcol').forEach(function(col){var r=col.getBoundingClientRect();col.classList.toggle('over',e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom);});}
+    src.addEventListener('pointermove',mv);
+    src.addEventListener('pointerup',function(e){if(!ghost)return;ghost.remove();ghost=null;var hit=null;T.querySelectorAll('.bcol').forEach(function(col){var r=col.getBoundingClientRect();if(e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom)hit=+col.dataset.col;col.classList.remove('over');});
+      if(!moved)hit=c;if(hit===null)return;if(hit!==c){say('That block goes in the '+(c===100?'hundreds':c===10?'tens':'ones')+' column.');return;}if(BM.v[c]<19){BM.v[c]++;base10();}});
+    src.addEventListener('pointercancel',function(){if(ghost){ghost.remove();ghost=null;}});});
+  wireRead(function(){return BM.v[100]+' hundreds, '+BM.v[10]+' tens and '+BM.v[1]+' ones make '+tot;});}
+
+/*/TOOLS2*/
+var R={base10:base10,tenframe:tenframe,counters:counters,pvdisks:pvdisks,hundred:hundred,randoms:randoms,sharing:sharing,pizzas:pizzas,dienes:dienes,clock:clock,coins:coins,fractions:fractions,numberline:numberline,arrays:arrays,whiteboard:whiteboard};
+function route(){var k=location.hash.slice(1);if(!R[k])k='base10';document.querySelector('.wrap').style.maxWidth=k==='whiteboard'?'1400px':'';if(k!=='whiteboard'&&window.__wbro){window.__wbro.disconnect();window.__wbro=null;}tabs(k);R[k]();}
+window.addEventListener('hashchange',route);route();
+})();
+</script>
+</body>
+</html>

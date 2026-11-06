@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Measure Quest Arcade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap">
+<style>
+*{box-sizing:border-box}
+body{margin:0}
+/* Layout: a calm, dark puzzle-game console. A slim header, one stage panel with a blueprint grid, the question beneath it, and a grid of flat control tiles. Deliberately single-theme (dark) so every classroom screen matches. */
+:root{
+  --bg:#0d1524; --panel:#141f33; --stage:#111b2d; --tile:#1b2840; --tile-hi:#22324d; --edge:#2b3b57;
+  --fg:#e6edf7; --muted:#9aaac2; --faint:#6b7a93;
+  --cw:#5b9bff; --acw:#ff8a3d; --ok:#3dd68c; --ok-ink:#07210f; --gold:#f5c451; --life:#ff5d73;
+  --font:'Lexend', 'Segoe UI', Verdana, sans-serif;
+  color-scheme:dark;
+}
+html,body{min-height:100%}
+body{
+  background:var(--bg); color:var(--fg); font-family:var(--font); font-size:17px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+  padding-block:20px 40px;
+}
+.wrap{max-width:540px; margin:0 auto; display:flex; flex-direction:column; gap:16px}
+.topbar{display:flex; align-items:center; gap:10px}
+.logo{flex:1; min-width:0; margin:0; display:flex; flex-direction:column; gap:2px}
+.logo b{font-size:20px; font-weight:700; letter-spacing:.18em}
+.logo span{font-size:12px; font-weight:500; letter-spacing:.14em; text-transform:uppercase; color:var(--muted)}
+.pill{font:500 14px var(--font); color:var(--fg); background:var(--tile); border:1px solid var(--edge); border-radius:10px; padding:9px 14px; cursor:pointer}
+.pill:hover{background:var(--tile-hi)}
+.panel{background:var(--panel); border:1px solid var(--edge); border-radius:18px; overflow:hidden}
+.hud{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:12px 16px; font-size:14px; font-weight:500; color:var(--muted); font-variant-numeric:tabular-nums}
+.hud .lives{display:flex; align-items:center; gap:6px; text-transform:uppercase; letter-spacing:.12em; font-size:12px}
+.hud .pip{width:10px; height:10px; border-radius:50%; background:var(--life)}
+.hud .pip.off{background:transparent; box-shadow:inset 0 0 0 2px var(--edge)}
+.hud .r{color:var(--fg)}
+.stage{background:var(--stage); border-block:1px solid var(--edge)}
+canvas{display:block; width:100%; height:auto; aspect-ratio:320/288; max-width:100%}
+.prompt{min-height:8em; padding:16px 18px 18px; font-size:19px; line-height:1.5; display:flex; flex-direction:column; gap:6px}
+.prompt b{font-weight:600; color:#ffffff}
+.prompt .big{font-size:22px; font-weight:600; letter-spacing:.01em}
+.prompt .big.good{color:var(--ok)}
+.prompt .big.bad{color:var(--acw)}
+.prompt .note{color:var(--muted);font-size:16px}
+.fr{display:inline-flex;flex-direction:column;align-items:center;line-height:1.05;vertical-align:middle;font-weight:700;margin:0 2px}
+.fr i{font-style:normal;border-top:2px solid currentColor;padding:0 .25em}
+.chip{display:inline-block; padding:0 9px; border-radius:7px; font-weight:600; font-size:.92em}
+.chip.cw{color:var(--cw); background:rgba(91,155,255,.14); border:1px solid rgba(91,155,255,.5)}
+.chip.acw{color:var(--acw); background:rgba(255,138,61,.12); border:1px dashed var(--acw)}
+.code{display:flex; flex-wrap:wrap; gap:6px; min-height:30px}
+.code span{background:var(--tile); border:1px solid var(--edge); padding:2px 10px; font-size:15px; font-weight:500; border-radius:8px}
+.code span.r{border-color:var(--cw); color:var(--cw)}
+.code span.l{border-color:var(--acw); color:var(--acw); border-style:dashed}
+.code .empty{background:none; border:0; color:var(--faint); padding:0}
+.panel.shake canvas{animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-6px)}50%{transform:translateX(6px)}75%{transform:translateX(-3px)}}
+.answers{display:grid; grid-template-columns:repeat(var(--cols,2), minmax(0,1fr)); gap:10px}
+.key{
+  font:500 18px/1.2 var(--font); color:var(--fg); background:var(--tile);
+  border:1px solid var(--edge); border-radius:14px; padding:12px 10px; min-height:62px;
+  cursor:pointer; text-wrap:balance; transition:background .12s, border-color .12s, transform .08s;
+}
+.key small{display:block; font-size:13px; font-weight:400; color:var(--muted); margin-top:3px}
+.key:hover{background:var(--tile-hi)}
+.key:active{transform:scale(.98)}
+.key.sel{border-color:var(--cw)}
+.key:focus-visible{outline:2px solid var(--cw); outline-offset:2px}
+.key.run{background:var(--ok); border-color:var(--ok); color:var(--ok-ink); font-weight:600}
+.key.run small{color:var(--ok-ink); opacity:.75}
+.key.cwk{color:var(--cw)} .key.acwk{color:var(--acw); border-style:dashed}
+.key.wide{grid-column:1 / -1}
+.key .sw{display:inline-block; width:14px; height:14px; border-radius:3px; vertical-align:-1px; margin-right:8px}
+button:focus-visible{outline:2px solid var(--cw); outline-offset:2px}
+@media (prefers-reduced-motion: reduce){ .panel.shake canvas{animation:none} .key{transition:none} }
+@media (max-width:400px){ .key{font-size:16px} .prompt{font-size:17px} }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="topbar">
+    <h1 class="logo"><b>MEASURE QUEST</b><span>Money · Time · Length · Mass · Fractions · Year 3</span></h1>
+    <button class="pill" id="btnSound" type="button">Sound: on</button>
+    <button class="pill" id="btnMenu" type="button">Menu</button>
+  </div>
+
+  <div class="panel" id="card">
+    <div class="hud" id="hud"></div>
+    <div class="stage"><canvas id="cv" width="640" height="576" aria-label="Game picture"></canvas></div>
+    <div class="prompt" id="prompt" aria-live="polite"></div>
+  </div>
+
+  <div class="answers" id="answers"></div>
+</div>
+
+<style id="a11y-css">
+body.big .prompt{font-size:23px;line-height:1.55}
+body.big .prompt .big{font-size:27px}
+body.big .key{font-size:20px;min-height:64px}
+body.big .hud{font-size:16px}
+body.still *{transition:none!important;animation:none!important}
+.a11y-read{background:#f5c451!important;color:#14213d!important;border-color:#f5c451!important;font-weight:700!important}
+.a11y-panel{position:fixed;z-index:30;top:60px;right:12px;width:min(320px,calc(100vw - 24px));background:#16233a;border:1px solid #2b3b57;border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px;box-shadow:0 12px 30px rgba(0,0,0,.4);font-size:16px}
+.a11y-panel[hidden]{display:none}
+.a11y-panel h2{margin:0;font-size:17px}
+.a11y-panel label{display:flex;gap:10px;align-items:center;cursor:pointer;min-height:40px}
+.a11y-panel input{width:22px;height:22px;accent-color:#f5c451}
+.topbar{flex-wrap:wrap;row-gap:8px}
+.topbar .logo{flex:1 1 230px;min-width:200px}
+.topbar .logo b{white-space:nowrap}
+</style>
+<script id="mh-voice">/* Maths Hub voice: picks the most natural English voice on this device and applies the reader's settings */
+(function(){var ss=window.speechSynthesis;if(!ss||ss.__mh)return;ss.__mh=1;var orig=ss.speak.bind(ss);
+function A(){try{return JSON.parse(localStorage.getItem('mh-a11y')||'{}')||{};}catch(e){return {};}}
+var BAD=/compact|espeak|robot|novelty|bad news|bells|whisper|zarvox|trinoids|albert|jester|organ|cellos|bubbles|boing|deranged|hysterical|superstar|wobble|grandma|grandpa|eddy|flo\b|reed|rocko|sandy|shelley|good news|junior|ralph|fred|kathy|vicki|victoria/;
+function rank(v){var n=v.name.toLowerCase(),l=(v.lang||'').toLowerCase().replace('_','-'),s=0;if(l.indexOf('en')!==0)return -1;
+  if(l==='en-gb')s+=30;else if(l==='en-ie'||l==='en-au'||l==='en-nz')s+=16;else s+=10;
+  if(/natural|neural/.test(n))s+=45;if(/online/.test(n))s+=8;if(/premium/.test(n))s+=42;if(/enhanced/.test(n))s+=36;if(/siri/.test(n))s+=30;
+  if(/google uk english female/.test(n))s+=26;else if(/google uk english/.test(n))s+=22;else if(/google/.test(n))s+=12;
+  if(/sonia|libby|maisie|abbi|bella|hollie|olivia|serena|kate|stephanie|martha|daniel|arthur|oliver|jamie/.test(n))s+=12;
+  if(BAD.test(n))s-=80;return s;}
+function list(){return ss.getVoices().filter(function(v){return rank(v)>=0;}).sort(function(a,b){return rank(b)-rank(a);});}
+function best(){var a=A(),vs=ss.getVoices();if(a.voice){var f=vs.filter(function(v){return v.name===a.voice;})[0];if(f)return f;}return list()[0]||null;}
+ss.speak=function(u){try{var v=best();if(v){u.voice=v;u.lang=v.lang;}var a=A();u.rate=a.slow?0.8:0.97;u.pitch=1;
+  if(u.text)u.text=u.text.replace(/\s*\n+\s*/g,'. ').replace(/\s{2,}/g,' ');}catch(e){}return orig(u);};
+window.MH_VOICES=list;window.MH_VOICE_RANK=rank;
+try{ss.getVoices();if(typeof ss.addEventListener==='function')ss.addEventListener('voiceschanged',function(){});}catch(e){}
+})();
+</script>
+<script>
+function speakable(t){
+  var D={2:['half','halves'],3:['third','thirds'],4:['quarter','quarters'],5:['fifth','fifths'],6:['sixth','sixths'],7:['seventh','sevenths'],8:['eighth','eighths'],9:['ninth','ninths'],10:['tenth','tenths'],12:['twelfth','twelfths'],100:['hundredth','hundredths']};
+  var N=['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve'];
+  t=String(t).replace(/½/g,' 1/2').replace(/¼/g,' 1/4').replace(/¾/g,' 3/4').replace(/\s+/g,' ').trim();
+  t=t.replace(/(\d)\s?mm\b/g,'$1 millimetres').replace(/(\d)\s?cm\b/g,'$1 centimetres').replace(/(\d)\s?km\b/g,'$1 kilometres').replace(/(\d)\s?kg\b/g,'$1 kilograms').replace(/(\d)\s?ml\b/g,'$1 millilitres').replace(/(\d)\s?g\b/g,'$1 grams').replace(/(\d)\s?l\b/g,'$1 litres').replace(/(\d)\s?m\b/g,'$1 metres').replace(/(\d)p\b/g,'$1 pence');
+  t=t.replace(/(^|[^\d\/])(\d{1,2})\/(\d{1,3})(?![\d\/])/g,function(m,p,a,b){a=+a;b=+b;var w=D[b]?(N[a]||a)+' '+D[b][a===1?0:1]:a+' over '+b;if(a===b&&b>1)w+=', one whole';return p+w;});
+  t=t.replace(/_{2,}|☐/g,' blank ');
+  t=t.replace(/(^|[\s(=+\-−×÷])\?(?=\s*[+\-−×÷=])/g,'$1 what number ').replace(/([=+\-−×÷]\s*)\?/g,'$1 what number');
+  t=t.replace(/=\s*$/,' equals what?').replace(/…\s*$/,' what?').replace(/…/g,', ');
+  t=t.replace(/×/g,' times ').replace(/÷/g,' divided by ').replace(/−/g,' minus ').replace(/\s\+\s|\+/g,' plus ').replace(/=/g,' equals ').replace(/\s<\s/g,' is less than ').replace(/\s>\s/g,' is greater than ');
+  t=t.replace(/(^|[^\d,.\/])1 (millimetre|centimetre|kilometre|kilogram|millilitre|gram|litre|metre)s\b/g,'$1one $2').replace(/(half|quarter|third|fifth|tenth) (millimetre|centimetre|kilometre|kilogram|millilitre|gram|litre|metre)s\b/g,'$1 a $2').replace(/\bone half a /g,'half a ').replace(/\bone (quarter|third|fifth|tenth) a /g,'a $1 of a ');
+  t=t.replace(/[↻↺→←↑↓✓✗★☆♥]/g,'').replace(/\s+/g,' ').trim();
+  return t;
+}
+
+(function(){
+  var A={};try{A=JSON.parse(localStorage.getItem('mh-a11y')||'{}')||{};}catch(e){}
+  window.A11Y=A;
+  if(A.low)A.still=true;if(A.still){var mm=window.matchMedia;window.matchMedia=function(q){if(/prefers-reduced-motion/.test(q))return {matches:true,media:q,addListener:function(){},removeListener:function(){},addEventListener:function(){},removeEventListener:function(){}};return mm.call(window,q);};}
+  try{if(window.speechSynthesis){var sp=speechSynthesis.speak.bind(speechSynthesis);speechSynthesis.speak=function(u){if(A.slow)u.rate=Math.min(u.rate||1,.7);return sp(u);};}}catch(e){}
+  var SKIP=/^(Next|Back|Skip to game|Read to me|Menu|Play again|Learn again|Start|Play|Read aloud)\b/i;
+  function textOf(el){var c=el.cloneNode(true);c.querySelectorAll('.fr').forEach(function(f){var b=f.querySelector('b'),i=f.querySelector('i');f.textContent=' '+(b?b.textContent:'')+'/'+(i?i.textContent:'')+' ';});c.querySelectorAll('small').forEach(function(s){s.textContent=', '+s.textContent;});c.querySelectorAll('span,b,div').forEach(function(s){s.insertAdjacentText('afterend',' ');});return c.textContent.replace(/\s+/g,' ').trim();}
+  function promptText(p){return [].slice.call(p.children).map(function(c){var x=textOf(c);return x&&!/[.?!:]$/.test(x)?x+'.':x;}).join(' ')||textOf(p);}
+  function tidy(x){return x.replace(/equals\s*\./g,'equals what?').replace(/\s+([.,?!])/g,'$1').replace(/([?!.])\.+/g,'$1').replace(/\s+/g,' ').trim();}
+  function readNow(){var p=document.getElementById('prompt'),a=document.getElementById('answers');if(!p)return;
+    var t=promptText(p),opts=[].slice.call(a?a.querySelectorAll('button'):[]).map(textOf).filter(function(x){return x&&!SKIP.test(x);});
+    if(/^Choose a game/.test(t))opts=[];
+    var s=tidy(speakable(t)+(opts.length&&opts.length<=8?' Is it '+opts.map(speakable).join(', or ')+'?':''));
+    try{var u=new SpeechSynthesisUtterance(s);u.lang='en-GB';u.rate=.9;speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}}
+  window.A11Y.read=readNow;
+  function save(){try{localStorage.setItem('mh-a11y',JSON.stringify({big:A.big,slow:A.slow,still:A.still,auto:A.auto}));}catch(e){}}
+  document.addEventListener('DOMContentLoaded',function(){
+    document.body.classList.toggle('big',!!A.big);document.body.classList.toggle('still',!!A.still);
+    var bar=document.querySelector('.topbar'),menu=document.getElementById('btnMenu');if(!bar)return;
+    var rb=document.createElement('button');rb.className='pill a11y-read';rb.type='button';rb.id='btnRead';rb.textContent='Read aloud';rb.onclick=readNow;
+    var sb=document.createElement('button');sb.className='pill';sb.type='button';sb.id='btnA11y';sb.textContent='Settings';sb.setAttribute('aria-expanded','false');
+    bar.insertBefore(rb,bar.querySelector('.pill'));bar.insertBefore(sb,menu);
+    var pn=document.createElement('div');pn.className='a11y-panel';pn.hidden=true;pn.setAttribute('role','dialog');pn.setAttribute('aria-label','Settings');
+    var opts=[['big','Bigger text'],['slow','Slower speech'],['still','Less movement'],['auto','Read each question out automatically']];
+    pn.innerHTML='<h2>Settings</h2>'+opts.map(function(o){return '<label><input type="checkbox" data-k="'+o[0]+'"'+(A[o[0]]?' checked':'')+'> '+o[1]+'</label>';}).join('')+'<button class="pill" type="button" id="a11yDone">Done</button>';
+    document.body.appendChild(pn);
+    sb.onclick=function(){pn.hidden=!pn.hidden;sb.setAttribute('aria-expanded',String(!pn.hidden));};
+    pn.querySelector('#a11yDone').onclick=function(){pn.hidden=true;sb.setAttribute('aria-expanded','false');};
+    pn.querySelectorAll('input').forEach(function(c){c.onchange=function(){A[c.dataset.k]=c.checked;save();
+      if(c.dataset.k==='big')document.body.classList.toggle('big',c.checked);
+      if(c.dataset.k==='still'){document.body.classList.toggle('still',c.checked);}};});
+    var p=document.getElementById('prompt'),tm;
+    if(p)new MutationObserver(function(){if(!A.auto)return;clearTimeout(tm);tm=setTimeout(function(){if(!/^Choose a game/.test(p.textContent.trim()))readNow();},350);}).observe(p,{childList:true,subtree:true,characterData:true});
+  });
+})();
+</script>
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const cv=$('cv'), ctx=cv.getContext('2d'); ctx.setTransform(2,0,0,2,0,0);
+const C={fg:'#e6edf7',muted:'#9aaac2',faint:'#6b7a93',stage:'#111b2d',grid:'#1a2740',edge:'#2b3b57',tile:'#1b2840',gold:'#f5c451',ok:'#3dd68c',warn:'#ff8a3d',off:'#2b3b57'};
+const HC='#5b9bff', TC='#3dd68c', OC='#f5c451', COLS=[HC,TC,OC], CN=['H','T','O'], CW=['hundreds','tens','ones'];
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const promptEl=$('prompt'), hudEl=$('hud'), answersEl=$('answers'), cardEl=$('card');
+const sleep=ms=>new Promise(r=>setTimeout(r,reduce?Math.min(ms,150):ms));
+const rnd=n=>Math.floor(Math.random()*n), between=(a,b)=>a+rnd(b-a+1), pick=a=>a[rnd(a.length)];
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;};
+const D3=n=>[Math.floor(n/100)%10,Math.floor(n/10)%10,n%10];
+const fmt=n=>n>=1000?String(n).replace(/\B(?=(\d{3})+(?!\d))/g,','):String(n);
+
+/* ---------- sound ---------- */
+let actx=null, muted=false;
+function beep(f,d,vol){ if(muted) return; try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+  const o=actx.createOscillator(), g=actx.createGain(), t=actx.currentTime; o.type='sine'; o.frequency.value=f; g.gain.setValueAtTime(vol||.12,t); g.gain.exponentialRampToValueAtTime(.0001,t+(d||.12));
+  o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t+(d||.12)+.02);}catch(e){} }
+const tune=n=>n.forEach(([f,t,d])=>setTimeout(()=>beep(f,d||.14),t));
+const sGood=()=>tune([[587,0],[880,110,.25]]), sBad=()=>tune([[294,0,.2],[220,150,.28]]), sClick=()=>beep(1200,.03,.04), sWin=()=>tune([[523,0],[659,120],[784,240],[1047,360,.4]]), sStep=i=>beep(440+i*70,.09);
+
+/* ---------- storage ---------- */
+let best={}; try{ best=JSON.parse(localStorage.getItem('measurequest-best')||'{}')||{}; }catch(e){ best={}; }
+function saveBest(k,v){ if(!(best[k]>=v)){ best[k]=v; try{ localStorage.setItem('measurequest-best',JSON.stringify(best)); }catch(e){} } }
+
+/* ---------- drawing ---------- */
+function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(x,y,w,h);}
+function rrect(x,y,w,h,r,fill,stroke,lw){ctx.beginPath();ctx.roundRect?ctx.roundRect(x,y,w,h,r):ctx.rect(x,y,w,h);if(fill){ctx.fillStyle=fill;ctx.fill();}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw||2;ctx.stroke();}}
+function text(s,x,y,size,c,weight,align){ctx.fillStyle=c||C.fg;ctx.font=(weight||500)+' '+size+'px Lexend, sans-serif';ctx.textAlign=align||'center';ctx.textBaseline='middle';ctx.fillText(s,x,y);}
+function line(a,b,c,w,dash){ctx.strokeStyle=c;ctx.lineWidth=w||3;ctx.lineCap='round';ctx.setLineDash(dash?[6,6]:[]);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();ctx.setLineDash([]);}
+function dot(x,y,r,c){ctx.fillStyle=c;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();}
+function badge(x,y,s,c){dot(x,y,11,c||C.gold);text(String(s),x,y+1,12,C.stage,700);}
+function caption(s,col){ctx.font='600 13px Lexend, sans-serif';const w=ctx.measureText(s).width+20;rrect(160-w/2,264,w,20,10,'rgba(13,21,36,.9)');text(s,160,274.5,13,col||C.fg,600);}
+function bg(){rect(0,0,320,288,C.stage);ctx.strokeStyle=C.grid;ctx.lineWidth=1;for(let x=16;x<320;x+=24){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,288);ctx.stroke();}for(let y=12;y<288;y+=24){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(320,y);ctx.stroke();}}
+const countUp=(t,n,dur)=>Math.min(n,Math.floor((t%((n+3)*dur))/dur));
+/* place value chart */
+function pvChart(n,x0,y0,w,o){o=o||{};const cw=w/3,d=D3(n);
+  for(let i=0;i<3;i++){const x=x0+i*cw;rrect(x+3,y0,cw-6,30,8,COLS[i]+'33');text(CN[i],x+cw/2,y0+16,15,COLS[i],700);
+    rrect(x+3,y0+36,cw-6,64,10,C.tile,o.hl===i?C.gold:C.edge,o.hl===i?3:1.5);
+    text(o.hide===i?'?':String(d[i]),x+cw/2,y0+69,40,o.hl===i?C.gold:C.fg,700);
+    if(o.vals&&o.vals>i) text(String(d[i]*[100,10,1][i]),x+cw/2,y0+118,15,COLS[i],600);}}
+/* Dienes blocks */
+function dienes(h,t,o,x,y,s){s=s||1;let cx=x;const S=40*s;
+  for(let i=0;i<h;i++){rect(cx,y,S,S,HC+'55');ctx.strokeStyle=HC;ctx.lineWidth=1;for(let k=0;k<=10;k++){ctx.beginPath();ctx.moveTo(cx+k*S/10,y);ctx.lineTo(cx+k*S/10,y+S);ctx.stroke();ctx.beginPath();ctx.moveTo(cx,y+k*S/10);ctx.lineTo(cx+S,y+k*S/10);ctx.stroke();}cx+=S+6;}
+  for(let i=0;i<t;i++){rect(cx,y,S/10+2,S,TC+'66');ctx.strokeStyle=TC;ctx.lineWidth=1;ctx.strokeRect(cx,y,S/10+2,S);for(let k=1;k<10;k++){ctx.beginPath();ctx.moveTo(cx,y+k*S/10);ctx.lineTo(cx+S/10+2,y+k*S/10);ctx.stroke();}cx+=S/10+6;}
+  cx+=4;for(let i=0;i<o;i++){const c=i%3,r=Math.floor(i/3);rect(cx+c*(S/10+5),y+S-(r+1)*(S/10+5)+5,S/10+2,S/10+2,OC);}}
+/* number line */
+function NLine(a,b,step,y,lab){const x0=30,x1=290,X=v=>x0+(v-a)/(b-a)*(x1-x0);
+  line([x0-8,y],[x1+8,y],C.fg,3);for(let v=a;v<=b+1e-9;v+=step){line([X(v),y-9],[X(v),y+9],C.fg,2.5);}
+  (lab||[a,b]).forEach(v=>text(fmt(v),X(v),y+24,13,C.muted,600));return X;}
+function arrowDown(x,y,c){line([x,y-38],[x,y-12],c||C.gold,4);ctx.fillStyle=c||C.gold;ctx.beginPath();ctx.moveTo(x-8,y-16);ctx.lineTo(x+8,y-16);ctx.lineTo(x,y-4);ctx.closePath();ctx.fill();}
+function hop(x1,x2,y,lbl,c){const m=(x1+x2)/2,hgt=Math.min(40,Math.abs(x2-x1)*.6+12);ctx.strokeStyle=c||C.gold;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x1,y-6);ctx.quadraticCurveTo(m,y-6-hgt*2,x2,y-6);ctx.stroke();
+  const dir=Math.sign(x2-x1);ctx.fillStyle=c||C.gold;ctx.beginPath();ctx.moveTo(x2,y-4);ctx.lineTo(x2-dir*9,y-14);ctx.lineTo(x2+dir*2,y-16);ctx.closePath();ctx.fill();if(lbl)text(lbl,m,y-14-hgt,14,c||C.gold,700);}
+/* column method */
+function colCalc(a,b,op,k,cols){cols=cols||colWork(a,b,op);const x0=110,cw=50,yT=66,yB=110,yA=168;
+  text(op,x0-30,yB,30,C.fg,600);
+  for(let i=0;i<3;i++){const x=x0+i*cw+cw/2;text(CN[i],x,14,13,COLS[i],700);
+    const tv=cols.top[i];text(String(D3(a)[i]),x,yT,30,(k>2-i&&tv.ch)?C.faint:C.fg,700);if(k>2-i&&tv.ch){line([x-12,yT+12],[x+12,yT-12],C.warn,2.5);text(String(tv.v),x+2,yT-30,16,C.warn,700);}
+    text(String(D3(b)[i]),x,yB,30,C.fg,700);
+    if(k>2-i){text(String(cols.ans[i]),x,yA,32,C.ok,700);if(cols.carry[i])text(String(cols.carry[i]),x,yA+26,15,C.gold,700);}}
+  line([x0-6,136],[x0+3*cw+6,136],C.fg,3);line([x0-6,208],[x0+3*cw+6,208],C.fg,1.5);}
+function colWork(a,b,op){const A=D3(a),Bd=D3(b),ans=[0,0,0],carry=[0,0,0],top=[{v:A[0]},{v:A[1]},{v:A[2]}];
+  if(op==='+'){let c=0;for(let i=2;i>=0;i--){const s=A[i]+Bd[i]+c;ans[i]=s%10;c=s>=10?1:0;if(c&&i>0)carry[i-1]=1;}}
+  else{const T=A.slice();for(let i=2;i>=0;i--){if(T[i]<Bd[i]){let j=i-1;while(T[j]===0){T[j]=9;top[j]={v:9,ch:true};j--;}T[j]--;top[j]={v:T[j],ch:true};T[i]+=10;top[i]={v:T[i],ch:true};}ans[i]=T[i]-Bd[i];}}
+  return {ans,carry,top};}
+/* bar model */
+function barModel(whole,p1,p2,hide){const x0=40,w=240,y1=70,y2=130,h=40,f=p1/whole;
+  rrect(x0,y1,w,h,6,'rgba(91,155,255,.25)',HC,2);text(hide==='w'?'?':fmt(whole),x0+w/2,y1+h/2,20,hide==='w'?C.gold:C.fg,700);
+  rrect(x0,y2,w*f,h,6,'rgba(61,214,140,.2)',TC,2);text(hide==='a'?'?':fmt(p1),x0+w*f/2,y2+h/2,20,hide==='a'?C.gold:C.fg,700);
+  rrect(x0+w*f,y2,w*(1-f),h,6,'rgba(245,196,81,.2)',OC,2);text(hide==='b'?'?':fmt(p2),x0+w*f+w*(1-f)/2,y2+h/2,20,hide==='b'?C.gold:C.fg,700);}
+/* pictogram */
+function symbol(x,y,frac,c){ctx.fillStyle=c||C.gold;ctx.beginPath();if(frac>=1)ctx.arc(x,y,10,0,Math.PI*2);else{ctx.moveTo(x,y-10);ctx.arc(x,y,10,-Math.PI/2,Math.PI/2,true);ctx.closePath();}ctx.fill();}
+function picto(cats,vals,key,o){o=o||{};cats.forEach((c,i)=>{const y=40+i*48;text(c,48,y,14,o.hl===i?C.gold:C.fg,600);rect(84,y+22,220,1,C.edge);
+  const n=vals[i]/key;for(let k=0;k<Math.ceil(n-1e-9);k++)symbol(98+k*26,y,Math.min(1,n-k),o.hl===i?C.gold:'#f5c451cc');
+  if(o.shown&&o.shown.includes(i))text('= '+vals[i],300,y,15,C.ok,700,'right');});
+  symbol(110,238,1);text('= '+key+(key===1?' child':' children'),126,239,14,C.fg,600,'left');text('Key',72,239,13,C.muted,600);}
+/* bar chart */
+function bars(cats,vals,scale,steps,o){o=o||{};const x0=50,yb=228,ht=190,max=scale*steps,Y=v=>yb-v/max*ht;
+  for(let s=0;s<=steps;s++){const y=Y(s*scale);rect(x0,y,250,1,C.grid);line([x0-5,y],[x0,y],C.fg,2);text(String(s*scale),x0-10,y,12,C.muted,600,'right');}
+  line([x0,yb-ht-8],[x0,yb],C.fg,2.5);line([x0,yb],[300,yb],C.fg,2.5);
+  cats.forEach((c,i)=>{const x=x0+16+i*60;rrect(x,Y(vals[i]),40,yb-Y(vals[i]),4,o.hl&&o.hl.includes(i)?'rgba(245,196,81,.75)':'rgba(91,155,255,.6)');text(c,x+20,yb+14,12,C.fg,600);
+    if(o.read&&o.read.includes(i)){line([x0,Y(vals[i])],[x,Y(vals[i])],C.gold,2,true);text(String(vals[i]),x+20,Y(vals[i])-10,14,C.gold,700);}});}
+
+/* ---------- state + UI plumbing ---------- */
+const st={mode:'menu',btns:[],focus:-1,cols:2,locked:false,q:null,t0:0};
+function setPrompt(h){promptEl.innerHTML=h;}
+function setHud(l,r){hudEl.innerHTML='<span class="lives">'+l+'</span><span class="r">'+r+'</span>';}
+const pips=n=>'Lives '+[0,1,2].map(i=>`<span class="pip${i<n?'':' off'}"></span>`).join('');
+function setButtons(list,handler,cols){answersEl.innerHTML='';st.btns=[];st.cols=cols||2;answersEl.style.setProperty('--cols',st.cols);
+  list.forEach((b,i)=>{const el=document.createElement('button');el.className='key'+(b.cls?' '+b.cls:'');el.type='button';el.innerHTML=b.label;el.dataset.v=String(b.value);
+    el.addEventListener('click',()=>{st.focus=i;mark();sClick();handler(b.value);});answersEl.appendChild(el);st.btns.push(el);});st.focus=-1;mark();}
+function mark(){st.btns.forEach((b,i)=>b.classList.toggle('sel',i===st.focus));}
+function move(dx,dy){if(!st.btns.length)return;let f=st.focus<0?0:st.focus+dx+dy*st.cols;f=Math.max(0,Math.min(st.btns.length-1,f));st.focus=f;mark();st.btns[f].focus();}
+function shake(){cardEl.classList.remove('shake');void cardEl.offsetWidth;cardEl.classList.add('shake');}
+function opts(ans,wrongs,f){const s=[ans];wrongs.forEach(w=>{if(w!==ans&&w>=0&&(typeof w!=='number'||Number.isInteger(w))&&!s.includes(w)&&s.length<4)s.push(w);});return shuffle(s).map(v=>({label:(f||fmt)(v),value:v}));}
+
+/* =====================================================================  GAMES  ===================================================================== */
+
+/* ---------- measure helpers ---------- */
+const money=p=>p<100?p+'p':(p%100?'£'+Math.floor(p/100)+' and '+(p%100)+'p':'£'+p/100);
+const F=(n,d)=>`<span class="fr"><b>${n}</b><i>${d}</i></span>`, FS=s=>{const[a,b]=String(s).split('/');return b?F(a,b):s;};
+const hm=(h,m)=>h+':'+String(m).padStart(2,'0');
+const dur=m=>(m>=60?Math.floor(m/60)+' hour'+(m>=120?'s':''):'')+(m>=60&&m%60?' ':'')+(m%60?m%60+' minutes':'');
+function fracT(x,y,n,d,s,c){text(String(n),x,y-s*.55,s,c||C.fg,700);line([x-s*.55,y],[x+s*.55,y],c||C.fg,2.5);text(String(d),x,y+s*.6,s,c||C.fg,700);}
+const COINS={1:['#d9884f',13],2:['#d9884f',16],5:['#c9ccd3',12],10:['#c9ccd3',17],20:['#c9ccd3',15],50:['#c9ccd3',19],100:['#f5c451',17],200:['#f5c451',21]};
+function coin(x,y,v){const [c,r]=COINS[v];dot(x,y,r+2,'#0d1524');dot(x,y,r,c);text(v>=100?'£'+v/100:v+'p',x,y+1,v>=100?12:r>14?12:10,'#14213d',700);}
+function note(x,y,v){rrect(x-34,y-20,68,40,6,v===5?'#7fbf9c':'#d98a6a','#0d1524',2);text('£'+v,x,y+1,18,'#14213d',700);}
+function drawMoney(items,x0,y0,k){let x=x0,y=y0;items.forEach((v,i)=>{const w=v>=500?76:(COINS[v][1]*2+8);if(x+w>300){x=x0;y+=56;}if(v>=500)note(x+w/2,y,v/100);else coin(x+w/2,y,v);if(k!=null&&i<k)badge(x+w/2,y-26,i+1);x+=w;});}
+function clockFace(cx,cy,R,h,m,o){o=o||{};dot(cx,cy,R+4,'#0d1524');dot(cx,cy,R,'#f4f1e8');
+  for(let i=0;i<60;i++){const a=i/60*Math.PI*2,r1=i%5?R-7:R-12;line([cx+r1*Math.sin(a),cy-r1*Math.cos(a)],[cx+(R-3)*Math.sin(a),cy-(R-3)*Math.cos(a)],'#14213d',i%5?1:2.5);}
+  for(let i=1;i<=12;i++){const a=i/12*Math.PI*2;text(String(i),cx+(R-26)*Math.sin(a),cy-(R-26)*Math.cos(a),R>70?17:12,'#14213d',700);}
+  if(o.fives)for(let i=1;i<=o.fives;i++){const a=i/12*Math.PI*2;text(String(i*5),cx+(R+16)*Math.sin(a),cy-(R+16)*Math.cos(a),11,C.gold,700);}
+  const ha=((h%12)+m/60)/12*Math.PI*2,ma=m/60*Math.PI*2;line([cx,cy],[cx+R*.5*Math.sin(ha),cy-R*.5*Math.cos(ha)],'#2f6fdf',7);line([cx,cy],[cx+R*.8*Math.sin(ma),cy-R*.8*Math.cos(ma)],'#e0485f',4);dot(cx,cy,6,'#14213d');}
+function digital(x,y,t,c){rrect(x-58,y-24,116,48,10,'#0b1322',C.edge,2);text(t,x,y+2,26,c||C.ok,700);}
+function pencil(x0,y,len){const tip=Math.min(16,len*.4),b=len-tip;rrect(x0,y,Math.max(4,b),18,3,'#f5c451');rect(x0,y,6,18,'#e98aa0');rect(x0+6,y,3,18,'#c9ccd3');ctx.fillStyle='#e9c79a';ctx.beginPath();ctx.moveTo(x0+b,y);ctx.lineTo(x0+len,y+9);ctx.lineTo(x0+b,y+18);ctx.closePath();ctx.fill();ctx.fillStyle='#14213d';ctx.beginPath();ctx.moveTo(x0+b+tip*.6,y+9-3.6);ctx.lineTo(x0+len,y+9);ctx.lineTo(x0+b+tip*.6,y+9+3.6);ctx.closePath();ctx.fill();}
+function ruler(x0,y,cm,px){rrect(x0-8,y,cm*px+16,46,4,'#f2e3a6','#0d1524',2);for(let i=0;i<=cm*10;i++){const x=x0+i*px/10;line([x,y],[x,y+(i%10?(i%5?8:12):18)],'#14213d',i%10?1:2);if(i%10===0)text(String(i/10),x,y+30,11,'#14213d',700);}text('cm',x0+cm*px+2,y+38,9,'#14213d',600,'right');}
+function dial(cx,cy,R,max,step,lab,v,unit){dot(cx,cy,R+4,'#0d1524');dot(cx,cy,R,'#f4f1e8');const A=x=>x/max*Math.PI*2*0.9-Math.PI*0.9;
+  for(let x=0;x<=max+1e-9;x+=step){const a=A(x),big=Math.abs(x/lab-Math.round(x/lab))<1e-9;line([cx+(R-(big?16:9))*Math.sin(a),cy-(R-(big?16:9))*Math.cos(a)],[cx+(R-3)*Math.sin(a),cy-(R-3)*Math.cos(a)],'#14213d',big?2.5:1.3);if(big)text(String(x),cx+(R-32)*Math.sin(a),cy-(R-32)*Math.cos(a),12,'#14213d',700);}
+  text(unit,cx,cy+R*.45,13,'#4f5d75',700);const a=A(v);line([cx,cy],[cx+(R-12)*Math.sin(a),cy-(R-12)*Math.cos(a)],'#e0485f',4);dot(cx,cy,6,'#14213d');}
+function jug(cx,y0,h,max,step,lab,v){const w=110,yb=y0+h,Y=x=>yb-x/max*h;rrect(cx-w/2,y0-10,w,h+10,6,'rgba(230,237,247,.08)',C.fg,2.5);rect(cx-w/2+3,Y(v),w-6,yb-Y(v),'rgba(91,155,255,.55)');
+  for(let x=0;x<=max+1e-9;x+=step){const big=Math.abs(x/lab-Math.round(x/lab))<1e-9;line([cx+w/2-(big?24:14),Y(x)],[cx+w/2,Y(x)],C.fg,big?2.5:1.3);if(big)text(String(x),cx+w/2+8,Y(x),12,C.fg,700,'left');}text('ml',cx+w/2+8,y0-14,12,C.muted,700,'left');}
+function fbar(x,y,w,h,n,d,col,lbl){for(let i=0;i<d;i++)rrect(x+i*w/d,y,w/d,h,0,i<n?(col||C.gold):'rgba(230,237,247,.06)',C.fg,2);if(lbl)for(let i=0;i<d;i++)text(lbl,x+i*w/d+w/d/2,y+h/2,14,i<n?'#14213d':C.fg,700);}
+function fcircle(cx,cy,R,n,d){for(let i=0;i<d;i++){ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,R,-Math.PI/2+i/d*Math.PI*2,-Math.PI/2+(i+1)/d*Math.PI*2);ctx.closePath();ctx.fillStyle=i<n?C.gold:'rgba(230,237,247,.06)';ctx.fill();ctx.strokeStyle=C.fg;ctx.lineWidth=2;ctx.stroke();}}
+function fline(d,y,lab){const x0=30,x1=290,X=v=>x0+v/d*(x1-x0);line([x0-6,y],[x1+6,y],C.fg,3);for(let i=0;i<=d;i++)line([X(i),y-10],[X(i),y+10],C.fg,2.5);text('0',X(0),y+26,14,C.muted,700);text('1',X(d),y+26,14,C.muted,700);return X;}
+function fopts(n,d,extra){const s=[n+'/'+d];(extra||[]).forEach(e=>{const[a,b]=e;if(a>0&&b>0&&!s.includes(a+'/'+b)&&s.length<4)s.push(a+'/'+b);});return shuffle(s).map(v=>({label:FS(v),value:v}));}
+function sopts(ans,wr,f){const s=[ans];wr.forEach(w=>{if(w&&!s.includes(w)&&s.length<4)s.push(w);});return shuffle(s).map(v=>({label:f?f(v):v,value:v}));}
+
+const GAMES={
+ coins:{name:'Coin Counter',unit:'Money',make(r){const q={cols:2},pool=r<=3?[1,2,5,10,20,50]:r<=6?[5,10,20,50,100,200]:[10,20,50,100,200,500,1000],n=r<=3?between(2,4):between(3,5);let items,tot;
+   do{items=[];for(let i=0;i<n;i++)items.push(pick(pool));items.sort((a,b)=>b-a);tot=items.reduce((a,b)=>a+b,0);}while((r<=3&&tot>=100)||(r>3&&r<=6&&tot<100));
+   q.prompt=`<span>How much money is there altogether?</span><span class="note">${r<=3?'Start with the biggest coin and count on.':'Count the pounds first, then the pence.'}</span>`;q.answer=tot;q.cols=2;
+   q.options=opts(tot,[tot-items[items.length-1],tot+items[items.length-1],tot-items[0],tot+10],money);q.say=money;q.explain='Count on from the biggest: '+items.map(money).join(' + ')+' = '+money(tot)+'.';
+   q.draw=()=>{drawMoney(items,20,70,q.k);if(q.k)text(money(items.slice(0,q.k).reduce((a,b)=>a+b,0)),160,232,24,C.gold,700);};
+   q.reveal=async()=>{for(let i=1;i<=items.length;i++){q.k=i;sStep(i);await sleep(600);}};return q;}},
+ change:{name:'Change Maker',unit:'Money',make(r){const q={cols:2},paid=r<=3?100:r<=6?500:1000;const cost=r<=3?between(1,19)*5:r<=6?between(21,99)*5:between(101,999);const ch=paid-cost,nx=Math.ceil(cost/100)*100;
+   q.prompt=`<span>It costs <b>${money(cost)}</b>. You pay with <b>${money(paid)}</b>.</span><span>How much change do you get?</span>`;q.answer=ch;q.options=opts(ch,[ch+10,ch-10,ch+100,cost],money);q.say=money;
+   q.explain=nx<paid&&nx!==cost?`Count on: ${money(cost)} + ${money(nx-cost)} = ${money(nx)}, then ${money(paid-nx)} more to ${money(paid)}.`:`Count on from ${money(cost)} to ${money(paid)}.`;
+   q.draw=()=>{rrect(30,30,110,50,10,C.tile,C.edge,1.5);text('Price',85,44,12,C.muted,600);text(money(cost),85,64,18,C.fg,700);paid>=500?note(230,55,paid/100):coin(230,55,paid);
+     const X=v=>30+(v-cost)/(paid-cost)*260;line([24,180],[296,180],C.fg,3);text(money(cost),30,206,12,C.muted,700);text(money(paid),290,206,12,C.muted,700);
+     if(q.k>=1&&nx!==cost&&nx<paid){hop(X(cost),X(nx),180,'+'+money(nx-cost));text(money(nx),X(nx),206,12,C.muted,700);}if(q.k>=2)hop(nx<paid&&nx!==cost?X(nx):X(cost),X(paid),180,'+'+money(nx<paid&&nx!==cost?paid-nx:paid-cost),C.ok);if(q.k>=2)text('change = '+money(ch),160,244,18,C.ok,700);};
+   q.reveal=async()=>{q.k=1;sStep(1);await sleep(800);q.k=2;sStep(2);await sleep(900);};return q;}},
+ clock:{name:'Clock Reader',unit:'Time',make(r){const q={cols:2},h=between(1,12);const m=r<=2?pick([0,30]):r<=4?pick([15,45]):r<=6?between(1,11)*5:between(1,59);
+   const t=hm(h,m),nh=h%12+1;q.prompt=`<span>What time does the clock show?</span><span class="note">${r<=2?'Look at the minute hand first.':r<=4?'Quarter past is :15, quarter to is :45.':r<=6?'Count in 5s for the minute hand.':'Count in 5s, then the single minutes.'}</span>`;
+   q.answer=t;q.options=sopts(t,[hm(nh,m),hm(h,m===0?30:m%5?(m+5)%60:Math.floor(m/5)),hm(h,(60-m)%60),hm(h===1?12:h-1,m)]);q.say=v=>v;
+   q.explain=m===0?`The minute hand is on the 12, so it is ${h} o'clock.`:m===30?`Half past ${h}.`:m===15?`Quarter past ${h}.`:m===45?`Quarter to ${nh}.`:`The minute hand shows ${m} minutes past ${h}.`;
+   q.draw=()=>{clockFace(160,140,100,h,m,{fives:q.k?Math.min(12,Math.ceil(m/5)||12):0});if(q.k)digital(160,262,t);};q.reveal=async()=>{q.k=1;sStep(1);await sleep(1100);};return q;}},
+ duration:{name:'How Long?',unit:'Time',make(r){const q={cols:2},sh=between(8,15),sm=r<=3?pick([0,30]):r<=6?pick([0,15,30,45]):between(0,11)*5;const d=r<=3?pick([30,60,90,120]):r<=6?between(1,8)*15:between(2,23)*5;
+   const st=sh*60+sm,en=st+d,s=hm(sh>12?sh-12:sh,sm),e=hm(Math.floor(en/60)>12?Math.floor(en/60)-12:Math.floor(en/60),en%60);
+   q.prompt=`<span>It starts at <b>${s}</b> and ends at <b>${e}</b>.</span><span>How long does it last?</span>`;q.answer=d;q.options=opts(d,[d+5,d-5,d+60,d-30,d+15],dur);q.say=dur;
+   const nx=Math.ceil(st/60)*60;q.explain=nx>st&&nx<en?`${s} to the hour is ${nx-st} minutes, then ${en-nx} minutes more: ${dur(d)}.`:`From ${s} to ${e} is ${dur(d)}.`;
+   q.draw=()=>{digital(90,50,s,C.fg);digital(230,50,e,C.fg);text('start',90,86,12,C.muted,600);text('end',230,86,12,C.muted,600);const X=v=>30+(v-st)/d*260;line([24,180],[296,180],C.fg,3);
+     if(q.k){if(nx>st&&nx<en){hop(X(st),X(nx),180,(nx-st)+' min');hop(X(nx),X(en),180,(en-nx)+' min',C.ok);}else hop(X(st),X(en),180,dur(d),C.ok);text(dur(d),160,236,20,C.ok,700);}};
+   q.reveal=async()=>{q.k=1;sStep(1);await sleep(1100);};return q;}},
+ ruler:{name:'Ruler Reader',unit:'Length',make(r){const q={cols:2},cm=r<=3?between(2,11):between(1,10),mm=r<=3?0:between(1,9),L=cm*10+mm,px=22;
+   const A=r<=6?(mm?cm+' cm '+mm+' mm':cm+' cm'):L+' mm';q.prompt=`<span>How long is the pencil?</span><span class="note">${r<=3?'Start at 0 and count the centimetres.':r<=6?'Count the cm, then the small mm marks.':'Give your answer in millimetres. 1 cm = 10 mm.'}</span>`;
+   q.answer=A;const alt=(c,m)=>r<=6?(m?c+' cm '+m+' mm':c+' cm'):(c*10+m)+' mm';q.options=sopts(A,[alt(cm+1,mm),alt(cm,(mm+5)%10),alt(cm-1,mm),r<=6?cm+mm+' cm':cm+mm+' mm']);q.say=v=>v;
+   q.explain=mm?`${cm} cm and ${mm} mm = ${L} mm.`:`It reaches the ${cm} cm mark.`;
+   q.draw=()=>{const x0=30;pencil(x0,96,L*px/10);ruler(x0,124,12,px);
+     if(q.k){line([x0+L*px/10,80],[x0+L*px/10,180],C.ok,2,true);text(A,160,230,22,C.ok,700);}};q.reveal=async()=>{q.k=1;sStep(1);await sleep(1000);};return q;}},
+ perimeter:{name:'Perimeter',unit:'Length',make(r){const q={cols:2};let P,L;
+   if(r<=3){const w=between(3,9),h=between(2,6);P=[[0,0],[w,0],[w,h],[0,h]];L=[w,h,w,h];}
+   else if(r<=6){const a=between(3,8),b=between(3,8),c=between(Math.max(a,b)-Math.min(a,b)+1,a+b-1);P=[[0,0],[a,0],[0,0]];L=[a,b,c];P=null;q.tri=[a,b,c];}
+   else{const w=between(6,9),h=between(5,7),cw=between(2,w-2),ch=between(2,h-2);P=[[0,0],[w,0],[w,h-ch],[w-cw,h-ch],[w-cw,h],[0,h]];L=[w,h-ch,cw,ch,w-cw,h];}
+   const tot=L.reduce((a,b)=>a+b,0);q.prompt='<span>What is the <b>perimeter</b> of this shape?</span><span class="note">Add the lengths of all the sides.</span>';q.answer=tot;q.options=opts(tot,[tot-L[0],tot+2,tot-2,L.length===4?L[0]*L[1]:tot+L[0]],v=>v+' cm');q.say=v=>v+' cm';q.explain=L.join(' + ')+' = '+tot+' cm.';
+   let S;if(q.tri){const [a,b,c]=q.tri;const x=(a*a+c*c-b*b)/(2*a),y=-Math.sqrt(Math.max(1,c*c-x*x));S=[[0,0],[a,0],[x,y]];L=[a,b,c];}else S=P;
+   const xs=S.map(p=>p[0]),ys=S.map(p=>p[1]),sc=Math.min(220/(Math.max(...xs)-Math.min(...xs)),150/(Math.max(...ys)-Math.min(...ys)),30),cx=(Math.max(...xs)+Math.min(...xs))/2,cy=(Math.max(...ys)+Math.min(...ys))/2,T=p=>[160+(p[0]-cx)*sc,120+(p[1]-cy)*sc],Q=S.map(T);
+   q.draw=()=>{ctx.beginPath();Q.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fillStyle='rgba(91,155,255,.25)';ctx.fill();
+     Q.forEach((p,i)=>{const n=Q[(i+1)%Q.length],lit=q.k>i;line(p,n,lit?C.gold:C.fg,lit?6:3);const m=[(p[0]+n[0])/2,(p[1]+n[1])/2],c=[160,120],d=Math.hypot(m[0]-c[0],m[1]-c[1])||1;text(L[i]+' cm',m[0]+(m[0]-c[0])/d*22,m[1]+(m[1]-c[1])/d*16,13,lit?C.gold:C.fg,700);});
+     if(q.k)text(L.slice(0,q.k).join(' + ')+(q.k===L.length?' = '+tot+' cm':''),160,246,16,q.k===L.length?C.ok:C.gold,700);};
+   q.reveal=async()=>{for(let i=1;i<=L.length;i++){q.k=i;sStep(i);await sleep(550);}};return q;}},
+ scales:{name:'Scale Reader',unit:'Mass and capacity',make(r){const q={cols:2};let max,step,lab,v,unit,kind;
+   if(r<=3){kind='dial';max=10;step=1;lab=1;v=between(1,9);unit='kg';}else if(r<=6){kind='dial';max=1000;step=100;lab=200;v=between(1,9)*100;unit='g';}else{kind='jug';max=1000;step=pick([50,100]);lab=step===50?250:500;v=between(1,19)*step;if(v>=1000)v=900;unit='ml';}
+   q.prompt=`<span>What does the ${kind==='jug'?'jug':'scale'} show?</span><span class="note">${r<=3?'Each mark is 1 kg.':'Work out what each small interval is worth first.'}</span>`;q.answer=v;
+   q.options=opts(v,[v+step,v-step,v+lab,v/step],x=>x+' '+unit);q.say=x=>x+' '+unit;q.explain=`Each interval is ${step} ${unit}. Count ${v/step} intervals from 0.`;
+   q.draw=()=>{if(kind==='dial')dial(160,140,105,max,step,lab,v,unit);else jug(150,40,190,max,step,lab,v);if(q.k)text(v+' '+unit,kind==='dial'?160:60,kind==='dial'?268:140,20,C.ok,700);};
+   q.reveal=async()=>{q.k=1;sStep(1);await sleep(1000);};return q;}},
+ fracshape:{name:'Fraction Spotter',unit:'Fractions',make(r){const q={cols:2},d=pick([2,3,4,5,6,8,10]),n=r<=3?1:between(2,d-1)||1,circ=d<=8&&Math.random()<.5;
+   q.prompt='<span>What fraction is shaded?</span><span class="note">Count the equal parts (the denominator), then the shaded parts (the numerator).</span>';q.answer=n+'/'+d;q.options=fopts(n,d,[[d,n],[d-n,d],[n,d+1],[1,d]]);q.say=FS;
+   q.explain=`There are ${d} equal parts and ${n} ${n===1?'is':'are'} shaded.`;
+   q.draw=()=>{if(circ)fcircle(160,120,90,n,d);else fbar(30,90,260,60,n,d);if(q.k){fracT(160,246,n,d,18,C.ok);}};q.reveal=async()=>{q.k=1;sStep(1);await sleep(900);};return q;}},
+ fracline:{name:'Fraction Line',unit:'Fractions',make(r){const q={cols:2},d=pick([2,3,4,5,6,8,10]),n=r<=3?1:between(1,d-1);
+   q.prompt='<span>What fraction is the arrow pointing to?</span><span class="note">Count the intervals between 0 and 1.</span>';q.answer=n+'/'+d;q.options=fopts(n,d,[[n,d+1],[d,n],[n+1,d],[n,10]]);q.say=FS;q.explain=`0 to 1 is split into ${d} equal intervals. The arrow is ${n} jump${n>1?'s':''} along.`;
+   q.draw=()=>{const X=fline(d,170);arrowDown(X(n),160);if(q.k){for(let i=0;i<q.k;i++)hop(X(i),X(i+1),170);fracT(X(n),118,n,d,14,C.ok);}};
+   q.reveal=async()=>{for(let i=1;i<=n;i++){q.k=i;sStep(i);await sleep(Math.max(250,1200/n));}await sleep(300);};return q;}},
+ fraccompare:{name:'Fraction Compare',unit:'Fractions',make(r){const q={cols:3};let a,b,c,d;
+   if(r<=4){a=1;c=1;b=between(2,10);do{d=between(2,10);}while(d===b);}else if(r<=6){b=d=between(5,10);a=between(1,d-1);do{c=between(1,d-1);}while(c===a);}else{a=c=between(2,4);b=between(a+1,10);do{d=between(a+1,10);}while(d===b);}
+   const ans=a/b<c/d?'<':a/b>c/d?'>':'=';q.prompt=`<span>Which symbol goes in the box?</span><span style="font-size:1.3em">${F(a,b)} ☐ ${F(c,d)}</span>`;q.answer=ans;q.options=['<','>','='].map(s=>({label:s,value:s}));q.say=s=>s;
+   q.explain=b===d?'Same denominator: compare the numerators.':a===c?'Same numerator: the greater the denominator, the smaller the parts.':'Unit fractions: the greater the denominator, the smaller the fraction.';
+   q.draw=()=>{fbar(80,50,210,44,q.k?a:0,b);fbar(80,140,210,44,q.k?c:0,d);fracT(42,72,a,b,18);fracT(42,162,c,d,18);if(q.k)text(ans,42,118,26,C.gold,700);};q.reveal=async()=>{q.k=1;sStep(1);await sleep(1000);};return q;}},
+ fracamount:{name:'Fraction of an Amount',unit:'Fractions',make(r){const q={cols:2},d=pick([2,3,4,5,6,8,10]),k=between(2,r<=4?6:9),N=d*k,n=r<=4?1:between(2,d-1),ans=n*k;
+   q.prompt=`<span>What is ${F(n,d)} of <b>${N}</b>?</span><span class="note">${n===1?'Divide by the denominator.':'Divide by the denominator, then multiply by the numerator.'}</span>`;q.answer=ans;q.options=opts(ans,[k,N*n,N-ans,ans+k,N/d+n]);q.say=fmt;
+   q.explain=n===1?`${N} ÷ ${d} = ${k}.`:`${N} ÷ ${d} = ${k}, and ${k} × ${n} = ${ans}.`;
+   q.draw=()=>{rrect(30,60,260,44,4,'rgba(91,155,255,.3)',C.fg,2);text(String(N),160,82,20,C.fg,700);fbar(30,124,260,44,q.k?n:0,d,null,q.k?String(k):'');if(q.k)text(n+'/'+d+' of '+N+' = '+ans,160,214,20,C.ok,700);};
+   q.reveal=async()=>{q.k=1;sStep(1);await sleep(1100);};return q;}},
+ fracadd:{name:'Add and Subtract Fractions',unit:'Fractions',make(r){const q={cols:2},d=between(4,10);let a,b,ans,op,s;
+   if(r<=4){a=between(1,d-2);b=between(1,d-a-1);ans=a+b;op='+';s=`${F(a,d)} + ${F(b,d)}`;}else if(r<=6){a=between(3,d-1);b=between(1,a-1);ans=a-b;op='−';s=`${F(a,d)} − ${F(b,d)}`;}else{a=d;b=between(1,d-1);ans=d-b;op='−';s=`1 − ${F(b,d)}`;}
+   q.prompt=`<span>Work it out:</span><span style="font-size:1.3em">${s} =</span>`;q.answer=ans+'/'+d;q.options=fopts(ans,d,[[ans,2*d],[op==='+'?Math.abs(a-b)||1:a+b,d],[ans+1,d],[ans,d+1]]);q.say=FS;
+   q.explain=r>=7?`1 whole = ${F(d,d)}. ${d} − ${b} = ${ans}, so the answer is ${F(ans,d)}.`:`The denominator stays the same. ${a} ${op} ${b} = ${ans}.`;
+   q.draw=()=>{if(op==='+'){for(let i=0;i<d;i++)rrect(30+i*260/d,90,260/d,50,0,i<a?C.gold:i<a+b?(q.k?C.ok:'rgba(230,237,247,.06)'):'rgba(230,237,247,.06)',C.fg,2);if(!q.k)for(let i=a;i<a+b;i++)text('+',30+i*260/d+130/d,115,18,C.ok,700);}
+     else{for(let i=0;i<d;i++){const on=i<a,gone=i>=ans&&i<a;rrect(30+i*260/d,90,260/d,50,0,on?(q.k&&gone?'rgba(255,138,61,.25)':C.gold):'rgba(230,237,247,.06)',C.fg,2);if(q.k&&gone)line([30+i*260/d+6,96],[30+(i+1)*260/d-6,134],C.warn,3);}}
+     if(q.k)fracT(160,214,ans,d,20,C.ok);};q.reveal=async()=>{q.k=1;sStep(1);await sleep(1000);};return q;}}
+};
+
+/* =====================================================================  LEARN FIRST  ===================================================================== */
+const TEACH={
+ coins:[{title:'Coins and notes',text:'Coins are worth <b>1p, 2p, 5p, 10p, 20p, 50p, £1 and £2</b>. Notes are worth £5, £10 and more.',draw:t=>{drawMoney([1,2,5,10,20,50,100,200,500],20,70);caption('100p = £1');}},
+  {title:'Count on from the biggest',text:'Start with the <b>biggest</b> coin and count on. 20p, then 30p, then 35p.',draw:t=>{const k=countUp(t,3,800);drawMoney([20,10,5],60,90,k);if(k)text(['20p','30p','35p'][k-1],160,200,26,C.gold,700);}},
+  {title:'Pounds and pence',text:'Count the <b>pounds</b> first, then the <b>pence</b>. £2 + £1 + 50p = £3 and 50p.',draw:t=>{drawMoney([200,100,50],60,90,countUp(t,3,800));caption('£3 and 50p');}}],
+ change:[{title:'What is change?',text:'<b>Change</b> is the money you get back when you pay more than the price.',draw:t=>{coin(230,80,100);rrect(30,55,110,50,10,C.tile,C.edge,1.5);text('70p',85,80,22,C.fg,700);caption('pay £1 for something that costs 70p');}},
+  {title:'Count on to find change',text:'Count on from the <b>price</b> to the <b>money you paid</b>. 70p + 30p = £1, so the change is 30p.',draw:t=>{line([24,170],[296,170],C.fg,3);text('70p',30,196,13,C.muted,700);text('£1',290,196,13,C.muted,700);if(Math.floor(t/900)%2||t>1800)hop(30,290,170,'+30p',C.ok);caption('change = 30p',C.ok);}},
+  {title:'Jump to the next pound',text:'£3 and 60p, paid with £5: jump <b>40p</b> to £4, then <b>£1</b> to £5. Change = £1 and 40p.',draw:t=>{line([24,170],[296,170],C.fg,3);text('£3.60',30,196,12,C.muted,700);text('£4',110,196,12,C.muted,700);text('£5',290,196,12,C.muted,700);hop(30,110,170,'+40p');if(Math.floor(t/900)%2||t>1800)hop(110,290,170,'+£1',C.ok);caption('£1 and 40p change',C.ok);}}],
+ clock:[{title:'Two hands',text:'The <b>short hand</b> shows the hour. The <b>long red hand</b> shows the minutes.',draw:t=>{clockFace(160,140,100,3,0);caption("3 o'clock");}},
+  {title:'Quarter past, half past, quarter to',text:'Minute hand on the <b>3</b>: quarter past. On the <b>6</b>: half past. On the <b>9</b>: quarter to.',draw:t=>{const m=[15,30,45][Math.floor(t/1300)%3];clockFace(160,140,100,3,m);caption(['quarter past 3','half past 3','quarter to 4'][Math.floor(t/1300)%3]);}},
+  {title:'Count in 5s',text:'Each number on the clock is <b>5 minutes</b>. Count in 5s round from the 12. Each small mark is 1 minute.',draw:t=>{const k=countUp(t,4,600);clockFace(160,140,100,2,20,{fives:k});caption(k===4?'20 past 2 = 2:20':'5, 10, 15, 20…');}}],
+ duration:[{title:'Start and end',text:'<b>Duration</b> is how long something lasts: the time from the start to the end.',draw:t=>{digital(90,70,'9:00',C.fg);digital(230,70,'9:45',C.fg);caption('9:00 to 9:45 = 45 minutes');}},
+  {title:'Jump to the hour',text:'From <b>9:40</b> to <b>10:15</b>: jump 20 minutes to 10:00, then 15 more. 35 minutes.',draw:t=>{line([24,180],[296,180],C.fg,3);text('9:40',30,206,12,C.muted,700);text('10:00',150,206,12,C.muted,700);text('10:15',290,206,12,C.muted,700);hop(30,150,180,'20 min');if(Math.floor(t/900)%2||t>1800)hop(150,290,180,'15 min',C.ok);caption('35 minutes',C.ok);}},
+  {title:'Hours and minutes',text:'60 minutes = <b>1 hour</b>. 90 minutes = 1 hour 30 minutes.',draw:t=>{text('60 minutes = 1 hour',160,110,22,C.fg,700);text('90 minutes = 1 hour 30 minutes',160,160,17,C.gold,700);}}],
+ ruler:[{title:'Start at zero',text:'Line up the end of the object with the <b>0</b> on the ruler.',draw:t=>{pencil(30,96,88);ruler(30,124,12,22);line([30,80],[30,180],C.ok,2,true);caption('start at 0');}},
+  {title:'Read the centimetres',text:'Read the number where the object <b>ends</b>. The pencil ends at the tip of its point, so it is <b>4 cm</b> long.',draw:t=>{pencil(30,96,88);ruler(30,124,12,22);line([118,80],[118,180],C.ok,2,true);caption('4 cm');}},
+  {title:'Millimetres',text:'The small marks are <b>millimetres</b>. 10 mm = 1 cm. 4 cm and 6 mm = 46 mm.',draw:t=>{pencil(30,96,101.2);ruler(30,124,12,22);line([131.2,80],[131.2,180],C.ok,2,true);caption('4 cm 6 mm = 46 mm');}}],
+ perimeter:[{title:'What is perimeter?',text:'<b>Perimeter</b> is the distance all the way <b>around</b> the outside of a shape.',draw:t=>{rrect(70,60,180,110,0,'rgba(91,155,255,.25)');const k=countUp(t,4,600);[[[70,60],[250,60]],[[250,60],[250,170]],[[250,170],[70,170]],[[70,170],[70,60]]].forEach((s,i)=>line(s[0],s[1],i<k?C.gold:C.fg,i<k?6:3));caption('go all the way round');}},
+  {title:'Add every side',text:'Add the lengths of <b>all</b> the sides. 6 + 4 + 6 + 4 = <b>20 cm</b>.',draw:t=>{rrect(70,60,180,110,0,'rgba(91,155,255,.25)',C.gold,5);text('6 cm',160,46,14,C.fg,700);text('6 cm',160,186,14,C.fg,700);text('4 cm',48,115,14,C.fg,700);text('4 cm',272,115,14,C.fg,700);caption('6 + 4 + 6 + 4 = 20 cm',C.ok);}},
+  {title:'Shapes with more sides',text:'Count the sides as you add, so you do not miss one. Tick each side off.',draw:t=>{text('3 + 4 + 5 = 12 cm',160,120,22,C.fg,700);caption('a triangle has 3 sides to add');}}],
+ scales:[{title:'Find the interval',text:'Look at two labelled numbers and count the marks between. Work out what each <b>interval</b> is worth.',draw:t=>{dial(160,140,105,1000,100,200,0,'g');caption('0 to 200 has 2 intervals: each is 100 g');}},
+  {title:'Read the pointer',text:'Count the intervals from 0 to the pointer. This scale shows <b>600 g</b>.',draw:t=>{dial(160,140,105,1000,100,200,600,'g');caption('600 g');}},
+  {title:'Measuring jugs',text:'Read the level of the liquid at the side of the jug. <b>1 litre = 1000 ml</b>.',draw:t=>{jug(150,40,190,1000,100,500,700);text('700 ml',60,140,20,C.ok,700);}}],
+ fracshape:[{title:'Equal parts',text:'A fraction is part of a whole split into <b>equal parts</b>. The <b>denominator</b> (bottom) is how many parts.',draw:t=>{fbar(30,90,260,60,0,4);caption('4 equal parts: quarters');}},
+  {title:'Shaded parts',text:'The <b>numerator</b> (top) is how many parts are shaded. 3 out of 4 shaded is three quarters.',draw:t=>{fbar(30,90,260,60,countUp(t,3,700),4);fracT(160,226,3,4,20,C.gold);}},
+  {title:'Circles too',text:'It works for any shape, as long as the parts are equal. This circle shows two fifths.',draw:t=>{fcircle(160,125,90,2,5);caption('2/5 shaded');}}],
+ fracline:[{title:'0 to 1',text:'A fraction number line goes from <b>0</b> to <b>1</b>. Count how many equal intervals.',draw:t=>{fline(4,170);caption('4 intervals: quarters');}},
+  {title:'Count the jumps',text:'Count the jumps from 0. Three jumps of a quarter is <b>3/4</b>.',draw:t=>{const X=fline(4,170),k=countUp(t,3,600);for(let i=0;i<k;i++)hop(X(i),X(i+1),170);if(k===3)fracT(X(3),118,3,4,14,C.ok);caption('1/4, 2/4, 3/4');}},
+  {title:'The end is a whole',text:'At the end of the line, the fraction is one <b>whole</b>: 4/4 = 1.',draw:t=>{const X=fline(4,170);arrowDown(X(4),160);caption('4/4 = 1 whole');}}],
+ fraccompare:[{title:'Unit fractions',text:'The <b>greater the denominator</b>, the smaller each part. 1/3 is bigger than 1/5.',draw:t=>{fbar(80,50,210,44,1,3);fbar(80,140,210,44,1,5);fracT(42,72,1,3,18);fracT(42,162,1,5,18);text('>',42,118,26,C.gold,700);}},
+  {title:'Same denominator',text:'If the denominators are the same, compare the <b>numerators</b>. 4/6 is bigger than 2/6.',draw:t=>{fbar(80,50,210,44,4,6);fbar(80,140,210,44,2,6);fracT(42,72,4,6,18);fracT(42,162,2,6,18);text('>',42,118,26,C.gold,700);}},
+  {title:'Same numerator',text:'If the numerators are the same, the fraction with <b>fewer parts</b> is bigger. 2/3 > 2/7.',draw:t=>{fbar(80,50,210,44,2,3);fbar(80,140,210,44,2,7);fracT(42,72,2,3,18);fracT(42,162,2,7,18);text('>',42,118,26,C.gold,700);}}],
+ fracamount:[{title:'Draw a bar model',text:'Draw the whole amount as a bar. Split it into the <b>denominator</b> number of equal parts.',draw:t=>{rrect(30,60,260,44,4,'rgba(91,155,255,.3)',C.fg,2);text('12',160,82,20,C.fg,700);fbar(30,124,260,44,0,4);caption('1/4 of 12: split into 4');}},
+  {title:'Divide to find one part',text:'12 ÷ 4 = <b>3</b>, so each part is 3. One quarter of 12 is 3.',draw:t=>{rrect(30,60,260,44,4,'rgba(91,155,255,.3)',C.fg,2);text('12',160,82,20,C.fg,700);fbar(30,124,260,44,1,4,null,'3');caption('1/4 of 12 = 3',C.ok);}},
+  {title:'More than one part',text:'For <b>3/4</b> of 12, find one part (3), then take 3 parts: 3 × 3 = <b>9</b>.',draw:t=>{rrect(30,60,260,44,4,'rgba(91,155,255,.3)',C.fg,2);text('12',160,82,20,C.fg,700);fbar(30,124,260,44,countUp(t,3,700),4,null,'3');caption('3/4 of 12 = 9',C.ok);}}],
+ fracadd:[{title:'Adding fractions',text:'When the denominators are the same, <b>add the numerators</b>. The denominator stays the same.',draw:t=>{fbar(30,90,260,50,2,7);for(let i=2;i<5;i++)rrect(30+i*260/7,90,260/7,50,0,Math.floor(t/900)%2?C.ok:'rgba(230,237,247,.06)',C.fg,2);caption('2/7 + 3/7 = 5/7');}},
+  {title:'Subtracting fractions',text:'<b>Subtract the numerators</b>. The denominator stays the same. 5/8 − 2/8 = 3/8.',draw:t=>{fbar(30,90,260,50,5,8);if(Math.floor(t/900)%2)for(let i=3;i<5;i++)line([30+i*260/8+6,96],[30+(i+1)*260/8-6,134],C.warn,3);caption('5/8 − 2/8 = 3/8');}},
+  {title:'Taking from a whole',text:'1 whole is the same as <b>8/8</b>. So 1 − 3/8 = 5/8.',draw:t=>{fbar(30,90,260,50,8,8);if(Math.floor(t/900)%2)for(let i=5;i<8;i++)line([30+i*260/8+6,96],[30+(i+1)*260/8-6,134],C.warn,3);caption('8/8 − 3/8 = 5/8');}}]
+};
+
+/*<MS2>*/
+/* ---------- extra time games (MS2) ---------- */
+const toRoman=n=>[[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']].reduce((s,[v,r])=>{while(n>=v){s+=r;n-=v;}return s;},'');
+const romanParts=r=>{const out=[];for(let i=0;i<r.length;i++){const v={I:1,V:5,X:10}[r[i]],nx={I:1,V:5,X:10}[r[i+1]]||0;if(v<nx){out.push([r[i]+r[i+1],nx-v]);i++;}else out.push([r[i],v]);}return out;};
+function romanClock(cx,cy,R,hl){dot(cx,cy,R+4,'#0d1524');dot(cx,cy,R,'#f4f1e8');for(let i=1;i<=12;i++){const a=i/12*Math.PI*2,x=cx+(R-24)*Math.sin(a),y=cy-(R-24)*Math.cos(a);if(i===hl){dot(x,y,R>80?18:15,C.gold);}text(toRoman(i),x,y,R>80?(i===hl?16:13):(i===hl?13:11),'#14213d',700);}dot(cx,cy,5,'#14213d');}
+function dayStrip(y,mark,showLbl){const x0=24,x1=296,X=h=>x0+h/24*(x1-x0);
+  for(let h=0;h<24;h++){const day=h>=6&&h<19;rrect(X(h),y,X(h+1)-X(h),26,0,day?'rgba(245,196,81,'+(h>=10&&h<15?.55:.3)+')':'rgba(60,80,140,.55)');}
+  line([X(12),y-8],[X(12),y+34],C.fg,2.5);line([X(0),y-8],[X(0),y+34],C.fg,2.5);line([X(24),y-8],[X(24),y+34],C.fg,2.5);
+  text('midnight',X(0)+2,y+48,10,C.muted,600,'left');text('noon',X(12),y+48,10,C.muted,600);text('midnight',X(24)-2,y+48,10,C.muted,600,'right');
+  if(showLbl!==false){text('am',X(6),y+13,14,'#14213d',700);text('pm',X(18),y+13,14,C.fg,700);}
+  if(mark!=null){const x=X(mark);ctx.fillStyle=C.ok;ctx.beginPath();ctx.moveTo(x-8,y-18);ctx.lineTo(x+8,y-18);ctx.lineTo(x,y-4);ctx.closePath();ctx.fill();}
+  return X;}
+const h12=(h,m)=>{const ap=h<12?'am':'pm',hh=h%12===0?12:h%12;return hh+':'+String(m).padStart(2,'0')+' '+ap;};
+const h24=(h,m)=>String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+function calGrid(x0,y0,rows,cols,k,lbl){const w=Math.min(34,260/cols),h=Math.min(26,150/rows);for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){const i=r*cols+c;rrect(x0+c*w,y0+r*h,w-3,h-3,4,k!=null&&i<k?C.gold:'rgba(230,237,247,.08)',C.edge,1);if(lbl&&r===0)text(lbl[c],x0+c*w+w/2-1.5,y0-10,10,C.muted,600);}}
+function stopwatch(cx,cy,R,s){dot(cx,cy,R+4,'#0d1524');dot(cx,cy,R,'#f4f1e8');rrect(cx-8,cy-R-16,16,12,3,C.fg);for(let i=0;i<60;i++){const a=i/60*Math.PI*2,r1=i%5?R-6:R-11;line([cx+r1*Math.sin(a),cy-r1*Math.cos(a)],[cx+(R-2)*Math.sin(a),cy-(R-2)*Math.cos(a)],'#14213d',i%5?1:2);}
+  if(s){ctx.fillStyle='rgba(224,72,95,.25)';ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,R-12,-Math.PI/2,-Math.PI/2+s/60*Math.PI*2);ctx.closePath();ctx.fill();}
+  const a=(s||0)/60*Math.PI*2;line([cx,cy],[cx+(R-12)*Math.sin(a),cy-(R-12)*Math.cos(a)],'#e0485f',3);dot(cx,cy,5,'#14213d');}
+const EVENTS=[['You eat breakfast',7,30],['School starts',7,15],['You go to bed',20,0],['You eat lunch',12,30],['You eat dinner',18,30],['The sun rises',6,0],['School ends',14,30],['You wake up',6,30],['Football after school',16,0],['The moon is up',22,0],['Morning break',9,45],['You watch TV after dinner',19,15]];
+const FACTS=[['How many days are in a week?',7,'days',[5,10,12],'week'],['How many months are in a year?',12,'months',[10,7,24],'year'],['How many hours are in a day?',24,'hours',[12,60,10],'day'],['How many minutes are in an hour?',60,'minutes',[100,24,30],'hour'],['How many seconds are in a minute?',60,'seconds',[100,24,10],'min'],['How many days are in a year?',365,'days',[366,100,52],'year'],['How many days are in a leap year?',366,'days',[365,300,29],'year'],['How many weeks are in a year?',52,'weeks',[12,365,48],'year'],['How many days are in September?',30,'days',[31,28,7],'mon'],['How many days are in January?',31,'days',[30,28,12],'mon'],['How many days are in February when it is not a leap year?',28,'days',[29,30,31],'mon'],['How many days are in February in a leap year?',29,'days',[28,30,31],'mon'],['How many days are in April?',30,'days',[31,29,12],'mon']];
+const MS2_GAMES={
+ roman:{name:'Roman Numerals',unit:'Time',make(r){const q={cols:2};
+   if(r<=6){const n=r<=3?between(1,8):between(4,12),R=toRoman(n);q.prompt=`<span>What is <b>${R}</b> in our numbers?</span><span class="note">${r<=3?'I = 1, V = 5. Add them up.':'A small numeral before a bigger one means take away: IV = 4, IX = 9.'}</span>`;
+     q.answer=n;q.options=opts(n,[n+1,n>1?n-1:n+3,n+5,n>5?n-5:n+2,n+2].filter(x=>x>0),String);q.say=String;const P=romanParts(R);q.explain=P.map(p=>p[0]+' = '+p[1]).join(', ')+'. So '+R+' = '+n+'.';
+     q.draw=()=>{romanClock(102,140,92,q.k?n:null);text(R,255,90,R.length>3?30:40,C.gold,700);if(q.k){P.forEach((p,i)=>text(p[0]+' = '+p[1],255,140+i*24,15,C.fg,600));text('= '+n,255,146+P.length*24,22,C.ok,700);}};}
+   else{const n=between(1,12),R=toRoman(n);q.prompt=`<span>How is <b>${n}</b> written in Roman numerals?</span><span class="note">Look round the clock face.</span>`;q.answer=R;
+     q.options=sopts(R,[toRoman(n%12+1),n>1?toRoman(n-1):'II',R.split('').reverse().join('')!==R?R.split('').reverse().join(''):'IIII','VV','XI'].filter(x=>x!==R));q.say=v=>v;q.explain=`${n} is written ${R}.`;
+     q.draw=()=>{romanClock(160,140,100,q.k?n:null);if(q.k)text(n+' = '+R,160,268,18,C.ok,700);};}
+   q.reveal=async()=>{q.k=1;sStep(1);await sleep(1100);};return q;}},
+ ampm:{name:'am or pm?',unit:'Time',make(r){const q={cols:2};
+   if(r<=5){const e=pick(EVENTS),hh=e[1]%12===0?12:e[1]%12,t=hh+':'+String(e[2]).padStart(2,'0'),ans=e[1]<12?'am':'pm';
+     q.prompt=`<span>${e[0]} at <b>${t}</b>.</span><span>Is it <b>am</b> or <b>pm</b>?</span>`;q.answer=ans;q.options=[{label:'am<small>midnight to noon</small>',value:'am'},{label:'pm<small>noon to midnight</small>',value:'pm'}];q.say=v=>v;
+     q.explain=ans==='am'?'It is in the morning, after midnight and before noon, so it is am.':'It is after 12 noon, so it is pm.';
+     q.draw=()=>{digital(160,60,t);text(e[0],160,104,14,C.muted,600);dayStrip(160,q.k?e[1]+e[2]/60:null,!!q.k);};}
+   else{const want=pick(['am','pm']),isW=e=>(e[1]<12)===(want==='am'),tgt=pick(EVENTS.filter(isW)),others=shuffle(EVENTS.filter(e=>!isW(e))).slice(0,2);
+     q.prompt=`<span>Which of these happens in the <b>${want==='am'?'morning (am)':'afternoon or evening (pm)'}</b>?</span>`;q.answer=tgt[0];q.options=shuffle([tgt,...others]).map(e=>({label:e[0]+'<small>'+h12(e[1],e[2])+'</small>',value:e[0]}));q.cols=1;q.say=v=>v;
+     q.explain=`${tgt[0]} at ${h12(tgt[1],tgt[2])} is ${want}.`;q.draw=()=>{const X=dayStrip(120,q.k?tgt[1]+tgt[2]/60:null);if(q.k)text(h12(tgt[1],tgt[2]),X(tgt[1]+tgt[2]/60),94,14,C.ok,700);};}
+   q.reveal=async()=>{q.k=1;sStep(1);await sleep(1000);};return q;}},
+ h24:{name:'24-Hour Clock',unit:'Time',make(r){const q={cols:2},h=r<=4?between(13,23):between(0,23),m=r<=2?0:pick([0,15,30,45,10,20,40,50]),a=h12(h,m),b=h24(h,m),to24=r<=4||r%2===0;
+   if(to24){q.prompt=`<span>What is <b>${a}</b> in 24-hour time?</span><span class="note">${h>=12?'For pm times, add 12 to the hour.':'For am times, keep the hour and write a 0 in front.'}</span>`;q.answer=b;
+     q.options=sopts(b,[h24((h+12)%24,m),h24(h%12,m),h24((h+2)%24,m),h24((h+10)%24,m)]);q.say=v=>v;}
+   else{q.prompt=`<span><b>${b}</b> is the same as…</span><span class="note">If the hour is more than 12, take away 12 and it is pm.</span>`;q.answer=a;
+     q.options=sopts(a,[h12((h+12)%24,m),h12((h+2)%24,m),h12((h+22)%24,m)]);q.say=v=>v;}
+   q.explain=h===0?'Midnight is 00:00 on a 24-hour clock.':h>=12?`${a}: ${h%12===0?12:h%12} + 12 = ${h}, so it is ${b}.`:`${a} is in the morning, so it is ${b}.`;
+   q.draw=()=>{digital(90,60,to24?a.replace(' ',''):b,C.fg);text(to24?'12-hour':'24-hour',90,98,12,C.muted,600);text('→',160,62,26,C.gold,700);digital(230,60,q.k?(to24?b:a.replace(' ','')):'?',q.k?C.ok:C.muted);text(to24?'24-hour':'12-hour',230,98,12,C.muted,600);
+     const X=dayStrip(170,q.k?h+m/60:null);if(q.k)text(h>=12?'+ 12':'am',X(h+m/60),142,14,C.ok,700);};
+   q.reveal=async()=>{q.k=1;sStep(1);await sleep(1000);};return q;}},
+ timefacts:{name:'Time Facts',unit:'Time',make(r){const q={cols:2};let ans,kind,k=1;
+   if(r<=3||(r>=7&&Math.random()<.35)){const f=pick(r<=2?FACTS.slice(0,5):r===3?FACTS.slice(0,8):FACTS.slice(8));q.prompt=`<span>${f[0]}</span>`;ans=f[1];q.options=opts(ans,f[3],String);q.say=v=>v+' '+f[2];kind=f[4];q.explain=f[4]==='mon'?`${f[0].replace('How many days are in ','').replace('?','').replace(/^\w/,c=>c.toUpperCase())} has ${ans} days. 30 days has September, April, June and November; February has 28, or 29 in a leap year; the rest have 31.`:`There are ${ans} ${f[2]} in ${f[4]==='min'?'a minute':f[4]==='hour'?'an hour':'a '+f[4]}.`;}
+   else{const c=pick([['weeks','days',7,[2,3,4]],['days','hours',24,[2,3]],['minutes','seconds',60,[2,3,5]],['hours','minutes',60,[2,3,4]],['half','seconds',30,[1]],['years','months',12,[2,3]]]);k=pick(c[3]);ans=k*c[2];kind=c[0];
+     q.prompt=c[0]==='half'?`<span>How many seconds are in <b>half a minute</b>?</span>`:`<span>How many ${c[1]} are in <b>${k} ${c[0]}</b>?</span><span class="note">1 ${c[0].slice(0,-1)} = ${c[2]} ${c[1]}.</span>`;
+     q.options=opts(ans,[ans+c[2],ans-c[2],k*10,ans+k,c[2]],String);q.say=v=>v+' '+(c[0]==='half'?'seconds':c[1]);q.explain=c[0]==='half'?'1 minute = 60 seconds. Half of 60 is 30.':`${k} × ${c[2]} = ${ans}, so ${k} ${c[0]} = ${ans} ${c[1]}.`;}
+   q.answer=ans;
+   q.draw=()=>{if(kind==='mon'){calGrid(40,70,5,7,q.k?ans:null,['M','T','W','T','F','S','S']);text('30 days has September, April, June and November',160,252,10,C.muted,600);if(q.k)text(ans+' days',160,226,22,C.ok,700);}
+     else if(kind==='week'||kind==='weeks'){calGrid(40,60,kind==='week'?1:k,7,q.k?99:null,['M','T','W','T','F','S','S']);if(q.k)text(ans+' days',160,240,22,C.ok,700);}
+     else if(kind==='year'||kind==='years'){calGrid(40,60,kind==='year'?1:k,12,q.k?99:null,['J','F','M','A','M','J','J','A','S','O','N','D']);if(q.k)text(ans+(ans>100?' days':' months'),160,240,22,C.ok,700);}
+     else if(kind==='min'||kind==='minutes'||kind==='half'){stopwatch(160,140,92,q.k?(kind==='half'?30:60):0);if(q.k)text(ans+' seconds',160,268,18,C.ok,700);}
+     else if(kind==='day'||kind==='days'){for(let d=0;d<(kind==='day'?1:k);d++)for(let i=0;i<24;i++)rrect(28+i*11,70+d*44,9,30,2,q.k?(i<6||i>=19?'rgba(91,155,255,.7)':C.gold):'rgba(230,237,247,.08)',C.edge,1);if(q.k)text(ans+' hours',160,240,22,C.ok,700);}
+     else{clockFace(160,140,96,3,q.k?0:15);if(q.k)text(ans+' minutes',160,268,18,C.ok,700);}};
+   q.reveal=async()=>{q.k=1;sStep(1);await sleep(1000);};return q;}}
+};
+const MS2_TEACH={
+ roman:[{title:'Roman numerals',text:'The Romans used letters for numbers. <b>I = 1, V = 5, X = 10</b>. Some clocks use them.',draw:t=>{romanClock(160,140,100,[1,5,10][countUp(t,3,900)-1]);}},
+  {title:'Add them up',text:'Put the numerals together and <b>add</b>: VI = 5 + 1 = 6, and VIII = 5 + 1 + 1 + 1 = 8.',draw:t=>{text('VIII',160,90,46,C.gold,700);const k=countUp(t,4,700);['V = 5','+ I = 6','+ I = 7','+ I = 8'].slice(0,k).forEach((s,i)=>text(s,160,140+i*28,16,C.fg,600));}},
+  {title:'Small before big',text:'A small numeral <b>before</b> a bigger one means take away. IV = 5 − 1 = 4. IX = 10 − 1 = 9.',draw:t=>{text('IV',100,110,44,C.gold,700);text('IX',220,110,44,C.gold,700);text('5 − 1 = 4',100,168,16,C.fg,600);text('10 − 1 = 9',220,168,16,C.fg,600);caption('XII = 10 + 1 + 1 = 12');}}],
+ ampm:[{title:'A day has 24 hours',text:'The day starts at <b>midnight</b>. <b>Noon</b> (12 o\'clock midday) is halfway through.',draw:t=>{dayStrip(120,(t/150)%24);}},
+  {title:'am',text:'<b>am</b> times are after midnight and before noon. Breakfast at 7:30 is <b>7:30 am</b>.',draw:t=>{digital(160,60,'7:30');dayStrip(150,7.5);}},
+  {title:'pm',text:'<b>pm</b> times are after noon and before midnight. Dinner at 6:30 is <b>6:30 pm</b>.',draw:t=>{digital(160,60,'6:30');dayStrip(150,18.5);}}],
+ h24:[{title:'The 24-hour clock',text:'A 24-hour clock counts the hours from <b>00:00</b> (midnight) all the way to <b>23:59</b>. There is no am or pm.',draw:t=>{digital(160,70,h24(Math.floor(t/400)%24,0));dayStrip(160,Math.floor(t/400)%24);}},
+  {title:'am times',text:'For <b>am</b> times, keep the hour. Write 2 digits: 9:30 am is <b>09:30</b>.',draw:t=>{digital(90,80,'9:30am',C.fg);text('→',160,82,26,C.gold,700);digital(230,80,'09:30');caption('am: keep the hour');}},
+  {title:'pm times',text:'For <b>pm</b> times, <b>add 12</b> to the hour. 3:00 pm is 3 + 12 = <b>15:00</b>.',draw:t=>{digital(90,80,'3:00pm',C.fg);text('+12',160,50,14,C.gold,700);text('→',160,82,22,C.gold,700);digital(230,80,'15:00');caption('pm: add 12 to the hour');}}],
+ timefacts:[{title:'Days, weeks and years',text:'There are <b>7 days</b> in a week and <b>12 months</b> in a year. A year has <b>365 days</b> (366 in a leap year).',draw:t=>{calGrid(40,70,1,7,countUp(t,7,350),['M','T','W','T','F','S','S']);calGrid(40,150,1,12,countUp(t,12,250),['J','F','M','A','M','J','J','A','S','O','N','D']);}},
+  {title:'Hours and minutes',text:'There are <b>24 hours</b> in a day and <b>60 minutes</b> in an hour.',draw:t=>{clockFace(160,140,96,3,Math.floor(t/60)%60);caption('the minute hand goes round once every hour');}},
+  {title:'Seconds',text:'There are <b>60 seconds</b> in a minute. To convert, multiply: 2 minutes = 2 × 60 = <b>120 seconds</b>.',draw:t=>{stopwatch(160,140,92,Math.floor(t/100)%61);caption('60 seconds = 1 minute');}}]
+};
+Object.assign(GAMES,MS2_GAMES);Object.assign(TEACH,MS2_TEACH);
+/* ---------- clock format option for Clock Reader (shared with the Clock tool) ---------- */
+let DIGM=0;try{DIGM=+(localStorage.getItem('mh-tool-dig')||0)||0;}catch(e){}
+window.__setDig=n=>{DIGM=n;try{localStorage.setItem('mh-tool-dig',String(n));}catch(e){}document.querySelectorAll('.digrow button').forEach(b=>b.classList.toggle('on',+b.dataset.d===n));};
+(function(){const st=document.createElement('style');st.textContent='.digrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;color:var(--muted);margin-top:4px}.digrow button{font:600 13px var(--font);border:1px solid var(--edge);background:transparent;color:var(--fg);border-radius:999px;padding:5px 11px;cursor:pointer}.digrow button.on{background:var(--gold,#f5c451);color:#14213d;border-color:transparent}';document.head.appendChild(st);})();
+const digRow=()=>'<span class="digrow">Answer as: '+['Clock time','12-hour (am/pm)','24-hour'].map((l,i)=>`<button type="button" data-d="${i}" class="${DIGM===i?'on':''}" onclick="__setDig(${i})">${l}</button>`).join('')+' <small>(from the next question)</small></span>';
+(function(){const orig=GAMES.clock.make;GAMES.clock.make=function(r){const q=orig.call(this,r),mode=DIGM;
+  if(mode){const pm=Math.random()<.5,f=v=>{const[h,m]=String(v).split(':').map(Number);return mode===1?`${h}:${String(m).padStart(2,'0')} ${pm?'pm':'am'}`:`${String(pm?(h%12)+12:h%12).padStart(2,'0')}:${String(m).padStart(2,'0')}`;};
+    q.options=q.options.map(o=>({label:f(o.value),value:o.value}));q.say=f;
+    q.prompt=q.prompt.replace('</span>',` It is ${pm?'in the afternoon or evening':'in the morning'}.</span>`)+(mode===2?'<span class="note">24-hour time: add 12 to the hour for pm.</span>':'');
+    q.explain+=` In ${mode===1?'12-hour':'24-hour'} time that is ${f(q.answer)}.`;
+    const d=q.draw;q.draw=(t)=>{d(t);if(q.k){rrect(72,238,176,48,10,'#0b1322',C.edge,2);text(f(q.answer),160,263,mode===1?22:26,C.ok,700);}};}
+  q.prompt+=digRow();return q;};})();
+
+/*</MS2>*/
+/*<MS3>*/
+/* ---------- curriculum gap game (MS3): comparing durations ---------- */
+const ACTS=[['Maths','#5b9bff'],['Reading','#f5c451'],['Swimming','#3dd68c'],['Art','#ff8a3d'],['A film','#b39ddb'],['A walk','#ff6b81'],['Football','#3dd68c'],['Lunch','#f5c451']];
+function durBars(evs,k,maxM){const x0=96,w=200;evs.forEach((e,i)=>{const y=70+i*70,L=e[2]/maxM*w;text(e[0],x0-10,y+12,13,C.fg,600,'right');rrect(x0,y,w,24,6,'rgba(230,237,247,.06)',C.edge,1);if(k)rrect(x0,y,L,24,6,e[1]);
+  text(e[3],x0+w/2,y+44,12,C.muted,600);if(k)text(dur(e[2]),x0+Math.max(L,40)-6,y+13,12,'#14213d',700,'right');});}
+const MS3_GAMES={
+ durcomp:{name:'Which Is Longer?',unit:'Time',make(r){const q={cols:2},[a,b]=shuffle(ACTS).slice(0,2);let da,db;do{da=r<=3?between(2,9)*5:between(3,23)*5;db=r<=3?between(2,9)*5:between(3,23)*5;}while(da===db);
+   const sa=between(8,14)*60+pick([0,10,15,20,30,40,45]),sb=between(8,14)*60+pick([0,5,15,20,30,35,45]),T=s=>hm(Math.floor(s/60)>12?Math.floor(s/60)-12:Math.floor(s/60),s%60);
+   const lblA=r<=3?dur(da):`${T(sa)} to ${T(sa+da)}`,lblB=r<=3?dur(db):`${T(sb)} to ${T(sb+db)}`,evs=[[a[0],a[1],da,lblA],[b[0],b[1],db,lblB]];
+   if(r<=6){q.prompt=r<=3?`<span><b>${a[0]}</b> lasts ${dur(da)}. <b>${b[0]}</b> lasts ${dur(db)}.</span><span>Which takes longer?</span>`:`<span><b>${a[0]}</b>: ${lblA}. <b>${b[0]}</b>: ${lblB}.</span><span>Which takes longer?</span><span class="note">Work out each duration first.</span>`;
+     q.answer=da>db?a[0]:b[0];q.options=[{label:a[0],value:a[0]},{label:b[0],value:b[0]}];q.say=v=>v;q.explain=`${a[0]} takes ${dur(da)} and ${b[0]} takes ${dur(db)}, so ${q.answer} takes longer.`;}
+   else{const d=Math.abs(da-db),lg=da>db?a[0]:b[0],sh=da>db?b[0]:a[0];q.prompt=`<span><b>${a[0]}</b>: ${lblA}. <b>${b[0]}</b>: ${lblB}.</span><span>How much longer is <b>${lg}</b> than <b>${sh}</b>?</span>`;q.answer=d;q.options=opts(d,[d+5,d-5,d+10,da+db]).map(o=>({label:dur(o.value),value:o.value}));q.say=dur;q.explain=`${dur(Math.max(da,db))} − ${dur(Math.min(da,db))} = ${dur(d)}.`;}
+   q.draw=()=>{durBars(evs,q.k,Math.max(da,db)*1.1);if(q.k)text(r<=6?q.answer+' takes longer':'difference: '+dur(Math.abs(da-db)),160,246,17,C.ok,700);};
+   q.reveal=async()=>{q.k=1;sStep(1);await sleep(1100);};return q;}}
+};
+const MS3_TEACH={
+ durcomp:[{title:'Duration',text:'The <b>duration</b> is how long something lasts, from the start to the end.',draw:t=>{durBars([['Maths','#5b9bff',45,'9:00 to 9:45']],1,60);}},
+  {title:'Compare durations',text:'Work out each duration, then compare. 45 minutes is <b>longer</b> than 30 minutes.',draw:t=>{durBars([['Maths','#5b9bff',45,'45 minutes'],['Reading','#f5c451',30,'30 minutes']],Math.floor(t/900)%2||t>1800,50);}},
+  {title:'How much longer?',text:'Subtract the shorter time from the longer time. Change hours to minutes first: 1 hour 20 minutes = 80 minutes.',draw:t=>{durBars([['Film A','#b39ddb',80,'1 hour 20 minutes'],['Film B','#ff6b81',90,'90 minutes']],1,100);caption('90 − 80 = 10 minutes longer');}}]
+};
+Object.assign(GAMES,MS3_GAMES);Object.assign(TEACH,MS3_TEACH);
+
+/*</MS3>*/
+/* ---------- learn first engine ---------- */
+function speak(s){try{const u=new SpeechSynthesisUtterance((s.title+'. '+s.text).replace(/<[^>]+>/g,'').replace(/&gt;/g,'greater than').replace(/&lt;/g,'less than'));u.lang='en-GB';u.rate=.9;speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}}
+function startTeach(kind){st.mode='teach';st.kind=kind;st.ti=0;st.locked=false;showTeach();}
+function showTeach(){const L=TEACH[st.kind],s=L[st.ti],last=st.ti===L.length-1;st.t0=performance.now();
+  setHud('Learn first',GAMES[st.kind].name+' · '+(st.ti+1)+' / '+L.length);setPrompt(`<span class="big">${s.title}</span><span>${s.text}</span>`);
+  setButtons([{label:st.ti?'Back':'Skip to game',value:'back'},{label:'Read to me',value:'read'},{label:last?'Start the game':'Next',value:'next',cls:last?'run':''}],v=>{
+    if(v==='read')return speak(s);if(v==='back'){if(st.ti){st.ti--;showTeach();}else startQuiz(st.kind);return;}if(last)startQuiz(st.kind);else{st.ti++;showTeach();}},3);}
+
+/* ---------- quiz engine ---------- */
+function startQuiz(kind){try{speechSynthesis.cancel();}catch(e){}st.kind=kind;st.round=0;st.score=0;st.hearts=3;nextQ();}
+function quizHud(){setHud(pips(st.hearts),`Question ${st.round} / 8 · Score ${st.score}`);}
+function nextQ(){if(st.round>=8||st.hearts<=0)return endQuiz();st.round++;st.mode='quiz';st.q=GAMES[st.kind].make(st.round);st.locked=false;quizHud();setPrompt(st.q.prompt);setButtons(st.q.options,answer,st.q.cols||2);}
+async function answer(v){if(st.locked)return;st.locked=true;const q=st.q,ok=v===q.answer;st.btns.forEach(b=>{if(b.dataset.v===String(v))b.classList.add('sel');});
+  setPrompt(q.prompt+'<span class="note">Watch…</span>');await q.reveal();
+  if(ok){st.score++;sGood();setPrompt(`<span class="big good">Correct</span><span>${q.explain}</span>`);}else{st.hearts--;sBad();shake();setPrompt(`<span class="big bad">Not quite</span><span>The answer is <b>${q.say(q.answer)}</b>. ${q.explain}</span>`);}
+  quizHud();setButtons([{label:st.round>=8||st.hearts<=0?'See my score':'Next question',value:'n',cls:'run wide'}],()=>nextQ(),1);}
+function endQuiz(){st.mode='over';st.stars=st.score>=7?3:st.score>=5?2:st.score>=3?1:0;st.overTitle=st.hearts>0?'Round complete':'Out of lives';
+  saveBest(st.kind,st.score);if(st.hearts>0)sWin();else sBad();setHud(GAMES[st.kind].name,st.stars+' / 3 stars');
+  setPrompt(st.stars===3?'<span class="big good">Brilliant measuring</span><span>Try a different game next.</span>':'<span class="big">Keep practising</span><span>Play again to earn more stars. The answers always show you how.</span>');
+  setButtons([{label:'Play again',value:'a',cls:'run'},{label:'Learn again',value:'l'},{label:'Menu',value:'m'}],v=>v==='a'?startQuiz(st.kind):v==='l'?startTeach(st.kind):menu(),3);}
+function star(x,y,r,c){ctx.fillStyle=c;ctx.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i%2?r*.45:r;ctx.lineTo(x+rr*Math.cos(a),y+rr*Math.sin(a));}ctx.closePath();ctx.fill();}
+function overScene(){text(st.overTitle,160,50,22,C.fg,600);text('SCORE',160,96,12,C.muted,500);text(st.score+' / 8',160,130,40,C.fg,600);for(let i=0;i<3;i++)star(110+i*50,196,18,i<st.stars?C.gold:C.off);text('Best score: '+best[st.kind]+' / 8',160,254,13,C.muted,500);}
+
+/* ---------- menu ---------- */
+function menu(){st.mode='menu';st.locked=false;setHud('Choose a game',Object.keys(GAMES).length+' games');
+  setPrompt('<span class="big">Choose a game</span><span>Each game starts with a short lesson. Money, time, length, mass and capacity, and fractions.</span>');
+  const b=k=>best[k]!=null?`<small>Best ${best[k]} / 8</small>`:`<small>${GAMES[k].unit}</small>`;
+  setButtons(Object.keys(GAMES).map(k=>({label:GAMES[k].name+b(k),value:k})),v=>startTeach(v),2);}
+function menuScene(t){clockFace(90,110,70,10,(t/120)%60);drawMoney([200,50,20],170,70);fbar(170,150,120,30,2,3);text('£ · time · cm · kg · ½',160,262,14,C.muted,500);}
+
+/* ---------- render ---------- */
+function render(t){bg();try{if(st.mode==='menu')menuScene(t);else if(st.mode==='quiz'&&st.q)st.q.draw(t);else if(st.mode==='teach')TEACH[st.kind][st.ti].draw(Math.max(0,t-st.t0));else if(st.mode==='over')overScene();}catch(e){console.error(e);}requestAnimationFrame(render);}
+$('btnMenu').addEventListener('click',()=>{if(!st.locked||st.mode==='over'){sClick();menu();}});
+$('btnSound').addEventListener('click',()=>{muted=!muted;$('btnSound').textContent=muted?'Sound: off':'Sound: on';if(!muted)sClick();});
+document.addEventListener('keydown',e=>{const k=e.key;if(k==='ArrowLeft'){move(-1,0);e.preventDefault();}else if(k==='ArrowRight'){move(1,0);e.preventDefault();}else if(k==='ArrowUp'){move(0,-1);e.preventDefault();}else if(k==='ArrowDown'){move(0,1);e.preventDefault();}else if(k==='Escape'){if(!st.locked||st.mode==='over')menu();}});
+window.__MQ={GAMES,TEACH};
+(function(){const h=location.hash.slice(1);if(TEACH[h])startTeach(h);else menu();})();
+requestAnimationFrame(render);
+})();
+</script>
+
+
+</body>
+</html>

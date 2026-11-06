@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maths Challenges</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap">
+<style>
+*{box-sizing:border-box}
+:root{--bg:#f5f7fb;--card:#fff;--line:#dde4ef;--ink:#14213d;--soft:#4f5d75;--accent:#2f6fdf;--gold:#e8a800;--ok:#1f9d63;--warn:#d2570f;--tint:#eef3fb;--font:'Lexend','Segoe UI',Verdana,sans-serif}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:17px;padding:14px max(14px,env(safe-area-inset-left,0px)) 40px}
+body.big{zoom:1.15}
+body.still *{transition:none!important;animation:none!important}
+.wrap{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+h1{margin:0;font-size:22px} h2{margin:0;font-size:20px}
+p{margin:0;line-height:1.5}
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+.btn{font:600 15px var(--font);border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:10px 14px;cursor:pointer;min-height:44px}
+.btn.p,.tabs .on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn.go{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn:disabled{opacity:.4;cursor:default}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.soft{color:var(--soft);font-size:15px}
+.credit{font-size:13px;color:var(--soft)}
+.msg{font-weight:600;padding:12px 14px;border-radius:12px;background:var(--tint)}
+.msg.win{background:#e3f6ec;color:#11633f}.msg.lose{background:#fdeee4;color:#8a3a0c}
+body.low{--bg:#fbf6e9;--card:#fffdf7;--line:#d8cfb8;--ink:#000;--soft:#222;--tint:#f3eddc;background:#fbf6e9}
+body.low *{box-shadow:none!important;animation:none!important;transition:none!important}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+/* dicey */
+.boards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.board{border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:6px;align-items:center}
+.board h3{margin:0;font-size:16px}
+.grid3{display:grid;grid-template-columns:34px repeat(3,58px);gap:6px;align-items:center;justify-items:center}
+.grid3 .hd{font-size:13px;font-weight:700;color:var(--soft)}
+.cell{width:58px;height:58px;border-radius:12px;border:2px dashed #b9c6da;background:#fbfcfe;font:700 28px var(--font);color:var(--ink);display:flex;align-items:center;justify-content:center}
+button.cell{cursor:pointer}
+button.cell.open{border-color:var(--accent);background:#eef4ff}
+.cell.full{border-style:solid;border-color:var(--line);background:#fff}
+.cell.ans{border-style:solid;border-color:var(--ok);background:#e3f6ec;color:#11633f}
+.opsym{font:700 26px var(--font)}
+.rule{grid-column:2/5;height:3px;background:var(--ink);width:100%;border-radius:2px}
+.die{width:84px;height:84px;border-radius:18px;background:#fff;border:3px solid var(--ink);display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:10px;box-shadow:0 4px 0 #c9d3e3}
+.die i{width:14px;height:14px;border-radius:50%;background:var(--ink);place-self:center;visibility:hidden}
+.die.roll{animation:spin .5s ease}
+@keyframes spin{0%{transform:rotate(0) scale(.8)}60%{transform:rotate(200deg) scale(1.08)}100%{transform:rotate(360deg) scale(1)}}
+/* got it */
+.track{display:flex;flex-wrap:wrap;gap:6px}
+.track span{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;border:2px solid var(--line);background:#fff}
+.track span.past{background:var(--tint);color:var(--soft)}
+.track span.now{background:var(--gold);border-color:var(--gold);color:var(--ink);transform:scale(1.12)}
+.track span.tgt{border-color:var(--ok);color:var(--ok)}
+.track span.key{box-shadow:inset 0 0 0 3px #8a4fd6}
+.big2{font-size:44px;font-weight:700;text-align:center}
+.log{font-size:15px;color:var(--soft);display:flex;flex-wrap:wrap;gap:6px}
+.log b{padding:3px 9px;border-radius:999px;background:var(--tint);color:var(--ink);font-weight:600}
+.log b.c{background:#f3eafd}
+/* digit addition */
+table.res{border-collapse:collapse;width:100%;font-size:16px}
+table.res th,table.res td{border:1px solid var(--line);padding:8px;text-align:center}
+table.res th{background:var(--tint);font-size:14px}
+.calc{display:grid;grid-template-columns:30px repeat(3,46px);gap:4px;font:700 30px var(--font);justify-items:center;align-items:center}
+.pad{display:flex;flex-wrap:wrap;gap:6px}
+.pad .btn{width:56px}
+.numshow{font:700 40px var(--font);min-width:110px;text-align:center;padding:6px 14px;border-radius:12px;background:var(--tint)}
+/* what shape */
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
+.shp{border:2px solid var(--line);border-radius:14px;background:#fff;padding:6px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;font:600 12px var(--font);color:var(--ink);position:relative}
+.shp svg{width:72px;height:72px}
+.shp.out{opacity:.28}
+.shp.out::after{content:'';position:absolute;inset:10px;background:linear-gradient(45deg,transparent 47%,#d2570f 47%,#d2570f 53%,transparent 53%)}
+.shp.guess{border-color:var(--accent);border-style:dashed}
+.shp.win{border-color:var(--ok);background:#e3f6ec;opacity:1}
+.qs{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px}
+.qs .btn{text-align:left;font-weight:500}
+.qs .btn.asked{opacity:.45}
+.ans{display:flex;flex-direction:column;gap:6px;max-height:220px;overflow:auto}
+.ans div{font-size:15px;padding:7px 10px;border-radius:10px;background:var(--tint)}
+.ans .y{font-weight:700;color:var(--ok)} .ans .n{font-weight:700;color:var(--warn)}
+/* rounding */
+.rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:10px}
+.rcirc{aspect-ratio:1;border-radius:50%;border:3px solid var(--ink);background:#fff;display:grid;grid-template-rows:auto 1fr 1fr;padding:6px 0 0;overflow:hidden;font:inherit;color:var(--ink);cursor:default}
+.rcirc .rl{font-weight:700;font-size:14px;color:var(--soft)}
+.rcirc .rh{display:flex;align-items:center;justify-content:center;font-size:20px}
+.rcirc .rh+.rh{border-top:2px solid var(--ink)}
+.rcirc.can{cursor:pointer;border-color:var(--accent);box-shadow:0 0 0 3px #cfe0ff}
+.p0{color:#2f6fdf}.p1{color:#d2570f}
+.sc{font-weight:700;padding:6px 12px;border-radius:999px;background:var(--tint)}
+.dice2{width:46px;height:46px;border-radius:10px;border:3px solid var(--ink);display:inline-flex;align-items:center;justify-content:center;font:700 24px var(--font);background:#fff}
+/* maze */
+.mzg{display:grid;gap:6px;max-width:460px}
+.mz{aspect-ratio:1;border-radius:12px;border:2px solid var(--line);background:#fff;font:700 22px var(--font);color:var(--ink);cursor:pointer;position:relative}
+.mz.on{background:#fff3cf;border-color:var(--gold)}
+.mz.last{background:var(--gold)}
+.mz.nx{border-color:var(--accent);border-style:dashed}
+.mz.st::before,.mz.en::before{position:absolute;top:2px;left:0;right:0;font-size:9px;letter-spacing:.06em;color:var(--soft)}
+.mz.st::before{content:'START'}.mz.en::before{content:'END'}
+/* make 100 */
+.mkrow{display:flex;flex-wrap:wrap;gap:4px;align-items:center;justify-content:center}
+.mkd{font:700 30px var(--font);width:30px;text-align:center}
+.mko{width:44px;height:44px;border-radius:10px;border:2px solid var(--accent);background:#eef4ff;font:700 22px var(--font);color:var(--ink);cursor:pointer}
+.mko.j{border-style:dashed;background:#fff;color:var(--soft)}
+@media (max-width:520px){.cell{width:48px;height:48px;font-size:24px}.grid3{grid-template-columns:30px repeat(3,48px)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Maths challenges</h1>
+  <div class="tabs" id="tabs"></div>
+  <div id="app"></div>
+  <p class="credit">These games are based on ideas from NRICH (nrich.maths.org), University of Cambridge.</p>
+</div>
+<script id="mh-voice">/* Maths Hub voice: picks the most natural English voice on this device and applies the reader's settings */
+(function(){var ss=window.speechSynthesis;if(!ss||ss.__mh)return;ss.__mh=1;var orig=ss.speak.bind(ss);
+function A(){try{return JSON.parse(localStorage.getItem('mh-a11y')||'{}')||{};}catch(e){return {};}}
+var BAD=/compact|espeak|robot|novelty|bad news|bells|whisper|zarvox|trinoids|albert|jester|organ|cellos|bubbles|boing|deranged|hysterical|superstar|wobble|grandma|grandpa|eddy|flo\b|reed|rocko|sandy|shelley|good news|junior|ralph|fred|kathy|vicki|victoria/;
+function rank(v){var n=v.name.toLowerCase(),l=(v.lang||'').toLowerCase().replace('_','-'),s=0;if(l.indexOf('en')!==0)return -1;
+  if(l==='en-gb')s+=30;else if(l==='en-ie'||l==='en-au'||l==='en-nz')s+=16;else s+=10;
+  if(/natural|neural/.test(n))s+=45;if(/online/.test(n))s+=8;if(/premium/.test(n))s+=42;if(/enhanced/.test(n))s+=36;if(/siri/.test(n))s+=30;
+  if(/google uk english female/.test(n))s+=26;else if(/google uk english/.test(n))s+=22;else if(/google/.test(n))s+=12;
+  if(/sonia|libby|maisie|abbi|bella|hollie|olivia|serena|kate|stephanie|martha|daniel|arthur|oliver|jamie/.test(n))s+=12;
+  if(BAD.test(n))s-=80;return s;}
+function list(){return ss.getVoices().filter(function(v){return rank(v)>=0;}).sort(function(a,b){return rank(b)-rank(a);});}
+function best(){var a=A(),vs=ss.getVoices();if(a.voice){var f=vs.filter(function(v){return v.name===a.voice;})[0];if(f)return f;}return list()[0]||null;}
+ss.speak=function(u){try{var v=best();if(v){u.voice=v;u.lang=v.lang;}var a=A();u.rate=a.slow?0.8:0.97;u.pitch=1;
+  if(u.text)u.text=u.text.replace(/\s*\n+\s*/g,'. ').replace(/\s{2,}/g,' ');}catch(e){}return orig(u);};
+window.MH_VOICES=list;window.MH_VOICE_RANK=rank;
+try{ss.getVoices();if(typeof ss.addEventListener==='function')ss.addEventListener('voiceschanged',function(){});}catch(e){}
+})();
+</script>
+<script>
+(function(){
+var A={};try{A=JSON.parse(localStorage.getItem('mh-a11y')||'{}')||{};}catch(e){}
+document.body.classList.toggle('big',!!A.big);document.body.classList.toggle('still',!!A.still||!!A.low);document.body.classList.toggle('low',!!A.low);
+var APP=document.getElementById('app');
+function say(t){try{var u=new SpeechSynthesisUtterance(t);u.lang='en-GB';u.rate=A.slow?.7:.9;speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}}
+function rnd(n){return Math.floor(Math.random()*n);}
+function readBtn(id){return '<button class="btn" type="button" id="'+id+'">Read aloud</button>';}
+var G={rounding:'Rounding Game',dicey:'Dicey Operations',gotit:'Got It!',reach100:'Reach 100',make100:'Make 100',maze100:'Maze 100',digitadd:'Digit Addition',supershapes:'Super Shapes',alldigits:'All the Digits',whatshape:'What Shape?'};
+function tabs(cur){document.getElementById('tabs').innerHTML=Object.keys(G).map(function(k){return '<button type="button" class="btn'+(k===cur?' on':'')+'" data-k="'+k+'">'+G[k]+'</button>';}).join('');
+  document.querySelectorAll('#tabs [data-k]').forEach(function(b){b.onclick=function(){location.hash=b.dataset.k;};});}
+
+/* ================= DICEY OPERATIONS ================= */
+var DI={mode:'add',you:null,cpu:null,left:6,roll:0,placed:true,done:false};
+var DIPIPS={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
+function diTarget(){return DI.mode==='add'?1000:100;}
+function diVal(g){var a=g[0]*100+g[1]*10+g[2],b=g[3]*100+g[4]*10+g[5];return DI.mode==='add'?a+b:Math.abs(a-b);}
+function diNew(){DI.you=[null,null,null,null,null,null];DI.cpu=[null,null,null,null,null,null];DI.left=6;DI.roll=0;DI.placed=true;DI.done=false;}
+function diCpuPlace(d){var best=-1,bs=1e9;for(var s=0;s<6;s++){if(DI.cpu[s]!==null)continue;var tot=0;for(var k=0;k<160;k++){var g=DI.cpu.slice();g[s]=d;for(var t=0;t<6;t++)if(g[t]===null)g[t]=1+rnd(6);tot+=Math.abs(diVal(g)-diTarget());}if(tot<bs){bs=tot;best=s;}}DI.cpu[best]=d;}
+function diBoard(g,who,mine){var op=DI.mode==='add'?'+':'−',full=g.every(function(x){return x!==null;});
+  var cell=function(i){var v=g[i];if(mine&&v===null&&!DI.placed)return '<button type="button" class="cell open" data-s="'+i+'" aria-label="Put the '+DI.roll+' here"></button>';return '<div class="cell'+(v!==null?' full':'')+'">'+(v===null?'':v)+'</div>';};
+  var ans='';if(full){var v=diVal(g),s=String(v).padStart(DI.mode==='add'?4:3,' ');}
+  return '<div class="board"><h3>'+who+'</h3><div class="grid3"><span></span><span class="hd">H</span><span class="hd">T</span><span class="hd">O</span><span></span>'+cell(0)+cell(1)+cell(2)+'<span class="opsym">'+op+'</span>'+cell(3)+cell(4)+cell(5)+'<span></span><div class="rule"></div>'+
+   (full?(DI.mode==='add'&&v>=1000?'<span class="opsym" style="font-size:20px">'+String(v)[0]+'</span>':'<span></span>')+String(v%1000).padStart(3,'0').split('').map(function(c,i){return '<div class="cell ans">'+(v<100&&i===0&&DI.mode!=='add'?'':v<10&&i===1&&DI.mode!=='add'?'':c)+'</div>';}).join(''):'<span></span><div class="cell"></div><div class="cell"></div><div class="cell"></div>')+'</div>'+
+   (full?'<p><b>'+v+'</b> is '+Math.abs(v-diTarget())+' away from '+diTarget()+'.</p>':'')+'</div>';}
+function diDie(n){var on=DIPIPS[n]||[];return '<div class="die" id="die" aria-label="Die shows '+(n||'nothing')+'">'+[0,1,2,3,4,5,6,7,8].map(function(i){return '<i style="'+(on.indexOf(i)>=0?'visibility:visible':'')+'"></i>';}).join('')+'</div>';}
+function dicey(){if(!DI.you)diNew();var tgt=diTarget(),msg='';
+  if(DI.done){var y=Math.abs(diVal(DI.you)-tgt),c=Math.abs(diVal(DI.cpu)-tgt);msg='<div class="msg '+(y<c?'win':y>c?'lose':'')+'">'+(y<c?'You win! You were closer to '+tgt+'.':y>c?'The computer was closer this time. Try a different plan!':'It is a draw!')+'</div>';}
+  APP.innerHTML='<div class="card"><h2>Dicey Operations</h2><p>Roll the die 6 times. After each roll, choose a box for the digit. Make your '+(DI.mode==='add'?'answer as close to <b>1000</b>':'difference as close to <b>100</b>')+' as you can. The computer gets the same rolls.</p>'+
+   '<div class="row"><span class="soft">Game:</span><button type="button" class="btn'+(DI.mode==='add'?' p':'')+'" data-m="add">Addition: closest to 1000</button><button type="button" class="btn'+(DI.mode==='sub'?' p':'')+'" data-m="sub">Subtraction: closest to 100</button>'+readBtn('rdD')+'</div>'+
+   '<div class="row" style="gap:16px">'+diDie(DI.roll)+'<div><button type="button" class="btn go" id="rollB" '+(DI.placed&&DI.left>0?'':'disabled')+'>'+(DI.left===6?'Roll the die':'Roll again')+'</button><p class="soft" style="margin-top:6px">'+(DI.done?'Game over.':DI.placed?DI.left+' roll'+(DI.left===1?'':'s')+' left.':'You rolled a <b>'+DI.roll+'</b>. Tap a box to place it.')+'</p></div></div>'+
+   '<div class="boards">'+diBoard(DI.you,'You',true)+diBoard(DI.cpu,'Computer',false)+'</div>'+msg+
+   '<div class="row"><button type="button" class="btn" id="newD">New game</button><span class="soft">Think: where should a big number go? Where should a small one go?</span></div></div>';
+  APP.querySelectorAll('[data-m]').forEach(function(b){b.onclick=function(){DI.mode=b.dataset.m;diNew();dicey();};});
+  document.getElementById('newD').onclick=function(){diNew();dicey();};
+  document.getElementById('rdD').onclick=function(){say('Roll the die 6 times. After each roll, choose a box for the digit. Try to make your '+(DI.mode==='add'?'answer as close to one thousand':'difference as close to one hundred')+' as you can.');};
+  var rb=document.getElementById('rollB');rb.onclick=function(){DI.roll=1+rnd(6);DI.left--;DI.placed=false;diCpuPlace(DI.roll);dicey();var d=document.getElementById('die');if(d&&!A.still){d.classList.add('roll');}say('You rolled a '+DI.roll);};
+  APP.querySelectorAll('[data-s]').forEach(function(b){b.onclick=function(){DI.you[+b.dataset.s]=DI.roll;DI.placed=true;if(DI.left===0)DI.done=true;dicey();};});}
+
+/* ================= GOT IT! ================= */
+var GI={target:23,max:4,opp:'hard',total:0,turn:0,log:[],over:false,keys:false,wins:0,games:0};
+function giNew(){GI.total=0;GI.turn=0;GI.log=[];GI.over=false;}
+function giCpu(){var t=GI.target,m=GI.max,need=(t-GI.total)%(m+1);var add=(GI.opp==='hard'&&need>0)?need:1+rnd(Math.min(m,t-GI.total));if(GI.opp==='easy'&&Math.random()<.25&&need>0)add=need;giMove(add,'Computer');}
+function giMove(n,who){GI.total+=n;GI.log.push([who,n,GI.total]);if(GI.total===GI.target){GI.over=who;GI.games++;if(who==='You'||who==='Player 1')GI.wins++;}else GI.turn=1-GI.turn;gotit();
+  if(!GI.over&&GI.opp!=='friend'&&GI.turn===1)setTimeout(giCpu,A.still?200:800);}
+function gotit(){var t=GI.target,m=GI.max,p1=GI.opp==='friend'?'Player 1':'You',p2=GI.opp==='friend'?'Player 2':'Computer',cur=GI.turn===0?p1:p2,keyset={};for(var k=t;k>=0;k-=m+1)keyset[k]=1;
+  APP.innerHTML='<div class="card"><h2>Got It!</h2><p>Start at <b>0</b>. Take turns to add a number from <b>1 to '+m+'</b>. The player who makes the total exactly <b>'+t+'</b> wins.</p>'+
+   '<div class="row"><span class="soft">Target:</span>'+[15,20,23,30].map(function(v){return '<button type="button" class="btn'+(t===v?' p':'')+'" data-t="'+v+'">'+v+'</button>';}).join('')+'<span class="soft">Add up to:</span>'+[3,4,5].map(function(v){return '<button type="button" class="btn'+(m===v?' p':'')+'" data-x="'+v+'">'+v+'</button>';}).join('')+'</div>'+
+   '<div class="row"><span class="soft">Play against:</span>'+[['easy','Computer (easy)'],['hard','Computer (hard)'],['friend','A friend']].map(function(o){return '<button type="button" class="btn'+(GI.opp===o[0]?' p':'')+'" data-o="'+o[0]+'">'+o[1]+'</button>';}).join('')+readBtn('rdG')+'</div>'+
+   '<div class="track" aria-label="Number track">'+Array.from({length:t+1},function(_,i){return '<span class="'+(i===GI.total?'now':i<GI.total?'past':'')+(i===t?' tgt':'')+(GI.keys&&keyset[i]?' key':'')+'">'+i+'</span>';}).join('')+'</div>'+
+   '<div class="big2">'+GI.total+'</div>'+
+   (GI.over?'<div class="msg '+(GI.over==='Computer'?'lose':'win')+'">'+(GI.over==='Computer'?'The computer got it! Can you work out its secret?':GI.over+' got it!')+'</div>':'<p style="text-align:center;font-weight:600">'+(GI.opp!=='friend'&&GI.turn===1?'The computer is thinking…':cur+': choose how much to add.')+'</p>')+
+   '<div class="row" style="justify-content:center">'+Array.from({length:m},function(_,i){var n=i+1;return '<button type="button" class="btn go" style="min-width:64px;font-size:20px" data-a="'+n+'" '+(GI.over||(GI.opp!=='friend'&&GI.turn===1)||GI.total+n>t?'disabled':'')+'>+'+n+'</button>';}).join('')+'</div>'+
+   '<div class="log">'+GI.log.map(function(l){return '<b class="'+(l[0]==='Computer'||l[0]==='Player 2'?'c':'')+'">'+l[0]+' +'+l[1]+' → '+l[2]+'</b>';}).join('')+'</div>'+
+   '<div class="row"><button type="button" class="btn" id="newG">New game</button><button type="button" class="btn" id="keyG">'+(GI.keys?'Hide':'Show')+' the secret numbers</button>'+(GI.games?'<span class="soft">You have won '+GI.wins+' of '+GI.games+' games.</span>':'')+'</div>'+
+   '<p class="soft">Think: which number do you want to land on just before '+t+'? And before that?</p>'+(GI.keys?'<p class="soft">The secret numbers are <b>'+Object.keys(keyset).map(Number).sort(function(a,b){return a-b;}).join(', ')+'</b>. They go up in '+(m+1)+'s. Land on these and you can always win!</p>':'')+'</div>';
+  APP.querySelectorAll('[data-t]').forEach(function(b){b.onclick=function(){GI.target=+b.dataset.t;giNew();gotit();};});
+  APP.querySelectorAll('[data-x]').forEach(function(b){b.onclick=function(){GI.max=+b.dataset.x;giNew();gotit();};});
+  APP.querySelectorAll('[data-o]').forEach(function(b){b.onclick=function(){GI.opp=b.dataset.o;giNew();gotit();};});
+  APP.querySelectorAll('[data-a]').forEach(function(b){b.onclick=function(){giMove(+b.dataset.a,cur);};});
+  document.getElementById('newG').onclick=function(){giNew();gotit();};document.getElementById('keyG').onclick=function(){GI.keys=!GI.keys;gotit();};
+  document.getElementById('rdG').onclick=function(){say('Start at zero. Take turns to add a number from one to '+m+'. The player who makes the total exactly '+t+' wins. The total is '+GI.total+'.');};}
+
+/* ================= DIGIT ADDITION ================= */
+var DA={inv:'rev',n:'',rows:[],asked:false,ans:null,cons:[]};
+function rev(n){return Number(String(n).padStart(2,'0').split('').reverse().join(''));}
+function colHTML(a,b,c){var p=function(v){return String(v).padStart(3,' ').split('').map(function(d){return '<span>'+(d===' '?'':d)+'</span>';}).join('');};return '<div class="calc"><span></span>'+p(a)+'<span style="color:var(--ok)">+</span>'+p(b)+'<span></span><span style="grid-column:2/5;height:3px;width:100%;background:var(--ink)"></span><span></span>'+p(c)+'</div>';}
+function digitadd(){var inv=DA.inv,html='';
+  var top='<div class="row"><span class="soft">Investigation:</span><button type="button" class="btn'+(inv==='rev'?' p':'')+'" data-i="rev">Reverse and add</button><button type="button" class="btn'+(inv==='three'?' p':'')+'" data-i="three">Three in a row</button>'+readBtn('rdA')+'</div>';
+  var Q=inv==='rev'?{intro:'Choose a 2-digit number. Reverse its digits (23 becomes 32). Add the two numbers. Try lots of numbers. What do you notice about the answers?',opts:['They are all in the 11 times table','They are all even','They are all bigger than 100'],ok:0,why:'Every answer is a multiple of 11! Even better: add the two digits, then multiply by 11. For 23: 2 + 3 = 5, and 5 × 11 = 55.'}:
+    {intro:'Choose a starting number. Add it to the next two numbers (5 + 6 + 7). Try lots of starting numbers. What do you notice about the answers?',opts:['The answer is always 3 times the middle number','The answer is always odd','The answer always ends in 0'],ok:0,why:'The answer is always 3 × the middle number! 5 + 6 + 7 = 18, and 3 × 6 = 18. The answers are all in the 3 times table.'};
+  var rows=inv==='rev'?DA.rows:DA.cons,last=rows[rows.length-1],enough=rows.length>=4;
+  html='<div class="card"><h2>Digit Addition</h2>'+top+'<p>'+Q.intro+'</p>'+
+   '<div class="row" style="gap:16px;align-items:flex-start"><div class="stack" style="display:flex;flex-direction:column;gap:8px"><div class="numshow" aria-live="polite">'+(DA.n||'?')+'</div><div class="pad">'+[1,2,3,4,5,6,7,8,9,0].map(function(d){return '<button type="button" class="btn" data-d="'+d+'">'+d+'</button>';}).join('')+'<button type="button" class="btn" data-d="del" style="width:auto">Delete</button></div><div class="row"><button type="button" class="btn go" id="tryA">Add them up</button><button type="button" class="btn" id="rndA">Pick a number for me</button></div></div>'+
+   '<div>'+(last?(inv==='rev'?colHTML(last[0],last[1],last[2]):'<div class="big2" style="font-size:30px">'+last[0]+' + '+(last[0]+1)+' + '+(last[0]+2)+' = '+last[1]+'</div>'):'<p class="soft">Your calculation will appear here.</p>')+'</div></div>'+
+   (rows.length?'<table class="res"><tr><th>Start</th>'+(inv==='rev'?'<th>Reversed</th><th>Total</th>':'<th>Numbers</th><th>Total</th><th>Middle number</th>')+'</tr>'+rows.map(function(r){return inv==='rev'?'<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td><b>'+r[2]+'</b></td></tr>':'<tr><td>'+r[0]+'</td><td>'+r[0]+' + '+(r[0]+1)+' + '+(r[0]+2)+'</td><td><b>'+r[1]+'</b></td><td>'+(r[0]+1)+'</td></tr>';}).join('')+'</table>':'')+
+   (enough?'<div class="card" style="background:var(--tint)"><p><b>What do you notice?</b></p><div class="row">'+Q.opts.map(function(o,i){return '<button type="button" class="btn'+(DA.ans===i?(i===Q.ok?' go':' p'):'')+'" data-n="'+i+'">'+o+'</button>';}).join('')+'</div>'+(DA.ans!==null?'<div class="msg '+(DA.ans===Q.ok?'win':'lose')+'">'+(DA.ans===Q.ok?Q.why:'Look at the totals again. Is there a times table they all belong to?')+'</div>':'')+'</div>':'<p class="soft">Try at least 4 numbers, then look for a pattern. ('+rows.length+' so far)</p>')+
+   (DA.ans===Q.ok?'<div class="msg">Challenge: can you <b>predict</b> the answer before you add? Type a number, say your prediction, then press Add them up.</div>':'')+
+   '<div class="row"><button type="button" class="btn" id="clrA">Start again</button></div></div>';
+  APP.innerHTML=html;
+  APP.querySelectorAll('[data-i]').forEach(function(b){b.onclick=function(){DA.inv=b.dataset.i;DA.n='';DA.ans=null;digitadd();};});
+  APP.querySelectorAll('[data-d]').forEach(function(b){b.onclick=function(){var d=b.dataset.d;if(d==='del')DA.n=DA.n.slice(0,-1);else if(DA.n.length<2&&!(DA.n===''&&d==='0'))DA.n+=d;digitadd();};});
+  APP.querySelectorAll('[data-n]').forEach(function(b){b.onclick=function(){DA.ans=+b.dataset.n;digitadd();if(DA.ans===Q.ok)say(Q.why);};});
+  document.getElementById('rndA').onclick=function(){DA.n=String(inv==='rev'?12+rnd(87):1+rnd(40));digitadd();};
+  document.getElementById('tryA').onclick=function(){var n=+DA.n;if(!n)return;if(inv==='rev'){if(n<10){return;}var r=rev(n);DA.rows.push([n,r,n+r]);say(n+' plus '+r+' equals '+(n+r));}else{DA.cons.push([n,3*n+3]);say(n+' plus '+(n+1)+' plus '+(n+2)+' equals '+(3*n+3));}DA.n='';digitadd();};
+  document.getElementById('clrA').onclick=function(){if(inv==='rev')DA.rows=[];else DA.cons=[];DA.ans=null;DA.n='';digitadd();};
+  document.getElementById('rdA').onclick=function(){say(Q.intro);};}
+
+/* ================= WHAT SHAPE? ================= */
+var SH=[
+ ['square',[[15,15],[85,15],[85,85],[15,85]],{sides:4,ra:1,par:1,eqS:1,eqA:1,sym:2,obt:0,cur:0}],
+ ['rectangle',[[5,25],[95,25],[95,75],[5,75]],{sides:4,ra:1,par:1,eqS:0,eqA:1,sym:2,obt:0,cur:0}],
+ ['rhombus',[[50,5],[85,50],[50,95],[15,50]],{sides:4,ra:0,par:1,eqS:1,eqA:0,sym:2,obt:1,cur:0}],
+ ['parallelogram',[[5,75],[65,75],[95,25],[35,25]],{sides:4,ra:0,par:1,eqS:0,eqA:0,sym:0,obt:1,cur:0}],
+ ['trapezium',[[5,75],[95,75],[70,25],[30,25]],{sides:4,ra:0,par:1,eqS:0,eqA:0,sym:1,obt:1,cur:0}],
+ ['kite',[[50,5],[80,35],[50,95],[20,35]],{sides:4,ra:0,par:0,eqS:0,eqA:0,sym:1,obt:1,cur:0}],
+ ['equilateral triangle',[[50,10],[92,84],[8,84]],{sides:3,ra:0,par:0,eqS:1,eqA:1,sym:2,obt:0,cur:0}],
+ ['right-angled triangle',[[15,15],[15,85],[90,85]],{sides:3,ra:1,par:0,eqS:0,eqA:0,sym:0,obt:0,cur:0}],
+ ['isosceles triangle',[[50,5],[75,90],[25,90]],{sides:3,ra:0,par:0,eqS:0,eqA:0,sym:1,obt:0,cur:0}],
+ ['obtuse triangle',[[5,75],[95,75],[25,35]],{sides:3,ra:0,par:0,eqS:0,eqA:0,sym:0,obt:1,cur:0}],
+ ['pentagon',[0,1,2,3,4].map(function(i){var a=-Math.PI/2+i*2*Math.PI/5;return [50+45*Math.cos(a),54+45*Math.sin(a)];}),{sides:5,ra:0,par:0,eqS:1,eqA:1,sym:2,obt:1,cur:0}],
+ ['hexagon',[0,1,2,3,4,5].map(function(i){var a=i*Math.PI/3;return [50+45*Math.cos(a),50+45*Math.sin(a)];}),{sides:6,ra:0,par:1,eqS:1,eqA:1,sym:2,obt:1,cur:0}],
+ ['octagon',[0,1,2,3,4,5,6,7].map(function(i){var a=Math.PI/8+i*Math.PI/4;return [50+46*Math.cos(a),50+46*Math.sin(a)];}),{sides:8,ra:0,par:1,eqS:1,eqA:1,sym:2,obt:1,cur:0}],
+ ['circle',null,{sides:0,ra:0,par:0,eqS:0,eqA:0,sym:2,obt:0,cur:1}],
+ ['semicircle','semi',{sides:1,ra:0,par:0,eqS:0,eqA:0,sym:1,obt:0,cur:1}]
+];
+var SQS=[['cur','Does it have a curved side?',function(p){return p.cur;}],['s3','Does it have exactly 3 sides?',function(p){return p.sides===3&&!p.cur;}],['s4','Does it have exactly 4 sides?',function(p){return p.sides===4;}],['s5','Does it have more than 4 straight sides?',function(p){return p.sides>4;}],
+ ['s7','Does it have more than 6 sides?',function(p){return p.sides>6;}],['ra','Does it have a right angle?',function(p){return p.ra;}],['obt','Does it have an obtuse angle?',function(p){return p.obt;}],['par','Does it have a pair of parallel sides?',function(p){return p.par;}],['eqS','Are all its sides the same length?',function(p){return p.eqS;}],
+ ['eqA','Are all its angles equal?',function(p){return p.eqA;}],['sym','Does it have a line of symmetry?',function(p){return p.sym>0;}],['sym2','Does it have more than 1 line of symmetry?',function(p){return p.sym>1;}]];
+var WS={secret:null,asked:[],out:{},guessing:false,won:false,tries:0};
+function wsNew(){WS.secret=rnd(SH.length);WS.asked=[];WS.out={};WS.guessing=false;WS.won=false;WS.tries=0;}
+function shapeSVG(s){var g=s[1];if(g===null)return '<svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42" fill="#bcd3f5" stroke="#14213d" stroke-width="3"/></svg>';if(g==='semi')return '<svg viewBox="0 0 100 100" aria-hidden="true"><path d="M8 70A42 42 0 0 1 92 70Z" fill="#bcd3f5" stroke="#14213d" stroke-width="3"/></svg>';
+  return '<svg viewBox="0 0 100 100" aria-hidden="true"><polygon points="'+g.map(function(p){return p[0].toFixed(1)+','+p[1].toFixed(1);}).join(' ')+'" fill="#bcd3f5" stroke="#14213d" stroke-width="3" stroke-linejoin="round"/></svg>';}
+function whatshape(){if(WS.secret===null)wsNew();var sec=SH[WS.secret];
+  APP.innerHTML='<div class="card"><h2>What Shape?</h2><p>I have chosen a secret shape. Ask questions to find it. Cross out shapes that cannot be the secret one by tapping them. Can you find it in fewer than 6 questions?</p><div class="row">'+readBtn('rdW')+'<button type="button" class="btn" id="newW">New secret shape</button><button type="button" class="btn" id="helpW">Help me cross out</button><button type="button" class="btn'+(WS.guessing?' go':'')+'" id="guessW">'+(WS.guessing?'Now tap your guess':'Make a guess')+'</button></div>'+
+   (WS.won?'<div class="msg win">Yes! It was the <b>'+sec[0]+'</b>. You found it with '+WS.asked.length+' question'+(WS.asked.length===1?'':'s')+(WS.tries>1?' and '+WS.tries+' guesses':'')+'.</div>':'')+
+   '<div class="sgrid">'+SH.map(function(s,i){return '<button type="button" class="shp'+(WS.out[i]?' out':'')+(WS.guessing&&!WS.out[i]?' guess':'')+(WS.won&&i===WS.secret?' win':'')+'" data-sh="'+i+'" aria-label="'+s[0]+(WS.out[i]?', crossed out':'')+'">'+shapeSVG(s)+'<span>'+s[0]+'</span></button>';}).join('')+'</div>'+
+   '<h3 style="margin:4px 0 0;font-size:17px">Ask a question</h3><div class="qs">'+SQS.map(function(q){var a=WS.asked.indexOf(q[0])>=0;return '<button type="button" class="btn'+(a?' asked':'')+'" data-q="'+q[0]+'" '+(a||WS.won?'disabled':'')+'>'+q[1]+'</button>';}).join('')+'</div>'+
+   (WS.asked.length?'<div class="ans" aria-live="polite">'+WS.asked.slice().reverse().map(function(k){var q=SQS.filter(function(x){return x[0]===k;})[0],y=!!q[2](sec[2]);return '<div>'+q[1]+' <span class="'+(y?'y':'n')+'">'+(y?'Yes':'No')+'</span></div>';}).join('')+'</div>':'')+
+   '<p class="soft">Playing in teams? One person picks a shape from the cards in secret. The team asks these questions out loud and crosses out shapes here.</p></div>';
+  document.getElementById('rdW').onclick=function(){say('I have chosen a secret shape. Ask questions to find it. Cross out shapes that cannot be the secret one.');};
+  document.getElementById('newW').onclick=function(){wsNew();whatshape();};
+  document.getElementById('guessW').onclick=function(){if(WS.won)return;WS.guessing=!WS.guessing;whatshape();};
+  document.getElementById('helpW').onclick=function(){SH.forEach(function(s,i){WS.asked.forEach(function(k){var q=SQS.filter(function(x){return x[0]===k;})[0];if(!!q[2](s[2])!==!!q[2](sec[2]))WS.out[i]=1;});});whatshape();};
+  APP.querySelectorAll('[data-q]').forEach(function(b){b.onclick=function(){var k=b.dataset.q;WS.asked.push(k);var q=SQS.filter(function(x){return x[0]===k;})[0];say(q[1]+' '+(q[2](sec[2])?'Yes':'No'));whatshape();};});
+  APP.querySelectorAll('[data-sh]').forEach(function(b){b.onclick=function(){var i=+b.dataset.sh;if(WS.won)return;if(WS.guessing){WS.tries++;WS.guessing=false;if(i===WS.secret){WS.won=true;say('Yes! It was the '+sec[0]);}else{WS.out[i]=1;say('No, it is not the '+SH[i][0]);}whatshape();return;}if(WS.out[i])delete WS.out[i];else WS.out[i]=1;whatshape();};});}
+
+/*CH2*/
+/* ================= ROUNDING GAME ================= */
+var RG={opp:'cpu',slots:null,score:[0,0],turn:0,dice:null,pick:null,msg:'',over:false,passes:0};
+function rgNew(){RG.slots={};for(var c=0;c<=100;c+=10)RG.slots[c]=[];RG.score=[0,0];RG.turn=0;RG.dice=null;RG.pick=null;RG.msg='';RG.over=false;RG.passes=0;}
+function rnd10(n){return Math.floor((n+5)/10)*10;}
+function rgNames(){return RG.opp==='cpu'?['You','Computer']:['Player 1','Player 2'];}
+function rgFull(c){return RG.slots[c].length>=2;}
+function rgPlace(n,who){var c=rnd10(n);RG.slots[c].push([n,who]);var scored=RG.slots[c].length===2;if(scored)RG.score[who]++;RG.passes=0;
+  if(Object.keys(RG.slots).every(function(k){return rgFull(+k);}))RG.over=true;return scored;}
+function rgOpts(){if(!RG.dice)return[];var a=RG.dice[0]*10+RG.dice[1],b=RG.dice[1]*10+RG.dice[0];return a===b?[a]:[a,b];}
+function rgNext(){RG.dice=null;RG.pick=null;if(RG.over){rounding();return;}RG.turn=1-RG.turn;rounding();if(RG.opp==='cpu'&&RG.turn===1)setTimeout(rgCpu,A.still?250:900);}
+function rgCpu(){RG.dice=[rnd(10),rnd(10)];var o=rgOpts().filter(function(n){return !rgFull(rnd10(n));}),nm=rgNames();
+  if(!o.length){RG.msg='The computer rolled '+RG.dice.join(' and ')+'. Both circles are full, so it misses a go.';RG.passes++;rounding();setTimeout(rgNext,A.still?300:1400);return;}
+  var best=o.filter(function(n){return RG.slots[rnd10(n)].length===1;})[0];if(best===undefined)best=o.filter(function(n){return RG.slots[rnd10(n)].length===0;})[0];if(best===undefined)best=o[0];
+  var s=rgPlace(best,1);RG.msg='The computer rolled '+RG.dice.join(' and ')+', made <b>'+best+'</b> and put it in the <b>'+rnd10(best)+'</b> circle.'+(s?' It filled the circle and scores a point!':'');rounding();setTimeout(rgNext,A.still?300:1600);}
+function rounding(){if(!RG.slots)rgNew();var nm=rgNames(),me=RG.turn,cpuTurn=RG.opp==='cpu'&&me===1,o=rgOpts();
+  var circ=function(c){var s=RG.slots[c],can=RG.pick!==null&&!cpuTurn;return '<button type="button" class="rcirc'+(can&&!rgFull(c)?' can':'')+'" data-c="'+c+'" '+(can?'':'tabindex="-1"')+' aria-label="'+c+' circle"><span class="rl">'+c+'</span><span class="rh">'+(s[0]?'<b class="p'+s[0][1]+'">'+s[0][0]+'</b>':'')+'</span><span class="rh">'+(s[1]?'<b class="p'+s[1][1]+'">'+s[1][0]+'</b>':'')+'</span></button>';};
+  APP.innerHTML='<div class="card"><h2>Rounding Game</h2><p>Roll two 0–9 dice and choose which 2-digit number to make. Round it to the nearest 10 and put it in the matching circle. Whoever writes the <b>second</b> number in a circle scores a point.</p>'+
+   '<div class="row"><span class="soft">Play against:</span><button type="button" class="btn'+(RG.opp==='cpu'?' p':'')+'" data-o="cpu">The computer</button><button type="button" class="btn'+(RG.opp==='friend'?' p':'')+'" data-o="friend">A partner</button>'+readBtn('rdR')+'</div>'+
+   '<div class="row" style="justify-content:space-between"><div class="row"><span class="sc p0">'+nm[0]+': '+RG.score[0]+'</span><span class="sc p1">'+nm[1]+': '+RG.score[1]+'</span></div><b>'+(RG.over?'Game over':nm[me]+'\'s turn')+'</b></div>'+
+   '<div class="rgrid">'+[0,10,20,30,40,50,60,70,80,90,100].map(circ).join('')+'</div>'+
+   (RG.over?'<div class="msg '+(RG.score[0]>RG.score[1]?'win':RG.score[0]<RG.score[1]?'lose':'')+'">'+(RG.score[0]===RG.score[1]?'It is a draw!':(RG.score[0]>RG.score[1]?nm[0]:nm[1])+' wins!')+'</div>':
+   cpuTurn?'<p class="msg">'+(RG.msg||'The computer is rolling…')+'</p>':
+   !RG.dice?'<div class="row"><button type="button" class="btn go" id="rollR">Roll the dice</button>'+(RG.msg?'<span class="soft">'+RG.msg+'</span>':'')+'</div>':
+   RG.pick===null?'<div class="row"><span class="dice2">'+RG.dice[0]+'</span><span class="dice2">'+RG.dice[1]+'</span><span>Which number will you make?</span>'+o.map(function(n){return '<button type="button" class="btn go" data-n="'+n+'" style="font-size:22px;min-width:72px">'+n+'</button>';}).join('')+(o.every(function(n){return rgFull(rnd10(n));})?'<button type="button" class="btn" id="passR">Both circles are full: miss a go</button>':'')+'</div>':
+   '<div class="row"><span class="dice2">'+RG.dice[0]+'</span><span class="dice2">'+RG.dice[1]+'</span><span>You made <b>'+RG.pick+'</b>. Tap the circle it rounds to.</span></div>')+
+   '<div class="row"><button type="button" class="btn" id="newR">New game</button><button type="button" class="btn" id="endR">Finish and count points</button></div>'+
+   '<p class="soft">Think: can you choose a number that fills a circle that already has one number in it?</p></div>';
+  APP.querySelectorAll('[data-o]').forEach(function(b){b.onclick=function(){RG.opp=b.dataset.o;rgNew();rounding();};});
+  document.getElementById('newR').onclick=function(){rgNew();rounding();};document.getElementById('endR').onclick=function(){RG.over=true;rounding();};
+  document.getElementById('rdR').onclick=function(){say('Roll two dice and choose which two-digit number to make. Round it to the nearest ten and put it in the matching circle. Whoever writes the second number in a circle scores a point.');};
+  var rr=document.getElementById('rollR');if(rr)rr.onclick=function(){RG.dice=[rnd(10),rnd(10)];RG.msg='';rounding();say('You rolled '+RG.dice[0]+' and '+RG.dice[1]);};
+  var pr=document.getElementById('passR');if(pr)pr.onclick=function(){RG.msg='';RG.passes++;rgNext();};
+  APP.querySelectorAll('[data-n]').forEach(function(b){b.onclick=function(){var n=+b.dataset.n;if(rgFull(rnd10(n))){RG.msg='';alertMsg(n+' rounds to '+rnd10(n)+', but that circle is full. Choose the other number.');return;}RG.pick=n;rounding();};});
+  APP.querySelectorAll('[data-c]').forEach(function(b){b.onclick=function(){if(RG.pick===null||cpuTurn)return;var c=+b.dataset.c,n=RG.pick;if(c!==rnd10(n)){alertMsg('Not quite. '+n+' is nearer to '+rnd10(n)+(n%10===5?' (5 rounds up)':'')+'. Tap that circle.');return;}var s=rgPlace(n,me);RG.msg=s?nm[me]+' filled the '+c+' circle and scores a point!':'';say(n+' rounds to '+c);rgNext();};});}
+function alertMsg(t){var m=document.getElementById('amsg');if(!m){m=document.createElement('div');m.id='amsg';m.className='msg lose';APP.querySelector('.card').insertBefore(m,APP.querySelector('.rgrid'));}m.textContent=t;say(t);}
+
+/* ================= REACH 100 ================= */
+var RH={g:[null,null,null,null],sel:0,found:[],all:null};
+function rhVal(g){return (g[0]*10+g[1])+(g[2]*10+g[3])+(g[0]*10+g[2])+(g[1]*10+g[3]);}
+function rhAll(){var out=[];for(var a=1;a<10;a++)for(var b=1;b<10;b++)for(var c=1;c<10;c++)for(var d=1;d<10;d++){if(new Set([a,b,c,d]).size<4)continue;if(rhVal([a,b,c,d])===100)out.push([a,b,c,d].join(''));}return out;}
+function reach100(){if(!RH.all)RH.all=rhAll();var g=RH.g,full=g.every(function(x){return x!==null;}),v=full?rhVal(g):null;
+  var box=function(i){return '<button type="button" class="cell'+(RH.sel===i?' open':'')+(g[i]!==null?' full':'')+'" data-b="'+i+'" style="width:72px;height:72px;font-size:34px">'+(g[i]===null?'':g[i])+'</button>';};
+  var nums=full?[[g[0]+''+g[1],'top row'],[g[2]+''+g[3],'bottom row'],[g[0]+''+g[2],'left column'],[g[1]+''+g[3],'right column']]:null;
+  APP.innerHTML='<div class="card"><h2>Reach 100</h2><p>Put four <b>different</b> digits from 1 to 9 in the grid. Read the two rows and the two columns as 2-digit numbers. Add all four numbers. Can you make exactly <b>100</b>?</p><div class="row">'+readBtn('rdH')+'</div>'+
+   '<div class="row" style="gap:24px;align-items:flex-start"><div style="display:grid;grid-template-columns:repeat(2,72px);gap:8px">'+box(0)+box(1)+box(2)+box(3)+'</div>'+
+   '<div>'+(full?nums.map(function(n){return '<div class="soft">'+n[1]+': <b style="color:var(--ink);font-size:20px">'+n[0]+'</b></div>';}).join('')+'<div style="font-size:24px;font-weight:700;margin-top:6px">'+nums.map(function(n){return n[0];}).join(' + ')+' = <span style="color:'+(v===100?'var(--ok)':'var(--warn)')+'">'+v+'</span></div>':'<p class="soft">Tap a box, then tap a digit.</p>')+'</div></div>'+
+   '<div class="pad">'+[1,2,3,4,5,6,7,8,9].map(function(d){return '<button type="button" class="btn" data-d="'+d+'" '+(g.indexOf(d)>=0?'disabled':'')+'>'+d+'</button>';}).join('')+'<button type="button" class="btn" id="clrH" style="width:auto">Clear grid</button></div>'+
+   (full&&v===100?'<div class="msg win">You reached 100!'+(RH.isNew?' That is a new way.':' You have found this one already.')+'</div>':full?'<div class="msg">'+(v>100?'Too big by '+(v-100)+'. Try smaller digits in the top-left box.':'Too small by '+(100-v)+'. Try a bigger digit in the top-left box.')+'</div>':'')+
+   '<p><b>Ways found: '+RH.found.length+' of '+RH.all.length+'</b></p><div class="log">'+RH.found.map(function(s){return '<b>'+s[0]+' '+s[1]+' / '+s[2]+' '+s[3]+'</b>';}).join('')+'</div>'+
+   '<p class="soft">Think: the top-left digit counts in two tens numbers, so it changes the total a lot. Is there a quick way to tell if the total will be odd or even?</p></div>';
+  document.getElementById('rdH').onclick=function(){say('Put four different digits from one to nine in the grid. Read the two rows and the two columns as two-digit numbers. Add all four numbers. Can you make exactly one hundred?');};
+  APP.querySelectorAll('[data-b]').forEach(function(b){b.onclick=function(){RH.sel=+b.dataset.b;reach100();};});
+  APP.querySelectorAll('[data-d]').forEach(function(b){b.onclick=function(){RH.isNew=false;RH.g[RH.sel]=+b.dataset.d;var nx=RH.g.indexOf(null);RH.sel=nx<0?RH.sel:nx;if(RH.g.every(function(x){return x!==null;})&&rhVal(RH.g)===100&&RH.found.indexOf(RH.g.join(''))<0){RH.found.push(RH.g.join(''));RH.isNew=true;say('You reached one hundred!');}reach100();};});
+  document.getElementById('clrH').onclick=function(){RH.g=[null,null,null,null];RH.sel=0;reach100();};}
+
+/* ================= ALL THE DIGITS ================= */
+var AD={g:[null,null,null,null,null,null,null,null,null],sel:0,checked:false,hint:0};
+var ADSOL=[5,6,9,4,1,7,0,8,2];
+function adClues(g){var n=g.slice(0,4),p=g.slice(4),cons=function(a){var s=a.slice().sort(function(x,y){return x-y;});return s[1]===s[0]+1&&s[2]===s[1]+1;},full=g.every(function(x){return x!==null;});
+  var c1=false,c2=false;if(n.every(function(x){return x!==null;})){[[0,1,3],[0,1,2],[0,2,3],[1,2,3]].forEach(function(t){if(cons(t.map(function(i){return n[i];}))){c1=true;if(t.indexOf(2)<0){var a=t.map(function(i){return n[i];});if(n[2]===a[0]+a[1]||n[2]===a[0]+a[2]||n[2]===a[1]+a[2])c2=true;}}});}
+  var pf=p.every(function(x){return x!==null;}),c3=pf&&cons([p[0],p[2],p[4]]),c4=pf&&Math.abs(p[1]-p[3])===1;
+  var used=g.filter(function(x){return x!==null;}).concat([3]),c5=used.length===10&&new Set(used).size===10,c6=full&&(n.join('')*3===+p.join(''));
+  return [[c1,'Three digits in the top number are consecutive (like 4, 5, 6) but not in order.'],[c2,'The third digit of the top number is the total of two of those consecutive digits.'],[c3,'In the answer, the 1st, 3rd and 5th digits are consecutive, but not in order.'],[c4,'In the answer, the 2nd and 4th digits are consecutive.'],[c5,'Every digit from 0 to 9 is used exactly once (the 3 is already used).'],[c6,'The top number × 3 really does equal the answer.']];}
+function alldigits(){var g=AD.g,cl=adClues(g),all=cl.every(function(c){return c[0];});
+  var box=function(i){return '<button type="button" class="cell'+(AD.sel===i?' open':'')+(g[i]!==null?' full':'')+'" data-b="'+i+'">'+(g[i]===null?'':g[i])+'</button>';};
+  APP.innerHTML='<div class="card"><h2>All the Digits</h2><p>A 4-digit number × 3 makes a 5-digit answer. Every digit from <b>0 to 9</b> is used <b>exactly once</b> in the whole calculation, including the 3. Use the clues to fill the boxes.</p><div class="row">'+readBtn('rdA2')+'</div>'+
+   '<div style="display:grid;grid-template-columns:40px repeat(5,58px);gap:6px;justify-items:center;align-items:center"><span></span><span></span>'+box(0)+box(1)+box(2)+box(3)+'<span class="opsym">×</span><span></span><span></span><span></span><span></span><div class="cell full">3</div><span></span><div style="grid-column:2/7;height:3px;width:100%;background:var(--ink)"></div><span></span>'+box(4)+box(5)+box(6)+box(7)+box(8)+'</div>'+
+   '<div class="pad">'+[0,1,2,4,5,6,7,8,9].map(function(d){return '<button type="button" class="btn" data-d="'+d+'" '+(g.indexOf(d)>=0?'disabled':'')+'>'+d+'</button>';}).join('')+'<button type="button" class="btn" id="delA2" style="width:auto">Delete</button></div>'+
+   '<div class="ans">'+cl.map(function(c){return '<div><span class="'+(c[0]?'y':'n')+'">'+(c[0]?'✓':'·')+'</span> '+c[1]+'</div>';}).join('')+'</div>'+
+   (all?'<div class="msg win">You solved it! 5694 × 3 = 17082, and every digit is used once.</div>':'')+
+   '<div class="row"><button type="button" class="btn" id="hintA2">Give me a digit</button><button type="button" class="btn" id="clrA2">Clear</button><span class="soft">Tip: try short multiplication. 3 × the ones digit gives the last digit of the answer.</span></div></div>';
+  document.getElementById('rdA2').onclick=function(){say('A four-digit number times three makes a five-digit answer. Every digit from nought to nine is used exactly once in the whole calculation, including the three. Use the clues to fill the boxes.');};
+  APP.querySelectorAll('[data-b]').forEach(function(b){b.onclick=function(){AD.sel=+b.dataset.b;alldigits();};});
+  APP.querySelectorAll('[data-d]').forEach(function(b){b.onclick=function(){AD.g[AD.sel]=+b.dataset.d;var nx=AD.g.indexOf(null);if(nx>=0)AD.sel=nx;alldigits();};});
+  document.getElementById('delA2').onclick=function(){AD.g[AD.sel]=null;alldigits();};
+  document.getElementById('clrA2').onclick=function(){AD.g=AD.g.map(function(){return null;});AD.sel=0;alldigits();};
+  document.getElementById('hintA2').onclick=function(){for(var i=0;i<9;i++){if(AD.g[i]!==ADSOL[i]){var j=AD.g.indexOf(ADSOL[i]);if(j>=0)AD.g[j]=null;AD.g[i]=ADSOL[i];break;}}alldigits();};}
+
+/* ================= SUPER SHAPES ================= */
+var SS={lvl:1,p:null,inp:{},checked:false};
+var SSH=[['triangle','#1f9d63'],['circle','#e0485f'],['square','#e8a800'],['star','#8a4fd6'],['hexagon','#2f6fdf'],['heart','#d2570f']];
+function ssIcon(i,sz){sz=sz||30;var c=SSH[i][1],k=SSH[i][0],b='<svg viewBox="0 0 40 40" width="'+sz+'" height="'+sz+'" aria-label="'+k+'" style="vertical-align:middle">';
+  if(k==='triangle')return b+'<polygon points="20,4 37,35 3,35" fill="'+c+'"/></svg>';if(k==='circle')return b+'<circle cx="20" cy="20" r="16" fill="'+c+'"/></svg>';if(k==='square')return b+'<rect x="5" y="5" width="30" height="30" rx="3" fill="'+c+'"/></svg>';
+  if(k==='star')return b+'<polygon points="20,3 25,15 38,15 27,23 31,36 20,28 9,36 13,23 2,15 15,15" fill="'+c+'"/></svg>';if(k==='hexagon')return b+'<polygon points="11,4 29,4 38,20 29,36 11,36 2,20" fill="'+c+'"/></svg>';
+  return b+'<path d="M20 35L5 20A8 8 0 0 1 20 10A8 8 0 0 1 35 20Z" fill="'+c+'"/></svg>';}
+function ssMake(lvl){var n=lvl===1?3:lvl===2?4:5,v=[];for(var i=0;i<n;i++)v.push(lvl===1?2+rnd(9):lvl===2?3+rnd(15):5+rnd(25));
+  var S=[];S.push([[[0,1]],v[0]]);/* shape 0 given */
+  S.push([[[0,1],[1,1]],v[0]+v[1]]);S.push([[[1,2],[2,1]],2*v[1]+v[2]]);
+  if(n>=4)S.push([[[3,3]],3*v[3]]);if(n>=5)S.push([[[0,1],[2,1],[4,2]],v[0]+v[2]+2*v[4]]);
+  var fin=v.reduce(function(a,b){return a+b;},0);return {v:v,S:S.slice(1),given:0,n:n,fin:fin};}
+function supershapes(){if(!SS.p)SS.p=ssMake(SS.lvl);var P=SS.p,sent=function(s){return s[0].map(function(t){var o='';for(var k=0;k<t[1];k++)o+=ssIcon(t[0]);return o;}).join(' <b>+</b> ')+' <b>=</b> <b>'+s[1]+'</b>';};
+  APP.innerHTML='<div class="card"><h2>Super Shapes</h2><p>Each shape stands for a number. The same shape always has the same value. Use the sums to work out what each shape is worth.</p>'+
+   '<div class="row"><span class="soft">Level:</span>'+[1,2,3].map(function(l){return '<button type="button" class="btn'+(SS.lvl===l?' p':'')+'" data-l="'+l+'">'+['','Starter','Explorer','Expert'][l]+'</button>';}).join('')+readBtn('rdS')+'</div>'+
+   '<div class="msg">'+ssIcon(0)+' = <b>'+P.v[0]+'</b></div>'+
+   '<div class="ans" style="max-height:none">'+P.S.map(function(s){return '<div style="font-size:20px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">'+sent(s)+'</div>';}).join('')+'</div>'+
+   '<div class="row">'+P.v.map(function(_,i){return i===0?'':'<label style="display:flex;align-items:center;gap:6px">'+ssIcon(i)+' = <input type="number" inputmode="numeric" data-s="'+i+'" value="'+(SS.inp[i]!==undefined?SS.inp[i]:'')+'" style="width:76px;font:600 20px var(--font);padding:8px;border-radius:10px;border:2px solid '+(SS.checked?(+SS.inp[i]===P.v[i]?'var(--ok)':'var(--warn)'):'var(--line)')+'"></label>';}).join('')+'</div>'+
+   '<div class="row"><span style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">'+P.v.map(function(_,i){return ssIcon(i,24);}).join(' + ')+' = <input type="number" inputmode="numeric" data-s="fin" value="'+(SS.inp.fin!==undefined?SS.inp.fin:'')+'" style="width:86px;font:600 20px var(--font);padding:8px;border-radius:10px;border:2px solid '+(SS.checked?(+SS.inp.fin===P.fin?'var(--ok)':'var(--warn)'):'var(--line)')+'"></span></div>'+
+   (SS.checked?(P.v.every(function(x,i){return i===0||+SS.inp[i]===x;})&&+SS.inp.fin===P.fin?'<div class="msg win">Super! You found every shape. Now make up your own shape puzzle for a partner.</div>':'<div class="msg lose">Some answers are not right yet (red boxes). Work through the sums in order: each sum has only one new shape.</div>'):'')+
+   '<div class="row"><button type="button" class="btn go" id="chkS">Check my answers</button><button type="button" class="btn" id="newS">New puzzle</button></div>'+
+   '<p class="soft">Think: which sum has only one shape you do not know yet? Start there.</p></div>';
+  document.getElementById('rdS').onclick=function(){say('Each shape stands for a number. The same shape always has the same value. Use the sums to work out what each shape is worth. The triangle is worth '+P.v[0]+'.');};
+  APP.querySelectorAll('[data-l]').forEach(function(b){b.onclick=function(){SS.lvl=+b.dataset.l;SS.p=null;SS.inp={};SS.checked=false;supershapes();};});
+  APP.querySelectorAll('[data-s]').forEach(function(i){i.oninput=function(){SS.inp[i.dataset.s]=i.value;SS.checked=false;};});
+  document.getElementById('chkS').onclick=function(){SS.checked=true;supershapes();};document.getElementById('newS').onclick=function(){SS.p=null;SS.inp={};SS.checked=false;supershapes();};}
+
+/* ================= MAZE 100 ================= */
+var MZS=[[[6,20,4,10,5],[17,16,17,14,8],[5,17,2,14,15],[2,16,10,9,20]],[[11,20,16,11,14],[13,2,16,13,7],[5,17,3,8,11],[6,9,14,14,17]],[[20,3,17,9,14],[15,7,13,19,13],[4,16,18,5,7],[18,14,13,17,2]]];
+var MZ={m:0,path:[[0,0]],found:[],goal:'100',stats:null};
+function mzStats(g){var R=g.length,C=g[0].length,tot={},seen={},routes100=[];function dfs(r,c,s,p){if(r===R-1&&c===C-1){tot[s]=(tot[s]||0)+1;if(s===100)routes100.push(p.join('|'));return;}[[1,0],[-1,0],[0,1],[0,-1]].forEach(function(d){var nr=r+d[0],nc=c+d[1];if(nr>=0&&nr<R&&nc>=0&&nc<C&&!seen[nr+','+nc]){seen[nr+','+nc]=1;p.push(nr+','+nc);dfs(nr,nc,s+g[nr][nc],p);p.pop();seen[nr+','+nc]=0;}});}
+  seen['0,0']=1;dfs(0,0,g[0][0],['0,0']);var ks=Object.keys(tot).map(Number);return {min:Math.min.apply(null,ks),max:Math.max.apply(null,ks),n100:routes100.length};}
+function maze100(){var g=MZS[MZ.m],R=g.length,C=g[0].length,path=MZ.path,last=path[path.length-1],sum=path.reduce(function(a,p){return a+g[p[0]][p[1]];},0),atEnd=last[0]===R-1&&last[1]===C-1;
+  if(!MZ.stats)MZ.stats=mzStats(g);var st=MZ.stats,tgt=MZ.goal==='100'?100:MZ.goal==='min'?st.min:st.max,inP=function(r,c){return path.some(function(p){return p[0]===r&&p[1]===c;});},adj=function(r,c){return Math.abs(r-last[0])+Math.abs(c-last[1])===1&&!inP(r,c);};
+  var cells='';for(var r=0;r<R;r++)for(var c=0;c<C;c++){var i=path.findIndex(function(p){return p[0]===r&&p[1]===c;});cells+='<button type="button" class="mz'+(i>=0?' on':'')+(i===path.length-1?' last':'')+(adj(r,c)&&!atEnd?' nx':'')+(r===0&&c===0?' st':'')+(r===R-1&&c===C-1?' en':'')+'" data-r="'+r+'" data-c="'+c+'">'+g[r][c]+'</button>';}
+  APP.innerHTML='<div class="card"><h2>Maze 100</h2><p>Start at the top left (<b>START</b>) and finish at the bottom right (<b>END</b>). Move up, down, left or right. Add every number you pass through. You cannot go into a square twice.</p>'+
+   '<div class="row"><span class="soft">Maze:</span>'+MZS.map(function(_,i){return '<button type="button" class="btn'+(MZ.m===i?' p':'')+'" data-m="'+i+'">'+(i+1)+'</button>';}).join('')+'<span class="soft">Goal:</span>'+[['100','Total of 100'],['min','Lowest total'],['max','Highest total']].map(function(o){return '<button type="button" class="btn'+(MZ.goal===o[0]?' p':'')+'" data-g="'+o[0]+'">'+o[1]+'</button>';}).join('')+readBtn('rdM')+'</div>'+
+   '<div class="mzg" style="grid-template-columns:repeat('+C+',1fr)">'+cells+'</div>'+
+   '<div class="row" style="justify-content:space-between"><div style="font-size:22px;font-weight:700">Total: <span style="color:'+(atEnd&&sum===tgt?'var(--ok)':'var(--ink)')+'">'+sum+'</span></div><div class="soft">'+path.map(function(p){return g[p[0]][p[1]];}).join(' + ')+'</div></div>'+
+   (atEnd?(sum===tgt?'<div class="msg win">You did it! Your route totals exactly '+tgt+'.'+(MZ.goal==='100'?' There '+(st.n100===1?'is only 1 route':'are '+st.n100+' routes')+' to 100 in this maze.':'')+'</div>':'<div class="msg lose">You reached the end with '+sum+'. '+(MZ.goal==='100'?'You need exactly 100.':MZ.goal==='min'?'The lowest possible total is '+st.min+'. Can you find it?':'The highest possible total is '+st.max+'. Can you find it?')+'</div>'):'')+
+   '<div class="row"><button type="button" class="btn" id="undoM">Step back</button><button type="button" class="btn" id="resetM">Start again</button></div>'+
+   '<p class="soft">Think: estimate as you go. How much more do you need to make '+(MZ.goal==='100'?'100':'your goal')+'?</p></div>';
+  document.getElementById('rdM').onclick=function(){say('Start at the top left and finish at the bottom right. Move up, down, left or right. Add every number you pass through. You cannot go into a square twice. Your total is '+sum+'.');};
+  APP.querySelectorAll('[data-m]').forEach(function(b){b.onclick=function(){MZ.m=+b.dataset.m;MZ.path=[[0,0]];MZ.stats=null;maze100();};});
+  APP.querySelectorAll('[data-g]').forEach(function(b){b.onclick=function(){MZ.goal=b.dataset.g;MZ.path=[[0,0]];maze100();};});
+  APP.querySelectorAll('[data-r]').forEach(function(b){b.onclick=function(){var r=+b.dataset.r,c=+b.dataset.c;if(atEnd)return;var i=path.findIndex(function(p){return p[0]===r&&p[1]===c;});if(i>=0&&i<path.length-1){MZ.path=path.slice(0,i+1);maze100();return;}if(adj(r,c)){MZ.path.push([r,c]);maze100();}else{b.animate&&b.animate([{transform:'translateX(-4px)'},{transform:'translateX(4px)'},{transform:'none'}],{duration:250});var t=APP.querySelector('.mzmsg');if(!t){t=document.createElement('p');t.className='mzmsg';t.style.cssText='color:#d2570f;font-weight:700;margin:6px 0';b.closest('.card').insertBefore(t,document.getElementById('undoM').parentNode);}t.textContent='You can only move to a square next to your last one (up, down, left or right).';}};});
+  document.getElementById('undoM').onclick=function(){if(MZ.path.length>1)MZ.path.pop();maze100();};document.getElementById('resetM').onclick=function(){MZ.path=[[0,0]];maze100();};}
+
+/* ================= MAKE 100 ================= */
+var MK={mode:'easy',ops:['+','+','+','+','+','+','+','+'],found:[]};
+function mkExpr(){var s='1';for(var i=0;i<8;i++)s+=(MK.ops[i]==='join'?'':' '+MK.ops[i]+' ')+(i+2);return s;}
+function mkEval(s){var t=s.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-');if(!/^[\d\s+\-*\/]+$/.test(t))return NaN;try{return Function('"use strict";return ('+t+')')();}catch(e){return NaN;}}
+function make100(){var opsList=MK.mode==='easy'?['+','−','join']:['+','−','×','÷','join'],ex=mkExpr(),v=mkEval(ex),ok=v===100;
+  var html='';for(var i=1;i<=9;i++){html+='<span class="mkd">'+i+'</span>';if(i<9){var o=MK.ops[i-1];html+='<button type="button" class="mko'+(o==='join'?' j':'')+'" data-i="'+(i-1)+'" aria-label="Operation '+(o==='join'?'join digits':o)+'. Tap to change.">'+(o==='join'?'↔':o)+'</button>';}}
+  APP.innerHTML='<div class="card"><h2>Make 100</h2><p>The digits 1 to 9 stay in order. Tap the boxes between them to change the sign. <b>↔</b> joins two digits into one number (7 ↔ 8 makes 78). Make the answer exactly <b>100</b>.</p>'+
+   '<div class="row"><span class="soft">Signs:</span><button type="button" class="btn'+(MK.mode==='easy'?' p':'')+'" data-md="easy">+ and − only</button><button type="button" class="btn'+(MK.mode==='hard'?' p':'')+'" data-md="hard">Add × and ÷ (challenge)</button>'+readBtn('rdK')+'</div>'+
+   '<div class="mkrow">'+html+'</div>'+
+   '<div style="font-size:22px;font-weight:700;text-align:center">'+ex+' = <span style="color:'+(ok?'var(--ok)':'var(--warn)')+'">'+(isFinite(v)?(Number.isInteger(v)?v:v.toFixed(2)):'?')+'</span></div>'+
+   (MK.mode==='hard'?'<p class="soft" style="text-align:center">Remember: do × and ÷ before + and −.</p>':'')+
+   (ok?'<div class="msg win">You made 100!'+(MK.isNew?' A new way!':' You found this one already.')+'</div>':'<div class="msg">'+(isFinite(v)?(v>100?'Too big by '+(Math.round((v-100)*100)/100)+'.':'Too small by '+(Math.round((100-v)*100)/100)+'.'):'')+' Keep trying!</div>')+
+   '<p><b>Ways found: '+MK.found.length+'</b></p><div class="log">'+MK.found.map(function(s){return '<b>'+s+'</b>';}).join('')+'</div>'+
+   '<div class="row"><button type="button" class="btn" id="resetK">All plus signs</button></div><p class="soft">Think: 1 + 2 + … + 9 = 45. How could joining two digits help you get closer to 100?</p></div>';
+  document.getElementById('rdK').onclick=function(){say('The digits one to nine stay in order. Change the signs between them, or join two digits to make one number. Make the answer exactly one hundred. Your answer is '+(isFinite(v)?Math.round(v*100)/100:'not finished')+'.');};
+  APP.querySelectorAll('[data-md]').forEach(function(b){b.onclick=function(){MK.mode=b.dataset.md;if(MK.mode==='easy')MK.ops=MK.ops.map(function(o){return o==='×'||o==='÷'?'+':o;});make100();};});
+  APP.querySelectorAll('[data-i]').forEach(function(b){b.onclick=function(){var i=+b.dataset.i,cur=opsList.indexOf(MK.ops[i]);MK.ops[i]=opsList[(cur+1)%opsList.length];var e=mkExpr();MK.isNew=false;if(mkEval(e)===100&&MK.found.indexOf(e)<0){MK.found.push(e);MK.isNew=true;say('You made one hundred!');}make100();};});
+  document.getElementById('resetK').onclick=function(){MK.ops=MK.ops.map(function(){return '+';});make100();};}
+
+/*/CH2*/
+var R={dicey:dicey,gotit:gotit,digitadd:digitadd,whatshape:whatshape,rounding:rounding,reach100:reach100,alldigits:alldigits,supershapes:supershapes,maze100:maze100,make100:make100};
+window.__CH={DI:DI,GI:GI,WS:WS,SH:SH,SQS:SQS};
+function route(){var k=location.hash.slice(1);if(!R[k])k='dicey';tabs(k);R[k]();}
+window.addEventListener('hashchange',route);route();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shape Quest Arcade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap">
+<style>
+*{box-sizing:border-box}
+body{margin:0}
+/* Layout: the Turn Quest console, reused on purpose: slim header, one stage panel on a blueprint grid, the question beneath, flat control tiles. Single dark theme so every classroom screen matches. Line colours follow the unit's code: horizontal red, vertical blue, diagonal green. */
+:root{
+  --bg:#0d1524; --panel:#141f33; --stage:#111b2d; --tile:#1b2840; --tile-hi:#22324d; --edge:#2b3b57;
+  --fg:#e6edf7; --muted:#9aaac2; --faint:#6b7a93;
+  --h:#ff6b81; --v:#5b9bff; --d:#3dd68c;
+  --ok:#3dd68c; --ok-ink:#07210f; --gold:#f5c451; --warn:#ff8a3d; --life:#ff5d73;
+  --font:'Lexend', 'Segoe UI', Verdana, sans-serif;
+  color-scheme:dark;
+}
+html,body{min-height:100%}
+body{
+  background:var(--bg); color:var(--fg); font-family:var(--font); font-size:17px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+  padding-block:20px 40px;
+}
+.wrap{max-width:540px; margin:0 auto; display:flex; flex-direction:column; gap:16px}
+.topbar{display:flex; align-items:center; gap:10px}
+.logo{flex:1; min-width:0; margin:0; display:flex; flex-direction:column; gap:2px}
+.logo b{font-size:20px; font-weight:700; letter-spacing:.18em}
+.logo span{font-size:12px; font-weight:500; letter-spacing:.14em; text-transform:uppercase; color:var(--muted)}
+.pill{font:500 14px var(--font); color:var(--fg); background:var(--tile); border:1px solid var(--edge); border-radius:10px; padding:9px 14px; cursor:pointer}
+.pill:hover{background:var(--tile-hi)}
+.panel{background:var(--panel); border:1px solid var(--edge); border-radius:18px; overflow:hidden}
+.hud{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:12px 16px; font-size:14px; font-weight:500; color:var(--muted); font-variant-numeric:tabular-nums}
+.hud .lives{display:flex; align-items:center; gap:6px; text-transform:uppercase; letter-spacing:.12em; font-size:12px}
+.hud .pip{width:10px; height:10px; border-radius:50%; background:var(--life)}
+.hud .pip.off{background:transparent; box-shadow:inset 0 0 0 2px var(--edge)}
+.hud .r{color:var(--fg)}
+.stage{background:var(--stage); border-block:1px solid var(--edge)}
+canvas{display:block; width:100%; height:auto; aspect-ratio:320/288; max-width:100%; touch-action:manipulation}
+canvas.tap{cursor:pointer}
+.prompt{min-height:8em; padding:16px 18px 18px; font-size:19px; line-height:1.5; display:flex; flex-direction:column; gap:6px}
+.prompt b{font-weight:600; color:var(--fg)}
+.prompt .big{font-size:22px; font-weight:600; letter-spacing:.01em}
+.prompt .big.good{color:var(--ok)}
+.prompt .big.bad{color:var(--warn)}
+.prompt .note{color:var(--muted); font-size:16px}
+.chip{display:inline-block; padding:0 9px; border-radius:7px; font-weight:600; font-size:.92em}
+.chip.h{color:var(--h); background:rgba(255,107,129,.13); border:1px solid rgba(255,107,129,.55)}
+.chip.v{color:var(--v); background:rgba(91,155,255,.14); border:1px solid rgba(91,155,255,.55)}
+.chip.d{color:var(--d); background:rgba(61,214,140,.12); border:1px solid rgba(61,214,140,.5)}
+.chip.g{color:var(--gold); background:rgba(245,196,81,.12); border:1px solid rgba(245,196,81,.5)}
+.facts{display:flex; flex-wrap:wrap; gap:6px}
+.facts span{background:var(--tile); border:1px solid var(--edge); padding:2px 10px; font-size:15px; font-weight:500; border-radius:8px}
+.panel.shake canvas{animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-6px)}50%{transform:translateX(6px)}75%{transform:translateX(-3px)}}
+.answers{display:grid; grid-template-columns:repeat(var(--cols,2), minmax(0,1fr)); gap:10px}
+.key{
+  font:500 18px/1.2 var(--font); color:var(--fg); background:var(--tile);
+  border:1px solid var(--edge); border-radius:14px; padding:12px 10px; min-height:62px;
+  cursor:pointer; text-wrap:balance; transition:background .12s, border-color .12s, transform .08s;
+}
+.key small{display:block; font-size:13px; font-weight:400; color:var(--muted); margin-top:3px}
+.key:hover{background:var(--tile-hi)}
+.key:active{transform:scale(.98)}
+.key.sel{border-color:var(--v)}
+.key.run{background:var(--ok); border-color:var(--ok); color:var(--ok-ink); font-weight:600}
+.key.run small{color:var(--ok-ink); opacity:.75}
+.key.wide{grid-column:1 / -1}
+button:focus-visible{outline:2px solid var(--v); outline-offset:2px}
+@media (prefers-reduced-motion: reduce){ .panel.shake canvas{animation:none} .key{transition:none} }
+@media (max-width:400px){ .key{font-size:16px} .prompt{font-size:17px} }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="topbar">
+    <h1 class="logo"><b>SHAPE QUEST</b><span>Lines, 2D, 3D and nets · Year 3</span></h1>
+    <button class="pill" id="btnSound" type="button">Sound: on</button>
+    <button class="pill" id="btnMenu" type="button">Menu</button>
+  </div>
+  <div class="panel" id="card">
+    <div class="hud" id="hud"></div>
+    <div class="stage"><canvas id="cv" width="640" height="576" aria-label="Game picture"></canvas></div>
+    <div class="prompt" id="prompt" aria-live="polite"></div>
+  </div>
+  <div class="answers" id="answers"></div>
+</div>
+
+<style id="a11y-css">
+body.big .prompt{font-size:23px;line-height:1.55}
+body.big .prompt .big{font-size:27px}
+body.big .key{font-size:20px;min-height:64px}
+body.big .hud{font-size:16px}
+body.still *{transition:none!important;animation:none!important}
+.a11y-read{background:#f5c451!important;color:#14213d!important;border-color:#f5c451!important;font-weight:700!important}
+.a11y-panel{position:fixed;z-index:30;top:60px;right:12px;width:min(320px,calc(100vw - 24px));background:#16233a;border:1px solid #2b3b57;border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px;box-shadow:0 12px 30px rgba(0,0,0,.4);font-size:16px}
+.a11y-panel[hidden]{display:none}
+.a11y-panel h2{margin:0;font-size:17px}
+.a11y-panel label{display:flex;gap:10px;align-items:center;cursor:pointer;min-height:40px}
+.a11y-panel input{width:22px;height:22px;accent-color:#f5c451}
+.topbar{flex-wrap:wrap;row-gap:8px}
+.topbar .logo{flex:1 1 230px;min-width:200px}
+.topbar .logo b{white-space:nowrap}
+</style>
+<script id="mh-voice">/* Maths Hub voice: picks the most natural English voice on this device and applies the reader's settings */
+(function(){var ss=window.speechSynthesis;if(!ss||ss.__mh)return;ss.__mh=1;var orig=ss.speak.bind(ss);
+function A(){try{return JSON.parse(localStorage.getItem('mh-a11y')||'{}')||{};}catch(e){return {};}}
+var BAD=/compact|espeak|robot|novelty|bad news|bells|whisper|zarvox|trinoids|albert|jester|organ|cellos|bubbles|boing|deranged|hysterical|superstar|wobble|grandma|grandpa|eddy|flo\b|reed|rocko|sandy|shelley|good news|junior|ralph|fred|kathy|vicki|victoria/;
+function rank(v){var n=v.name.toLowerCase(),l=(v.lang||'').toLowerCase().replace('_','-'),s=0;if(l.indexOf('en')!==0)return -1;
+  if(l==='en-gb')s+=30;else if(l==='en-ie'||l==='en-au'||l==='en-nz')s+=16;else s+=10;
+  if(/natural|neural/.test(n))s+=45;if(/online/.test(n))s+=8;if(/premium/.test(n))s+=42;if(/enhanced/.test(n))s+=36;if(/siri/.test(n))s+=30;
+  if(/google uk english female/.test(n))s+=26;else if(/google uk english/.test(n))s+=22;else if(/google/.test(n))s+=12;
+  if(/sonia|libby|maisie|abbi|bella|hollie|olivia|serena|kate|stephanie|martha|daniel|arthur|oliver|jamie/.test(n))s+=12;
+  if(BAD.test(n))s-=80;return s;}
+function list(){return ss.getVoices().filter(function(v){return rank(v)>=0;}).sort(function(a,b){return rank(b)-rank(a);});}
+function best(){var a=A(),vs=ss.getVoices();if(a.voice){var f=vs.filter(function(v){return v.name===a.voice;})[0];if(f)return f;}return list()[0]||null;}
+ss.speak=function(u){try{var v=best();if(v){u.voice=v;u.lang=v.lang;}var a=A();u.rate=a.slow?0.8:0.97;u.pitch=1;
+  if(u.text)u.text=u.text.replace(/\s*\n+\s*/g,'. ').replace(/\s{2,}/g,' ');}catch(e){}return orig(u);};
+window.MH_VOICES=list;window.MH_VOICE_RANK=rank;
+try{ss.getVoices();if(typeof ss.addEventListener==='function')ss.addEventListener('voiceschanged',function(){});}catch(e){}
+})();
+</script>
+<script>
+function speakable(t){
+  var D={2:['half','halves'],3:['third','thirds'],4:['quarter','quarters'],5:['fifth','fifths'],6:['sixth','sixths'],7:['seventh','sevenths'],8:['eighth','eighths'],9:['ninth','ninths'],10:['tenth','tenths'],12:['twelfth','twelfths'],100:['hundredth','hundredths']};
+  var N=['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve'];
+  t=String(t).replace(/½/g,' 1/2').replace(/¼/g,' 1/4').replace(/¾/g,' 3/4').replace(/\s+/g,' ').trim();
+  t=t.replace(/(\d)\s?mm\b/g,'$1 millimetres').replace(/(\d)\s?cm\b/g,'$1 centimetres').replace(/(\d)\s?km\b/g,'$1 kilometres').replace(/(\d)\s?kg\b/g,'$1 kilograms').replace(/(\d)\s?ml\b/g,'$1 millilitres').replace(/(\d)\s?g\b/g,'$1 grams').replace(/(\d)\s?l\b/g,'$1 litres').replace(/(\d)\s?m\b/g,'$1 metres').replace(/(\d)p\b/g,'$1 pence');
+  t=t.replace(/(^|[^\d\/])(\d{1,2})\/(\d{1,3})(?![\d\/])/g,function(m,p,a,b){a=+a;b=+b;var w=D[b]?(N[a]||a)+' '+D[b][a===1?0:1]:a+' over '+b;if(a===b&&b>1)w+=', one whole';return p+w;});
+  t=t.replace(/_{2,}|☐/g,' blank ');
+  t=t.replace(/(^|[\s(=+\-−×÷])\?(?=\s*[+\-−×÷=])/g,'$1 what number ').replace(/([=+\-−×÷]\s*)\?/g,'$1 what number');
+  t=t.replace(/=\s*$/,' equals what?').replace(/…\s*$/,' what?').replace(/…/g,', ');
+  t=t.replace(/×/g,' times ').replace(/÷/g,' divided by ').replace(/−/g,' minus ').replace(/\s\+\s|\+/g,' plus ').replace(/=/g,' equals ').replace(/\s<\s/g,' is less than ').replace(/\s>\s/g,' is greater than ');
+  t=t.replace(/(^|[^\d,.\/])1 (millimetre|centimetre|kilometre|kilogram|millilitre|gram|litre|metre)s\b/g,'$1one $2').replace(/(half|quarter|third|fifth|tenth) (millimetre|centimetre|kilometre|kilogram|millilitre|gram|litre|metre)s\b/g,'$1 a $2').replace(/\bone half a /g,'half a ').replace(/\bone (quarter|third|fifth|tenth) a /g,'a $1 of a ');
+  t=t.replace(/[↻↺→←↑↓✓✗★☆♥]/g,'').replace(/\s+/g,' ').trim();
+  return t;
+}
+
+(function(){
+  var A={};try{A=JSON.parse(localStorage.getItem('mh-a11y')||'{}')||{};}catch(e){}
+  window.A11Y=A;
+  if(A.low)A.still=true;if(A.still){var mm=window.matchMedia;window.matchMedia=function(q){if(/prefers-reduced-motion/.test(q))return {matches:true,media:q,addListener:function(){},removeListener:function(){},addEventListener:function(){},removeEventListener:function(){}};return mm.call(window,q);};}
+  try{if(window.speechSynthesis){var sp=speechSynthesis.speak.bind(speechSynthesis);speechSynthesis.speak=function(u){if(A.slow)u.rate=Math.min(u.rate||1,.7);return sp(u);};}}catch(e){}
+  var SKIP=/^(Next|Back|Skip to game|Read to me|Menu|Play again|Learn again|Start|Play|Read aloud)\b/i;
+  function textOf(el){var c=el.cloneNode(true);c.querySelectorAll('.fr').forEach(function(f){var b=f.querySelector('b'),i=f.querySelector('i');f.textContent=' '+(b?b.textContent:'')+'/'+(i?i.textContent:'')+' ';});c.querySelectorAll('small').forEach(function(s){s.textContent=', '+s.textContent;});c.querySelectorAll('span,b,div').forEach(function(s){s.insertAdjacentText('afterend',' ');});return c.textContent.replace(/\s+/g,' ').trim();}
+  function promptText(p){return [].slice.call(p.children).map(function(c){var x=textOf(c);return x&&!/[.?!:]$/.test(x)?x+'.':x;}).join(' ')||textOf(p);}
+  function tidy(x){return x.replace(/equals\s*\./g,'equals what?').replace(/\s+([.,?!])/g,'$1').replace(/([?!.])\.+/g,'$1').replace(/\s+/g,' ').trim();}
+  function readNow(){var p=document.getElementById('prompt'),a=document.getElementById('answers');if(!p)return;
+    var t=promptText(p),opts=[].slice.call(a?a.querySelectorAll('button'):[]).map(textOf).filter(function(x){return x&&!SKIP.test(x);});
+    if(/^Choose a game/.test(t))opts=[];
+    var s=tidy(speakable(t)+(opts.length&&opts.length<=8?' Is it '+opts.map(speakable).join(', or ')+'?':''));
+    try{var u=new SpeechSynthesisUtterance(s);u.lang='en-GB';u.rate=.9;speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}}
+  window.A11Y.read=readNow;
+  function save(){try{localStorage.setItem('mh-a11y',JSON.stringify({big:A.big,slow:A.slow,still:A.still,auto:A.auto}));}catch(e){}}
+  document.addEventListener('DOMContentLoaded',function(){
+    document.body.classList.toggle('big',!!A.big);document.body.classList.toggle('still',!!A.still);
+    var bar=document.querySelector('.topbar'),menu=document.getElementById('btnMenu');if(!bar)return;
+    var rb=document.createElement('button');rb.className='pill a11y-read';rb.type='button';rb.id='btnRead';rb.textContent='Read aloud';rb.onclick=readNow;
+    var sb=document.createElement('button');sb.className='pill';sb.type='button';sb.id='btnA11y';sb.textContent='Settings';sb.setAttribute('aria-expanded','false');
+    bar.insertBefore(rb,bar.querySelector('.pill'));bar.insertBefore(sb,menu);
+    var pn=document.createElement('div');pn.className='a11y-panel';pn.hidden=true;pn.setAttribute('role','dialog');pn.setAttribute('aria-label','Settings');
+    var opts=[['big','Bigger text'],['slow','Slower speech'],['still','Less movement'],['auto','Read each question out automatically']];
+    pn.innerHTML='<h2>Settings</h2>'+opts.map(function(o){return '<label><input type="checkbox" data-k="'+o[0]+'"'+(A[o[0]]?' checked':'')+'> '+o[1]+'</label>';}).join('')+'<button class="pill" type="button" id="a11yDone">Done</button>';
+    document.body.appendChild(pn);
+    sb.onclick=function(){pn.hidden=!pn.hidden;sb.setAttribute('aria-expanded',String(!pn.hidden));};
+    pn.querySelector('#a11yDone').onclick=function(){pn.hidden=true;sb.setAttribute('aria-expanded','false');};
+    pn.querySelectorAll('input').forEach(function(c){c.onchange=function(){A[c.dataset.k]=c.checked;save();
+      if(c.dataset.k==='big')document.body.classList.toggle('big',c.checked);
+      if(c.dataset.k==='still'){document.body.classList.toggle('still',c.checked);}};});
+    var p=document.getElementById('prompt'),tm;
+    if(p)new MutationObserver(function(){if(!A.auto)return;clearTimeout(tm);tm=setTimeout(function(){if(!/^Choose a game/.test(p.textContent.trim()))readNow();},350);}).observe(p,{childList:true,subtree:true,characterData:true});
+  });
+})();
+</script>
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const cv=$('cv'), ctx=cv.getContext('2d'); ctx.setTransform(2,0,0,2,0,0);
+const C={fg:'#e6edf7',muted:'#9aaac2',faint:'#6b7a93',stage:'#111b2d',grid:'#1a2740',edge:'#2b3b57',gold:'#f5c451',ok:'#3dd68c',warn:'#ff8a3d',
+  h:'#ff6b81',v:'#5b9bff',d:'#3dd68c',off:'#2b3b57',board:'#18243a',pin:'#9aaac2'};
+const FACE_COL=['#f5c451','#5b9bff','#3dd68c','#ff6b81','#b39ddb','#ff8a3d'];
+const PAIR_COL=['#f5c451','#5b9bff','#3dd68c','#b39ddb'];
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const promptEl=$('prompt'), hudEl=$('hud'), answersEl=$('answers'), cardEl=$('card');
+const sleep=ms=>new Promise(r=>setTimeout(r,reduce?Math.min(ms,150):ms));
+const rnd=n=>Math.floor(Math.random()*n);
+const pick=a=>a[rnd(a.length)];
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;};
+const R=d=>d*Math.PI/180;
+
+/* ---------- vectors ---------- */
+const sub=(a,b)=>[a[0]-b[0],a[1]-b[1]], add=(a,b)=>[a[0]+b[0],a[1]+b[1]], mul=(a,k)=>[a[0]*k,a[1]*k];
+const dot2=(a,b)=>a[0]*b[0]+a[1]*b[1], cross2=(a,b)=>a[0]*b[1]-a[1]*b[0], len=a=>Math.hypot(a[0],a[1]);
+const norm=a=>{const l=len(a)||1;return [a[0]/l,a[1]/l];};
+const rot=(p,a)=>[p[0]*Math.cos(a)-p[1]*Math.sin(a),p[0]*Math.sin(a)+p[1]*Math.cos(a)];
+
+/* ---------- sound ---------- */
+let actx=null, muted=false;
+function beep(f,d,vol){ if(muted) return; try{
+  actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+  const o=actx.createOscillator(), g=actx.createGain(), t=actx.currentTime;
+  o.type='sine'; o.frequency.value=f; g.gain.setValueAtTime(vol||.12,t); g.gain.exponentialRampToValueAtTime(.0001,t+(d||.12));
+  o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t+(d||.12)+.02);
+}catch(e){} }
+const tune=n=>n.forEach(([f,t,d])=>setTimeout(()=>beep(f,d||.14),t));
+const sGood=()=>tune([[587,0],[880,110,.25]]);
+const sBad=()=>tune([[294,0,.2],[220,150,.28]]);
+const sClick=()=>beep(1200,.03,.04);
+const sWin=()=>tune([[523,0],[659,120],[784,240],[1047,360,.4]]);
+const sStep=i=>beep(440+i*70,.09);
+
+/* ---------- storage ---------- */
+let best={};
+try{ best=JSON.parse(localStorage.getItem('shapequest-best')||'{}')||{}; }catch(e){ best={}; }
+function saveBest(k,v){ if(!(best[k]>=v)){ best[k]=v; try{ localStorage.setItem('shapequest-best',JSON.stringify(best)); }catch(e){} } }
+
+/* ---------- drawing helpers ---------- */
+function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(x,y,w,h);}
+function rrect(x,y,w,h,r,fill,stroke,lw){ctx.beginPath();ctx.roundRect?ctx.roundRect(x,y,w,h,r):ctx.rect(x,y,w,h);if(fill){ctx.fillStyle=fill;ctx.fill();}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw||2;ctx.stroke();}}
+function text(s,x,y,size,c,weight,align){ctx.fillStyle=c||C.fg;ctx.font=(weight||500)+' '+size+'px Lexend, sans-serif';ctx.textAlign=align||'center';ctx.textBaseline='middle';ctx.fillText(s,x,y);}
+function line(a,b,c,w,dash){ctx.strokeStyle=c;ctx.lineWidth=w||3;ctx.lineCap='round';ctx.setLineDash(dash?[6,6]:[]);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();ctx.setLineDash([]);}
+function poly(P,fill,stroke,lw,dash){ctx.beginPath();P.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();if(fill){ctx.fillStyle=fill;ctx.fill();}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw||3;ctx.lineJoin='round';ctx.setLineDash(dash?[6,6]:[]);ctx.stroke();ctx.setLineDash([]);}}
+function dot(p,r,c){ctx.fillStyle=c;ctx.beginPath();ctx.arc(p[0],p[1],r,0,Math.PI*2);ctx.fill();}
+function badge(p,s,c){dot(p,11,c||C.gold);text(String(s),p[0],p[1]+1,12,C.stage,700);}
+function bg(){
+  rect(0,0,320,288,C.stage); ctx.strokeStyle=C.grid; ctx.lineWidth=1;
+  for(let x=16;x<320;x+=24){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,288);ctx.stroke();}
+  for(let y=12;y<288;y+=24){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(320,y);ctx.stroke();}
+}
+function raMark(V,A,B,c,s){const u=norm(sub(A,V)),w=norm(sub(B,V));s=s||11;ctx.strokeStyle=c||C.gold;ctx.lineWidth=2.5;ctx.lineJoin='miter';ctx.beginPath();
+  ctx.moveTo(V[0]+u[0]*s,V[1]+u[1]*s);ctx.lineTo(V[0]+(u[0]+w[0])*s,V[1]+(u[1]+w[1])*s);ctx.lineTo(V[0]+w[0]*s,V[1]+w[1]*s);ctx.stroke();}
+function chevron(A,B,c,k){const m=mul(add(A,B),.5),u=norm(sub(B,A)),n=[-u[1],u[0]];ctx.strokeStyle=c;ctx.lineWidth=2.5;ctx.lineCap='round';
+  for(let i=0;i<(k||1);i++){const tip=add(m,mul(u,4+i*7));ctx.beginPath();ctx.moveTo(...add(add(tip,mul(u,-7)),mul(n,6)));ctx.lineTo(tip[0],tip[1]);ctx.lineTo(...add(add(tip,mul(u,-7)),mul(n,-6)));ctx.stroke();}}
+function sector(P,u,toward,r,c){ /* the right-angle checker: a quarter circle from direction u, turning toward the side of 'toward' */
+  const s=Math.sign(cross2(u,toward))||1, a0=Math.atan2(u[1],u[0]), a1=a0+s*Math.PI/2;
+  ctx.fillStyle=c||'rgba(245,196,81,.35)';ctx.strokeStyle=C.gold;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(P[0],P[1]);ctx.arc(P[0],P[1],r,a0,a1,s<0);ctx.closePath();ctx.fill();ctx.stroke();}
+function fit(pts,deg,box){ /* place unit points on the stage: rotate, then scale to the box */
+  box=Object.assign({cx:160,cy:140,w:220,h:180,max:40},box||{});
+  const P=pts.map(p=>rot(p,R(deg||0)));
+  const xs=P.map(p=>p[0]),ys=P.map(p=>p[1]);
+  const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+  const s=Math.min(box.w/((x1-x0)||1),box.h/((y1-y0)||1),box.max);
+  return P.map(p=>[box.cx+(p[0]-(x0+x1)/2)*s,box.cy+(p[1]-(y0+y1)/2)*s]);
+}
+/* properties of a polygon: sides, right angles (inside corners only), pairs of parallel sides, equal sides */
+function props(P){
+  const n=P.length;let area=0;for(let i=0;i<n;i++)area+=cross2(P[i],P[(i+1)%n]);
+  const ra=[],par=[],L=[];
+  for(let i=0;i<n;i++){const A=P[(i-1+n)%n],V=P[i],B=P[(i+1)%n];const e1=sub(A,V),e2=sub(B,V);
+    const c=dot2(e1,e2)/(len(e1)*len(e2));const turn=cross2(sub(V,A),sub(B,V));if(Math.abs(c)<0.01&&turn*area>0)ra.push(i);}
+  const S=P.map((p,i)=>[p,P[(i+1)%n]]);S.forEach(s=>L.push(len(sub(s[1],s[0]))));
+  for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){if(Math.abs(cross2(norm(sub(S[i][1],S[i][0])),norm(sub(S[j][1],S[j][0]))))<0.01)par.push([i,j]);}
+  const equal=L.every(l=>Math.abs(l-L[0])<0.01*L[0]);
+  return {n,ra,par,equal,area:Math.abs(area)/2,S};
+}
+function centroid(P){return mul(P.reduce((a,p)=>add(a,p),[0,0]),1/P.length);}
+function outward(P,i,d){const c=centroid(P);return add(P[i],mul(norm(sub(P[i],c)),d||18));}
+
+/* ---------- state ---------- */
+const st={mode:'menu',q:null,btns:[],focus:-1,cols:2,locked:false,yaw:.6,lastT:0};
+
+/* ---------- 3D solids ---------- */
+function solid(V,F,S){const E=[],seen={};F.forEach((f,fi)=>f.forEach((a,k)=>{const b=f[(k+1)%f.length];const key=Math.min(a,b)+'-'+Math.max(a,b);if(seen[key]==null){seen[key]=E.length;E.push({a,b,f:[fi]});}else E[seen[key]].f.push(fi);}));
+  const cen=V.reduce((s,p)=>[s[0]+p[0],s[1]+p[1],s[2]+p[2]],[0,0,0]).map(x=>x/V.length);
+  const N=F.map(f=>{const a=V[f[0]],b=V[f[1]],c=V[f[2]];const u=[b[0]-a[0],b[1]-a[1],b[2]-a[2]],w=[c[0]-a[0],c[1]-a[1],c[2]-a[2]];
+    let n=[u[1]*w[2]-u[2]*w[1],u[2]*w[0]-u[0]*w[2],u[0]*w[1]-u[1]*w[0]];const fc=f.reduce((s,i)=>[s[0]+V[i][0],s[1]+V[i][1],s[2]+V[i][2]],[0,0,0]).map(x=>x/f.length);
+    if(n[0]*(fc[0]-cen[0])+n[1]*(fc[1]-cen[1])+n[2]*(fc[2]-cen[2])<0)n=n.map(x=>-x);const l=Math.hypot(...n);return n.map(x=>x/l);});
+  return {V,F,E,N,S};}
+const BOX=(x,y,z)=>[[-x,-y,-z],[x,-y,-z],[x,y,-z],[-x,y,-z],[-x,-y,z],[x,-y,z],[x,y,z],[-x,y,z]];
+const BOXF=[[0,1,2,3],[4,5,6,7],[0,1,5,4],[3,2,6,7],[0,3,7,4],[1,2,6,5]];
+const SOLIDS={
+  'cube':{poly:solid(BOX(1,1,1),BOXF,50),f:6,e:12,v:8,fact:'6 square faces, 12 edges and 8 vertices.'},
+  'cuboid':{poly:solid(BOX(1.6,.8,.9),BOXF,46),f:6,e:12,v:8,fact:'6 rectangle faces, 12 edges and 8 vertices.'},
+  'square-based pyramid':{poly:solid([[-1,-.8,-1],[1,-.8,-1],[1,-.8,1],[-1,-.8,1],[0,1.2,0]],[[0,1,2,3],[0,1,4],[1,2,4],[2,3,4],[3,0,4]],56),f:5,e:8,v:5,fact:'1 square face and 4 triangle faces, 8 edges and 5 vertices.'},
+  'triangular prism':{poly:solid([[-1,-.8,-1.4],[1,-.8,-1.4],[0,.95,-1.4],[-1,-.8,1.4],[1,-.8,1.4],[0,.95,1.4]],[[0,1,2],[3,4,5],[0,1,4,3],[1,2,5,4],[2,0,3,5]],48),f:5,e:9,v:6,fact:'2 triangle faces and 3 rectangle faces, 9 edges and 6 vertices.'},
+  'cylinder':{curved:1,flat:2,v:0,fact:'2 flat circle faces and 1 curved surface. No vertices.'},
+  'cone':{curved:1,flat:1,v:1,fact:'1 flat circle face, 1 curved surface and 1 vertex at the point.'},
+  'sphere':{curved:1,flat:0,v:0,fact:'1 curved surface. No flat faces, no edges and no vertices.'}
+};
+function proj(p,yaw,pitch){const x=p[0]*Math.cos(yaw)+p[2]*Math.sin(yaw), z=-p[0]*Math.sin(yaw)+p[2]*Math.cos(yaw), y=p[1];
+  return [x, y*Math.cos(pitch)-z*Math.sin(pitch), y*Math.sin(pitch)+z*Math.cos(pitch)];}
+function drawPoly3(so,yaw,cx,cy,hl,S){
+  const pitch=.42; S=S||so.S;
+  const RV=so.V.map(p=>proj(p,yaw,pitch)), P=RV.map(p=>[cx+p[0]*S,cy-p[1]*S]);
+  const front=so.N.map(n=>proj(n,yaw,pitch)[2]>1e-6);
+  const nz=so.N.map(n=>proj(n,yaw,pitch)[2]);
+  const hk=hl&&hl.k||0, ht=hl&&hl.type;
+  if(ht==='f') so.F.forEach((f,i)=>{ if(i<hk&&!front[i]) poly(f.map(j=>P[j]),'rgba(245,196,81,.22)',C.gold,2,true); });
+  so.E.forEach(e=>{ if(!e.f.some(i=>front[i])) line(P[e.a],P[e.b],C.faint,2,true); });
+  so.F.forEach((f,i)=>{ if(front[i]) poly(f.map(j=>P[j]),'rgba(63,181,168,'+(.25+.45*nz[i]).toFixed(2)+')'); });
+  if(ht==='f') so.F.forEach((f,i)=>{ if(i<hk&&front[i]) poly(f.map(j=>P[j]),'rgba(245,196,81,.6)'); });
+  so.E.forEach(e=>{ if(e.f.some(i=>front[i])) line(P[e.a],P[e.b],C.fg,2.5); });
+  if(ht==='e') so.E.forEach((e,i)=>{ if(i<hk){ const vis=e.f.some(j=>front[j]); line(P[e.a],P[e.b],C.gold,4,!vis); }});
+  if(ht==='v') P.forEach((p,i)=>{ if(i<hk){ dot(p,6,C.gold); } });
+  if(ht==='f'&&hk){ const i=hk-1, f=so.F[i]; badge(centroid(f.map(j=>P[j])),hk); }
+  if(ht==='e'&&hk){ const e=so.E[hk-1]; badge(mul(add(P[e.a],P[e.b]),.5),hk); }
+  if(ht==='v'&&hk){ badge(add(P[hk-1],[14,-14]),hk); }
+}
+function ell(cx,cy,rx,ry,half,col,lw,dash,fill){ctx.beginPath();ctx.setLineDash(dash?[6,6]:[]);
+  if(half==='front')ctx.ellipse(cx,cy,rx,ry,0,0,Math.PI);else if(half==='back')ctx.ellipse(cx,cy,rx,ry,0,Math.PI,Math.PI*2);else ctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);
+  if(fill){ctx.fillStyle=fill;ctx.fill();}if(col){ctx.strokeStyle=col;ctx.lineWidth=lw||2.5;ctx.stroke();}ctx.setLineDash([]);}
+function drawCurved(name,hl){
+  const hk=hl&&hl.k||0, ht=hl&&hl.type, body='rgba(63,181,168,.45)';
+  if(name==='cylinder'){
+    const cx=160,top=70,bot=208,rx=58,ry=17;
+    ctx.beginPath();ctx.moveTo(cx-rx,top);ctx.lineTo(cx-rx,bot);ctx.ellipse(cx,bot,rx,ry,0,Math.PI,0,true);ctx.lineTo(cx+rx,top);ctx.closePath();ctx.fillStyle=body;ctx.fill();
+    ell(cx,bot,rx,ry,'back',C.faint,2,true); ell(cx,bot,rx,ry,'front',C.fg,2.5);
+    line([cx-rx,top],[cx-rx,bot],C.fg,2.5); line([cx+rx,top],[cx+rx,bot],C.fg,2.5);
+    ell(cx,top,rx,ry,'full',C.fg,2.5,false,'rgba(63,181,168,.75)');
+    if(ht==='f'){ if(hk>=1){ell(cx,top,rx,ry,'full',C.gold,3,false,'rgba(245,196,81,.6)');badge([cx,top],1);} if(hk>=2){ell(cx,bot,rx,ry,'full',C.gold,3,true,'rgba(245,196,81,.3)');badge([cx,bot],2);} }
+  } else if(name==='cone'){
+    const cx=160,apex=[160,52],by=212,rx=62,ry=18;
+    ctx.beginPath();ctx.moveTo(apex[0],apex[1]);ctx.lineTo(cx-rx,by);ctx.ellipse(cx,by,rx,ry,0,Math.PI,0,true);ctx.closePath();ctx.fillStyle=body;ctx.fill();
+    ell(cx,by,rx,ry,'back',C.faint,2,true); ell(cx,by,rx,ry,'front',C.fg,2.5);
+    line(apex,[cx-rx,by],C.fg,2.5); line(apex,[cx+rx,by],C.fg,2.5);
+    if(ht==='f'&&hk>=1){ell(cx,by,rx,ry,'full',C.gold,3,false,'rgba(245,196,81,.55)');badge([cx,by],1);}
+    if(ht==='v'&&hk>=1){dot(apex,7,C.gold);badge([apex[0]+18,apex[1]-6],1);}
+  } else {
+    const c=[160,138],r=82;
+    const g=ctx.createRadialGradient(130,105,10,160,138,r);g.addColorStop(0,'rgba(120,220,205,.85)');g.addColorStop(1,'rgba(40,120,112,.6)');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(c[0],c[1],r,0,Math.PI*2);ctx.fill();ctx.strokeStyle=C.fg;ctx.lineWidth=2.5;ctx.stroke();
+    ell(c[0],c[1],r,22,'back',C.faint,2,true); ell(c[0],c[1],r,22,'front',C.fg,2);
+  }
+}
+
+/* ---------- UI plumbing ---------- */
+function setPrompt(html){ promptEl.innerHTML=html; }
+function setHud(l,r){ hudEl.innerHTML='<span class="lives">'+l+'</span><span class="r">'+r+'</span>'; }
+const pips=n=>'Lives '+[0,1,2].map(i=>`<span class="pip${i<n?'':' off'}"></span>`).join('');
+function setButtons(list,handler,cols){
+  answersEl.innerHTML=''; st.btns=[]; st.cols=cols||2; answersEl.style.setProperty('--cols',st.cols);
+  list.forEach((b,i)=>{ const el=document.createElement('button'); el.className='key'+(b.cls?' '+b.cls:''); el.id='key-'+i; el.type='button'; el.innerHTML=b.label; el.dataset.v=String(b.value);
+    el.addEventListener('click',()=>{ st.focus=i; mark(); sClick(); handler(b.value); }); answersEl.appendChild(el); st.btns.push(el); });
+  st.focus=-1; mark();
+}
+function mark(){ st.btns.forEach((b,i)=>b.classList.toggle('sel',i===st.focus)); }
+function move(dx,dy){ if(!st.btns.length) return; let f=st.focus<0?0:st.focus+dx+dy*st.cols; f=Math.max(0,Math.min(st.btns.length-1,f)); st.focus=f; mark(); st.btns[f].focus(); }
+function shake(){ cardEl.classList.remove('shake'); void cardEl.offsetWidth; cardEl.classList.add('shake'); }
+const chip=(k,w)=>`<span class="chip ${k}">${w}</span>`;
+const TYPEWORD={H:chip('h','horizontal'),V:chip('v','vertical'),D:chip('d','diagonal')};
+function numOpts(a,max){const s=new Set([a]);const c=shuffle([a-1,a+1,a+2,a-2]).concat([a+3,a+4,a+5]);
+  for(const x of c){if(s.size>=4)break;if(x>=0&&(max==null||x<=max))s.add(x);}return [...s].sort((x,y)=>x-y).map(v=>({label:String(v),value:v}));}
+const plural=(n,w)=>n+' '+w+(n===1?'':'s');
+
+/* =====================================================================
+   GAME 1 · LINE SPOTTER: horizontal, vertical or diagonal
+   ===================================================================== */
+const LETTERS={E:[[0,0,0,6],[0,0,4,0],[0,3,3,3],[0,6,4,6]],F:[[0,0,0,6],[0,0,4,0],[0,3,3,3]],L:[[0,0,0,6],[0,6,4,6]],T:[[0,0,4,0],[2,0,2,6]],
+  H:[[0,0,0,6],[4,0,4,6],[0,3,4,3]],Z:[[0,0,4,0],[4,0,0,6],[0,6,4,6]],N:[[0,6,0,0],[0,0,4,6],[4,6,4,0]],M:[[0,6,0,0],[0,0,2,3],[2,3,4,0],[4,0,4,6]],
+  A:[[0,6,2,0],[2,0,4,6],[1,3,3,3]],X:[[0,0,4,6],[4,0,0,6]],K:[[0,0,0,6],[0,3,4,0],[0,3,4,6]],V:[[0,0,2,6],[2,6,4,0]],I:[[2,0,2,6],[0,0,4,0],[0,6,4,6]]};
+const OUTLINES={'rectangle':[[0,0],[8,0],[8,5],[0,5]],'triangle':[[0,5],[8,5],[4,0]],'trapezium':[[2,0],[6,0],[8,5],[0,5]],
+  'house shape':[[0,2.5],[4,0],[8,2.5],[8,6],[0,6]],'L-shape':[[0,0],[3,0],[3,4],[7,4],[7,6],[0,6]],'right-angled triangle':[[0,0],[0,5],[7,5]],
+  'square':[[4,0],[8,4],[4,8],[0,4]],'hexagon':[[2,0],[6,0],[8,3.46],[6,6.93],[2,6.93],[0,3.46]]};
+function ltype(s){const dx=Math.abs(s[1][0]-s[0][0]),dy=Math.abs(s[1][1]-s[0][1]);return dy<.5?'H':dx<.5?'V':'D';}
+function drawSegs(q){
+  q.segs.forEach((s,i)=>{const t=ltype(s);const lit=q.lit&&q.lit.includes(i);
+    const col=(q.col||lit)?C[t.toLowerCase()]:C.fg; line(s[0],s[1],col,lit?7:5); });
+  if(q.lit) q.lit.forEach((i,k)=>{const s=q.segs[i];badge(add(mul(add(s[0],s[1]),.5),[0,0]),k+1);});
+}
+function makeLines(){
+  const kind=pick(['line','line','letter','letter','shape','shape']);
+  const q={draw(){ if(q.label) text(q.label,160,22,14,C.muted,600); drawSegs(q); if(q.tag) text(q.tag,160,270,14,C.fg,600); }};
+  if(kind==='line'){
+    const t=pick(['H','V','D']), L=70+rnd(140), c=[160+rnd(70)-35,140+rnd(60)-30];
+    const ang=t==='H'?0:t==='V'?90:(Math.random()<.5?25+rnd(41):115+rnd(41));
+    const u=[Math.cos(R(ang)),-Math.sin(R(ang))]; let a=add(c,mul(u,-L/2)), b=add(c,mul(u,L/2));
+    if(t==='H'){a[1]=b[1]=Math.round(c[1]);} if(t==='V'){a[0]=b[0]=Math.round(c[0]);}
+    q.segs=[[a,b]]; q.answer=t;
+    q.prompt='<span>Look at this line.</span><span>Is it '+TYPEWORD.H+', '+TYPEWORD.V+' or neither (sloping)?</span>';
+    q.options=[{label:'Horizontal',value:'H'},{label:'Vertical',value:'V'},{label:'Diagonal<small>neither</small>',value:'D'}]; q.cols=3;
+    q.say=v=>({H:'horizontal',V:'vertical',D:'diagonal (neither)'})[v];
+    q.explain={H:'It goes straight across, like the horizon.',V:'It goes straight up and down.',D:'It slopes, so it is not horizontal or vertical.'}[t]+(L<110&&t!=='D'?' Short lines can still be '+(t==='H'?'horizontal':'vertical')+': it is the direction that counts.':'');
+    q.reveal=async()=>{q.col=true;q.tag={H:'horizontal',V:'vertical',D:'diagonal'}[t];sStep(1);await sleep(500);};
+    return q;
+  }
+  let name,segs;
+  if(kind==='letter'){ name=pick(Object.keys(LETTERS)); const s=22,ox=160-2*s,oy=140-3*s;
+    segs=LETTERS[name].map(([x1,y1,x2,y2])=>[[ox+x1*s,oy+y1*s],[ox+x2*s,oy+y2*s]]); q.label='LETTER '+name; }
+  else { name=pick(Object.keys(OUTLINES)); const P=fit(OUTLINES[name],0,{w:210,h:170,max:30}); segs=P.map((p,i)=>[p,P[(i+1)%P.length]]); q.label=name.toUpperCase(); }
+  q.segs=segs;
+  const cnt={H:0,V:0,D:0}; segs.forEach(s=>cnt[ltype(s)]++);
+  const T=kind==='letter'?pick(['H','V','H','V','D']):pick(['H','V']);
+  q.answer=cnt[T];
+  q.prompt=`<span>How many ${TYPEWORD[T]} lines does ${kind==='letter'?'the letter <b>'+name+'</b>':'this <b>'+name+'</b>'} have?</span>`+(name==='square'?'<span class="note">Careful: this square has been turned.</span>':'');
+  q.options=numOpts(q.answer,6); q.cols=4; q.say=v=>plural(v,{H:'horizontal line',V:'vertical line',D:'diagonal line'}[T]);
+  q.explain=`${kind==='letter'?'The letter '+name:'This '+name} has ${plural(cnt.H,'horizontal line')}, ${plural(cnt.V,'vertical line')} and ${plural(cnt.D,'diagonal line')}.`;
+  q.reveal=async()=>{ q.lit=[]; for(let i=0;i<segs.length;i++){ if(ltype(segs[i])===T){ q.lit.push(i); sStep(q.lit.length); await sleep(480);} }
+    if(!q.lit.length){ q.tag='none!'; await sleep(400);} q.col=true; await sleep(300); };
+  return q;
+}
+
+/* =====================================================================
+   GAME 2 · PARALLEL PATROL: parallel, perpendicular or neither
+   ===================================================================== */
+const inStage=p=>p[0]>18&&p[0]<302&&p[1]>18&&p[1]<262;
+function relOf(s1,s2){const a=norm(sub(s1[1],s1[0])),b=norm(sub(s2[1],s2[0]));if(Math.abs(cross2(a,b))<0.02)return 'par';if(Math.abs(dot2(a,b))<0.02)return 'perp';return 'neither';}
+function lineX(s1,s2){const r=sub(s1[1],s1[0]),s=sub(s2[1],s2[0]);const d=cross2(r,s);if(Math.abs(d)<1e-9)return null;const t=cross2(sub(s2[0],s1[0]),s)/d;return add(s1[0],mul(r,t));}
+function makePara(){
+  const want=pick(['par','perp','neither']);
+  const q={answer:want,cols:3};
+  q.options=[{label:'Parallel',value:'par'},{label:'Perpendicular',value:'perp'},{label:'Neither',value:'neither'}];
+  q.say=v=>({par:'parallel',perp:'perpendicular',neither:'neither'})[v];
+  q.explain={par:'They stay the same distance apart and never meet, however long you make them.',perp:'They meet at a right angle. The checker fits exactly.',neither:'They are not the same distance apart, and where they meet it is not a right angle.'}[want];
+  if(Math.random()<.35){ /* two sides of a shape */
+    for(let tries=0;tries<60;tries++){
+      const nm=pick(['rectangle','trapezium','right-angled triangle','parallelogram','square']);
+      const base={'rectangle':[[0,0],[6,0],[6,3.6],[0,3.6]],'trapezium':[[1.6,0],[5,0],[6.6,3.4],[0,3.4]],'right-angled triangle':[[0,0],[0,4],[5.5,4]],'parallelogram':[[0,0],[4.6,0],[6,3],[1.4,3]],'square':[[0,0],[4,0],[4,4],[0,4]]}[nm];
+      const P=fit(base,rnd(4)*15+(Math.random()<.5?0:90),{w:210,h:170,max:34});const S=P.map((p,i)=>[p,P[(i+1)%P.length]]);
+      const pairs=[];for(let i=0;i<S.length;i++)for(let j=i+1;j<S.length;j++)if(relOf(S[i],S[j])===want)pairs.push([i,j]);
+      if(!pairs.length)continue;
+      const [i,j]=pick(pairs); q.P=P; q.segs=[S[i],S[j]]; q.shape=nm;
+      q.prompt=`<span>Look at the two ${chip('g','gold')} sides of this <b>${nm}</b>.</span><span>Are they parallel, perpendicular or neither?</span>`;
+      if(want==='neither') q.explain='If you made these sides longer they would meet, but not at a right angle.';
+      break;
+    }
+  }
+  if(!q.segs){ /* two free lines */
+    for(let tries=0;tries<200;tries++){
+      const th=R(rnd(180)), u=[Math.cos(th),Math.sin(th)], c=[160+rnd(50)-25,140+rnd(40)-20];
+      let s1,s2,P=null,w=null;
+      if(want==='par'){const n=[-u[1],u[0]],d=40+rnd(40),sh=rnd(30)-15,a=110+rnd(70),b=a-20+rnd(40);
+        const c1=add(c,mul(n,-d/2)),c2=add(add(c,mul(n,d/2)),mul(u,sh));s1=[add(c1,mul(u,-a/2)),add(c1,mul(u,a/2))];s2=[add(c2,mul(u,-b/2)),add(c2,mul(u,b/2))];q.n=n;q.d=d;}
+      else { const phi=want==='perp'?90:(Math.random()<.5?30+rnd(31):120+rnd(31)); w=rot(u,R(phi)); const style=pick(['L','T','X']); const a=80+rnd(60),b=70+rnd(60);
+        P=c;
+        if(style==='L'){s1=[c,add(c,mul(u,a))];s2=[c,add(c,mul(w,b))];}
+        else if(style==='T'){s1=[add(c,mul(u,-a/2)),add(c,mul(u,a/2))];s2=[c,add(c,mul(w,b))];}
+        else {s1=[add(c,mul(u,-a/2)),add(c,mul(u,a/2))];s2=[add(c,mul(w,-b/2)),add(c,mul(w,b/2))];}
+        q.u=u;q.w=w;q.M=P; }
+      if([s1[0],s1[1],s2[0],s2[1]].every(inStage)){q.segs=[s1,s2];break;}
+    }
+    q.prompt='<span>Look at these two lines.</span><span>Are they <b>parallel</b>, <b>perpendicular</b> or <b>neither</b>?</span>';
+  }
+  q.draw=()=>{
+    if(q.P){ poly(q.P,'rgba(63,181,168,.18)',C.faint,2.5); q.segs.forEach(s=>line(s[0],s[1],C.gold,5)); }
+    else q.segs.forEach(s=>line(s[0],s[1],C.fg,5));
+    if(!q.show) return;
+    const [s1,s2]=q.segs;
+    if(q.answer==='par'){ const a=norm(sub(s1[1],s1[0])); let t2=s2; if(dot2(a,norm(sub(s2[1],s2[0])))<0)t2=[s2[1],s2[0]];
+      chevron(s1[0],s1[1],C.d,2); chevron(t2[0],t2[1],C.d,2);
+      if(!q.P){ [0.3,0.7].forEach(f=>{const p=add(s1[0],mul(sub(s1[1],s1[0]),f));const qq=lineX([p,add(p,q.n)],s2);if(qq)line(p,qq,C.gold,2,true);}); }
+    } else {
+      let M=q.M, u=q.u, w=q.w;
+      if(!M){ M=lineX(s1,s2); const far=(s,p)=>len(sub(s[0],p))>len(sub(s[1],p))?s[0]:s[1]; u=norm(sub(far(s1,M),M)); w=norm(sub(far(s2,M),M));
+        [s1,s2].forEach(s=>{const e=len(sub(s[0],M))<len(sub(s[1],M))?s[0]:s[1]; if(len(sub(e,M))>2) line(e,M,C.gold,2,true);}); }
+      if(M&&inStage(M)){ if(q.answer==='perp'){ sector(M,u,w,34,'rgba(245,196,81,.3)'); raMark(M,add(M,u),add(M,w),C.gold,13); }
+        else { sector(M,u,w,34,'rgba(255,138,61,.22)'); } }
+    }
+    if(q.tag) text(q.tag,160,272,14,q.answer==='neither'?C.warn:C.gold,600);
+  };
+  q.reveal=async()=>{ q.show=true; q.tag={par:'same distance apart',perp:'right angle: the checker fits',neither:'not a right angle'}[q.answer]; sStep(1); await sleep(700); };
+  return q;
+}
+
+/* =====================================================================
+   GAME 3 · 2D DETECTIVE
+   ===================================================================== */
+function reg(n,r){const p=[];for(let i=0;i<n;i++){const a=R(-90+360*i/n);p.push([r*Math.cos(a),r*Math.sin(a)]);}return p;}
+const SHAPE2D=[
+  ()=>{const s=3+rnd(2);return {type:'square',pts:[[0,0],[s,0],[s,s],[0,s]],rot:pick([0,0,20,45])};},
+  ()=>{const w=5+rnd(2),h=2+rnd(2);return {type:'rectangle',pts:[[0,0],[w,0],[w,h],[0,h]],rot:pick([0,0,15,30,90])};},
+  ()=>({type:'triangle',pts:[[0,0],[4+rnd(2),0],[0,3]],rot:pick([0,30,90,180,200]),hint:'right'}),
+  ()=>({type:'triangle',pts:pick([[[0,0],[5,0],[1.5,3.4]],[[0,0],[5,0],[2.5,4]],[[0,0],[6,0],[4.5,2.4]]]),rot:pick([0,0,25,180])}),
+  ()=>{const a=R(pick([60,65,70]));return {type:'rhombus',pts:[[0,0],[3,0],[3+3*Math.cos(a),3*Math.sin(a)],[3*Math.cos(a),3*Math.sin(a)]],rot:pick([0,0,90])};},
+  ()=>({type:'parallelogram',pts:[[0,0],[4.6,0],[5.9,2.4],[1.3,2.4]],rot:pick([0,0,180,20])}),
+  ()=>({type:'trapezium',pts:pick([[[1.3,0],[4.4,0],[5.7,2.6],[0,2.6]],[[0,0],[3.4,0],[5,2.6],[0,2.6]]]),rot:pick([0,0,180,90])}),
+  ()=>(Math.random()<.5?{type:'pentagon',pts:reg(5,2.6),rot:rnd(72)}:{type:'pentagon',pts:[[0,1.6],[2,0],[4,1.6],[4,4.2],[0,4.2]],rot:pick([0,0,180])}),
+  ()=>(Math.random()<.5?{type:'hexagon',pts:reg(6,2.6),rot:rnd(60)}:{type:'hexagon',pts:pick([[[0,0],[4,0],[4,1.5],[1.5,1.5],[1.5,4],[0,4]],[[0,0],[2.5,0],[4.5,1.4],[3.6,3.6],[1,4],[-0.8,1.8]]]),rot:pick([0,0,90,180])}),
+  ()=>({type:'octagon',pts:reg(8,2.7),rot:pick([0,22.5,10])})
+];
+const NAME_DISTRACT={triangle:['square','pentagon','hexagon','rectangle'],square:['triangle','pentagon','hexagon','octagon'],rectangle:['square','pentagon','hexagon','triangle'],
+  rhombus:['square','rectangle','pentagon','triangle'],parallelogram:['rectangle','square','pentagon','hexagon'],trapezium:['rectangle','square','pentagon','hexagon'],
+  pentagon:['hexagon','octagon','square','triangle'],hexagon:['pentagon','octagon','rectangle','triangle'],octagon:['hexagon','pentagon','square','rectangle']};
+const NAME_FACT={triangle:'A triangle has 3 sides and 3 vertices.',square:'A square has 4 equal sides and 4 right angles.',rectangle:'A rectangle has 4 right angles, with opposite sides equal.',
+  rhombus:'A rhombus has 4 equal sides but no right angles.',parallelogram:'A parallelogram has 2 pairs of parallel sides but no right angles.',trapezium:'A trapezium has exactly 1 pair of parallel sides.',
+  pentagon:'A pentagon has 5 sides and 5 vertices.',hexagon:'A hexagon has 6 sides and 6 vertices, even when the sides are not equal.',octagon:'An octagon has 8 sides, like an octopus has 8 legs.'};
+function make2D(){
+  const sh=pick(SHAPE2D)(); const P=fit(sh.pts,sh.rot,{w:200,h:170,max:40}); const pr=props(P);
+  const kinds=['name','name','vertices','sides','ra','ra'];
+  if(pr.n<=4) kinds.push('par','par'); if(pr.n>=3&&pr.n<=6) kinds.push('quad');
+  const kind=pick(kinds); const q={P,pr,kind,cols:2};
+  const turned=sh.rot%90!==0;
+  if(kind==='name'){ q.answer=sh.type; q.prompt='<span>What is the best name for this shape?</span>';
+    q.options=shuffle([sh.type].concat(shuffle(NAME_DISTRACT[sh.type]).slice(0,3))).map(n=>({label:n[0].toUpperCase()+n.slice(1),value:n})); q.say=v=>'a '+v; q.explain=NAME_FACT[sh.type]; }
+  else if(kind==='vertices'||kind==='sides'){ q.answer=pr.n; q.prompt=`<span>How many <b>${kind}</b> does this shape have?</span>`+(kind==='vertices'?'<span class="note">A vertex is a corner. More than one are vertices.</span>':''); q.options=numOpts(pr.n,10); q.cols=4; q.say=v=>plural(v,kind==='sides'?'side':'vertex').replace('vertexs','vertices'); q.explain=`Count round from one corner. This ${sh.type} has ${pr.n} sides and ${pr.n} vertices.`; }
+  else if(kind==='ra'){ q.answer=pr.ra.length; q.prompt='<span>How many <b>right angles</b> does this shape have?</span><span class="note">Check every corner. Inside corners only.</span>'; q.options=numOpts(q.answer,8); q.cols=4; q.say=v=>plural(v,'right angle');
+    q.explain=q.answer?`Each square corner is a right angle.`+(turned?' Turning a shape does not change its right angles.':''):'None of the corners is a square corner.'; }
+  else if(kind==='par'){ q.answer=pr.par.length; q.prompt='<span>How many <b>pairs of parallel sides</b> does this shape have?</span>'; q.options=numOpts(q.answer,4); q.cols=4; q.say=v=>plural(v,'pair'); q.explain=q.answer?'Parallel sides go in the same direction and never meet.':'No two sides go in the same direction.'; }
+  else { const yes=pr.n===4; q.answer=yes?'y':'n'; q.prompt='<span>Is this shape a <b>quadrilateral</b>?</span>'; q.options=[{label:'Yes',value:'y'},{label:'No',value:'n'}]; q.say=v=>v==='y'?'yes':'no'; q.explain=`A quadrilateral has exactly 4 straight sides. This shape has ${pr.n}.`; }
+  q.draw=()=>{ poly(P,'rgba(63,181,168,.35)',C.fg,3.5);
+    if(q.nums) for(let i=0;i<q.nums;i++) badge(outward(P,i,20),i+1);
+    if(q.ras) for(let i=0;i<q.ras;i++){const k=pr.ra[i];raMark(P[k],P[(k-1+pr.n)%pr.n],P[(k+1)%pr.n],C.gold,12);}
+    if(q.pars) for(let i=0;i<q.pars;i++){const [a,b]=pr.par[i];const col=PAIR_COL[i];let s1=pr.S[a],s2=pr.S[b];
+      if(dot2(sub(s1[1],s1[0]),sub(s2[1],s2[0]))<0)s2=[s2[1],s2[0]];line(s1[0],s1[1],col,6);line(s2[0],s2[1],col,6);chevron(s1[0],s1[1],C.stage,i+1);chevron(s2[0],s2[1],C.stage,i+1);}
+    if(q.tag) text(q.tag,160,272,14,C.gold,600); };
+  q.reveal=async()=>{
+    if(kind==='ra'){ q.ras=0; for(let i=0;i<pr.ra.length;i++){q.ras=i+1;sStep(i+1);await sleep(450);} if(!pr.ra.length){q.tag='no square corners';await sleep(500);} }
+    else if(kind==='par'){ q.pars=0; for(let i=0;i<pr.par.length;i++){q.pars=i+1;sStep(i+1);await sleep(600);} if(!pr.par.length){q.tag='no parallel sides';await sleep(500);} }
+    else { q.nums=0; for(let i=0;i<pr.n;i++){q.nums=i+1;sStep(i+1);await sleep(330);} if(kind==='name')q.tag=sh.type; }
+  };
+  return q;
+}
+
+/* =====================================================================
+   GAME 4 · 3D DETECTIVE
+   ===================================================================== */
+const NAMES3=['cube','cuboid','square-based pyramid','triangular prism','cylinder','cone','sphere'];
+function make3D(){
+  const name=pick(NAMES3), sd=SOLIDS[name]; const q={name,hl:null,cols:2};
+  const kinds=sd.curved?['name','name','flat','vert']:['name','faces','edges','vert'];
+  const kind=pick(kinds);
+  if(kind==='name'){ q.answer=name; q.prompt='<span>What is the name of this 3D shape?</span>';
+    const pool=NAMES3.filter(n=>n!==name); const near={cube:'cuboid',cuboid:'cube','square-based pyramid':'triangular prism','triangular prism':'square-based pyramid',cylinder:'cone',cone:'cylinder',sphere:'cylinder'}[name];
+    q.options=shuffle([name,near].concat(shuffle(pool.filter(n=>n!==near)).slice(0,2))).map(n=>({label:n[0].toUpperCase()+n.slice(1),value:n})); q.say=v=>'a '+v; q.explain='A '+name+' has '+sd.fact.charAt(0).toLowerCase()+sd.fact.slice(1); }
+  else if(kind==='faces'){ q.answer=sd.f; q.prompt=`<span>How many <b>faces</b> does this ${name} have?</span><span class="note">A face is a flat surface. Do not forget the ones at the back!</span>`; q.options=numOpts(sd.f,12); q.cols=4; q.say=v=>plural(v,'face'); q.explain='A '+name+' has '+sd.fact.charAt(0).toLowerCase()+sd.fact.slice(1); q.hlType='f'; }
+  else if(kind==='edges'){ q.answer=sd.e; q.prompt=`<span>How many <b>edges</b> does this ${name} have?</span><span class="note">An edge is where two faces meet.</span>`; q.options=numOpts(sd.e,15); q.cols=4; q.say=v=>plural(v,'edge'); q.explain='Dashed lines show the edges at the back. '+sd.fact; q.hlType='e'; }
+  else if(kind==='flat'){ q.answer=sd.flat; q.prompt=`<span>How many <b>flat faces</b> does this ${name} have?</span>`; q.options=numOpts(sd.flat,5); q.cols=4; q.say=v=>plural(v,'flat face'); q.explain='A '+name+' has '+sd.fact.charAt(0).toLowerCase()+sd.fact.slice(1); q.hlType='f'; }
+  else { q.answer=sd.v; q.prompt=`<span>How many <b>vertices</b> does this ${name} have?</span><span class="note">A vertex is a point where edges meet.</span>`; q.options=numOpts(sd.v,10); q.cols=4; q.say=v=>plural(v,'vertex').replace('vertexs','vertices'); q.explain='A '+name+' has '+sd.fact.charAt(0).toLowerCase()+sd.fact.slice(1); q.hlType='v'; }
+  q.draw=(t,dt)=>{ if(!q.frozen) st.yaw+=dt*0.0005;
+    if(sd.poly) drawPoly3(sd.poly,st.yaw,160,142,q.hl); else drawCurved(name,q.hl);
+    if(q.tag) text(q.tag,160,272,14,C.gold,600); };
+  q.reveal=async()=>{ q.frozen=true;
+    if(q.hlType){ q.hl={type:q.hlType,k:0}; for(let i=0;i<q.answer;i++){q.hl.k=i+1;sStep(i+1);await sleep(Math.max(220,1800/q.answer));}
+      if(!q.answer){q.tag=q.hlType==='v'?'no vertices':'no flat faces';await sleep(600);} else {await sleep(300);} }
+    else { q.tag=name; await sleep(500); }
+    q.frozen=false; };
+  return q;
+}
+
+/* =====================================================================
+   GAME 5 · NET FACTORY
+   ===================================================================== */
+function foldCube(cells){
+  const key=c=>c[0]+','+c[1], idx={}; cells.forEach((c,i)=>idx[key(c)]=i);
+  const face=cells.map(()=>-1), ori=[]; ori[0]={D:0,U:1,N:2,S:3,E:4,W:5}; face[0]=0; const qu=[0];
+  const roll={E:o=>({D:o.E,E:o.U,U:o.W,W:o.D,N:o.N,S:o.S}),W:o=>({D:o.W,W:o.U,U:o.E,E:o.D,N:o.N,S:o.S}),N:o=>({D:o.N,N:o.U,U:o.S,S:o.D,E:o.E,W:o.W}),S:o=>({D:o.S,S:o.U,U:o.N,N:o.D,E:o.E,W:o.W})};
+  const mv={E:[1,0],W:[-1,0],N:[0,-1],S:[0,1]};
+  while(qu.length){const i=qu.shift();for(const d in mv){const j=idx[key([cells[i][0]+mv[d][0],cells[i][1]+mv[d][1]])];if(j!=null&&face[j]<0){ori[j]=roll[d](ori[i]);face[j]=ori[j].D;qu.push(j);}}}
+  return {valid:cells.length===6&&new Set(face).size===6,face};
+}
+const HEX_POOL=(()=>{const p=[];
+  for(let a=0;a<4;a++)for(let b=0;b<4;b++)p.push([[0,0],[1,0],[2,0],[3,0],[a,-1],[b,1]]);
+  for(let a=0;a<4;a++)for(let b=a+1;b<4;b++)p.push([[0,0],[1,0],[2,0],[3,0],[a,-1],[b,-1]]);
+  p.push([[0,0],[1,0],[1,1],[2,1],[3,1],[2,2]],[[0,0],[1,0],[1,1],[2,1],[3,1],[1,2]],[[0,0],[1,0],[1,1],[2,1],[3,1],[3,2]],[[0,0],[1,0],[1,1],[2,1],[2,2],[3,2]],[[0,0],[1,0],[2,0],[2,1],[3,1],[4,1]]);
+  p.push([[0,0],[1,0],[2,0],[3,0],[4,0],[5,0]],[[0,0],[1,0],[2,0],[0,1],[1,1],[2,1]],[[0,0],[1,0],[2,0],[3,0],[4,0],[1,-1]],[[0,0],[1,0],[2,0],[3,0],[4,0],[2,1]],[[0,0],[1,0],[0,1],[1,1],[2,1],[3,1]],[[0,0],[0,1],[0,2],[1,2],[2,2],[3,2]]);
+  return p.map(c=>({c,valid:foldCube(c).valid}));})();
+function transformCells(c){const k=rnd(4),f=Math.random()<.5;let out=c.map(p=>p.slice());for(let i=0;i<k;i++)out=out.map(([x,y])=>[-y,x]);if(f)out=out.map(([x,y])=>[-x,y]);
+  const mx=Math.min(...out.map(p=>p[0])),my=Math.min(...out.map(p=>p[1]));return out.map(([x,y])=>[x-mx,y-my]);}
+function netItems(type){
+  if(type==='cuboid'){const a=2.6,b=1,c=1.4;const R4=(x,y,w,h)=>({pts:[[x,y],[x+w,y],[x+w,y+h],[x,y+h]]});
+    return [R4(b,0,a,b),R4(b,b,a,c),R4(b,b+c,a,b),R4(b,2*b+c,a,c),R4(0,b,b,c),R4(b+a,b,b,c)];}
+  if(type==='triangular prism'){const w=1.2,h=2.6,t=w*Math.sqrt(3)/2;const R4=(x)=>({pts:[[x,0],[x+w,0],[x+w,h],[x,h]]});
+    return [R4(0),R4(w),R4(2*w),{pts:[[w,0],[2*w,0],[1.5*w,-t]]},{pts:[[w,h],[2*w,h],[1.5*w,h+t]]}];}
+  if(type==='square-based pyramid') return [{pts:[[0,0],[2,0],[2,2],[0,2]]},{pts:[[0,0],[2,0],[1,-1.6]]},{pts:[[2,0],[2,2],[3.6,1]]},{pts:[[2,2],[0,2],[1,3.6]]},{pts:[[0,2],[0,0],[-1.6,1]]}];
+  if(type==='cylinder') return [{pts:[[0,0],[4.4,0],[4.4,2.2],[0,2.2]]},{circle:[2.2,-0.7],r:0.7},{circle:[2.2,2.9],r:0.7}];
+  if(type==='cone') return [{sector:[0,0],r:3,a0:R(30),a1:R(150)},{circle:[0,4],r:1}];
+  const cells=transformCells(pick(HEX_POOL.filter(h=>h.valid)).c); return cells.map(([x,y])=>({pts:[[x,y],[x+1,y],[x+1,y+1],[x,y+1]],cell:[x,y]}));
+}
+function layoutItems(items){ /* scale every item together to fit the stage */
+  const pts=[];items.forEach(it=>{if(it.pts)pts.push(...it.pts);else if(it.circle){pts.push([it.circle[0]-it.r,it.circle[1]-it.r],[it.circle[0]+it.r,it.circle[1]+it.r]);}else{pts.push(it.sector,[it.sector[0]-it.r,it.sector[1]+it.r],[it.sector[0]+it.r,it.sector[1]+it.r],[it.sector[0]+it.r*Math.cos(it.a0),it.sector[1]+it.r*Math.sin(it.a0)]);}});
+  const x0=Math.min(...pts.map(p=>p[0])),x1=Math.max(...pts.map(p=>p[0])),y0=Math.min(...pts.map(p=>p[1])),y1=Math.max(...pts.map(p=>p[1]));
+  const s=Math.min(250/(x1-x0),214/(y1-y0),46), T=p=>[160+(p[0]-(x0+x1)/2)*s,138+(p[1]-(y0+y1)/2)*s];
+  return items.map(it=>it.pts?Object.assign({},it,{P:it.pts.map(T)}):it.circle?Object.assign({},it,{C:T(it.circle),rr:it.r*s}):Object.assign({},it,{C:T(it.sector),rr:it.r*s}));
+}
+function drawItem(it,fill,stroke,lw){
+  if(it.P) poly(it.P,fill,stroke,lw||2.5);
+  else if(it.circle){ctx.beginPath();ctx.arc(it.C[0],it.C[1],it.rr,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle=stroke;ctx.lineWidth=lw||2.5;ctx.stroke();}
+  else {ctx.beginPath();ctx.moveTo(it.C[0],it.C[1]);ctx.arc(it.C[0],it.C[1],it.rr,it.a0,it.a1);ctx.closePath();ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle=stroke;ctx.lineWidth=lw||2.5;ctx.stroke();}
+}
+const itemCentre=it=>it.P?centroid(it.P):it.circle?it.C:add(it.C,[0,it.rr*0.6]);
+const NET_TYPES=['cube','cuboid','triangular prism','square-based pyramid','cylinder','cone'];
+const NET_FACT={cube:'6 squares fold up into a cube.',cuboid:'6 rectangles fold up into a cuboid. Opposite faces match.','triangular prism':'2 triangles and 3 rectangles make a triangular prism.',
+  'square-based pyramid':'1 square and 4 triangles that meet at the top make a square-based pyramid.',cylinder:'The rectangle rolls up into the curved surface, and the 2 circles are the ends.',cone:'The curved piece rolls up into a cone, and the circle is the base.'};
+function makeNet(){
+  const q={cols:2};
+  if(Math.random()<.5){ /* will it fold into a cube? */
+    const valid=Math.random()<.5; const h=pick(HEX_POOL.filter(x=>x.valid===valid)); const cells=transformCells(h.c); const fold=foldCube(cells);
+    q.items=layoutItems(cells.map(([x,y])=>({pts:[[x,y],[x+1,y],[x+1,y+1],[x,y+1]]}))); q.fold=fold;
+    q.answer=fold.valid?'y':'n'; q.options=[{label:'Yes, it makes a cube',value:'y'},{label:'No, it does not',value:'n'}]; q.cols=1;
+    q.prompt='<span>This net has 6 squares.</span><span>Will it fold up to make a <b>cube</b>?</span>'; q.say=v=>v==='y'?'yes':'no';
+    const counts={};fold.face.forEach(f=>counts[f]=(counts[f]||0)+1); q.clash=fold.face.map(f=>counts[f]>1);
+    q.explain=fold.valid?'Each colour shows a different face of the cube. 6 squares, 6 different faces.':'Squares with the same colour would land on the same face, so the cube is left with a hole.';
+    q.draw=()=>{ q.items.forEach((it,i)=>{ const lit=q.k!=null&&i<q.k; drawItem(it,lit?FACE_COL[fold.face[i]]+'cc':'rgba(63,181,168,.35)',C.fg,2.5); });
+      if(q.done&&!fold.valid) q.items.forEach((it,i)=>{ if(q.clash[i]) drawItem(it,'rgba(0,0,0,0)',C.warn,5); });
+      if(q.tag) text(q.tag,160,272,14,fold.valid?C.ok:C.warn,600); };
+    q.reveal=async()=>{ q.k=0; for(let i=0;i<6;i++){q.k=i+1;sStep(i+1);await sleep(330);} q.done=true; q.tag=fold.valid?'6 different faces':'two squares on the same face'; await sleep(500); };
+    return q;
+  }
+  const type=pick(NET_TYPES); q.items=layoutItems(netItems(type)); q.answer=type;
+  q.prompt='<span>Which 3D shape does this net fold up to make?</span>';
+  q.options=shuffle([type].concat(shuffle(NET_TYPES.filter(n=>n!==type)).slice(0,3))).map(n=>({label:n[0].toUpperCase()+n.slice(1),value:n})); q.say=v=>'a '+v; q.explain=NET_FACT[type];
+  q.draw=()=>{ q.items.forEach((it,i)=>drawItem(it,q.k!=null&&i<q.k?'rgba(245,196,81,.6)':'rgba(63,181,168,.35)',C.fg,2.5));
+    if(q.k) for(let i=0;i<q.k;i++) badge(itemCentre(q.items[i]),i+1);
+    if(q.tag) text(q.tag,160,272,14,C.gold,600); };
+  q.reveal=async()=>{ q.k=0; for(let i=0;i<q.items.length;i++){q.k=i+1;sStep(i+1);await sleep(380);} q.tag=type; await sleep(400); };
+  return q;
+}
+
+/* =====================================================================
+   GAME 6 · PINBOARD BUILDER
+   ===================================================================== */
+const PIN0=[60,30], PSTEP=50;
+const pinXY=([i,j])=>[PIN0[0]+i*PSTEP,PIN0[1]+j*PSTEP];
+const PIN_LEVELS=[
+  {task:'Make a square.',check:p=>p.n!==4?'A square has 4 sides. Yours has '+p.n+'.':p.ra.length<4?'A square needs 4 right angles. Yours has '+p.ra.length+'.':!p.equal?'All 4 sides must be the same length. That is a rectangle!':''},
+  {task:'Make a rectangle that is not a square.',check:p=>p.n!==4?'A rectangle has 4 sides. Yours has '+p.n+'.':p.ra.length<4?'A rectangle needs 4 right angles. Yours has '+p.ra.length+'.':p.equal?'All your sides are equal, so that is a square. Make two sides longer.':''},
+  {task:'Make a right-angled triangle.',check:p=>p.n!==3?'A triangle has 3 sides. Yours has '+p.n+'.':p.ra.length!==1?'It needs exactly 1 right angle. Yours has '+p.ra.length+'.':''},
+  {task:'Make a triangle with no right angles.',check:p=>p.n!==3?'A triangle has 3 sides. Yours has '+p.n+'.':p.ra.length?'This triangle has a right angle. Move one corner.':''},
+  {task:'Make a quadrilateral with exactly 2 right angles.',check:p=>p.n!==4?'A quadrilateral has 4 sides. Yours has '+p.n+'.':p.ra.length!==2?'It needs exactly 2 right angles. Yours has '+p.ra.length+'.':''},
+  {task:'Make a quadrilateral with 1 pair of parallel sides and no right angles.',check:p=>p.n!==4?'A quadrilateral has 4 sides. Yours has '+p.n+'.':p.ra.length?'Your shape has '+plural(p.ra.length,'right angle')+'. Slope the sides.':p.par.length!==1?'It needs exactly 1 pair of parallel sides. Yours has '+p.par.length+'.':''},
+  {task:'Make a pentagon.',check:p=>p.n!==5?'A pentagon has 5 sides. Yours has '+p.n+'.':''},
+  {task:'Make a hexagon with exactly 5 right angles.',check:p=>p.n!==6?'A hexagon has 6 sides. Yours has '+p.n+'.':p.ra.length!==5?'It needs exactly 5 right angles. Yours has '+p.ra.length+'. Try an L-shape!':''}
+];
+function segX(p1,p2,p3,p4){const o=(a,b,c)=>Math.sign(cross2(sub(b,a),sub(c,a)));const on=(a,b,c)=>Math.min(a[0],b[0])<=c[0]&&c[0]<=Math.max(a[0],b[0])&&Math.min(a[1],b[1])<=c[1]&&c[1]<=Math.max(a[1],b[1]);
+  const d1=o(p3,p4,p1),d2=o(p3,p4,p2),d3=o(p1,p2,p3),d4=o(p1,p2,p4);
+  if(d1!==d2&&d3!==d4&&d1&&d2&&d3&&d4)return true;
+  return (!d1&&on(p3,p4,p1))||(!d2&&on(p3,p4,p2))||(!d3&&on(p1,p2,p3))||(!d4&&on(p1,p2,p4));}
+function simplify(P){let A=P.slice(),ch=true;while(ch&&A.length>2){ch=false;for(let i=0;i<A.length;i++){const a=A[(i-1+A.length)%A.length],v=A[i],b=A[(i+1)%A.length];if(cross2(sub(v,a),sub(b,v))===0){A.splice(i,1);ch=true;break;}}}return A;}
+function startPin(i){ st.mode='pin'; st.lv=i; st.pin={pts:[],closed:false,res:null}; st.locked=false; cv.classList.add('tap'); pinHud(); pinUI(); }
+function pinHud(){ setHud('Pinboard Builder','Level '+(st.lv+1)+' / '+PIN_LEVELS.length); }
+function pinPrompt(msg){ setPrompt(`<span class="big">${PIN_LEVELS[st.lv].task}</span><span class="note">${msg||'Tap the pins to stretch the band. Tap your first pin again to close the shape, then press <b>Check</b>.'}</span>`); }
+function pinUI(){ pinPrompt(); setButtons([{label:'Undo',value:'U'},{label:'Clear',value:'X'},{label:'Check',value:'C',cls:'run'}],pinKey,3); }
+function pinKey(v){ if(st.locked) return; const pn=st.pin;
+  if(v==='U'){ if(pn.closed){pn.closed=false;pn.res=null;} else pn.pts.pop(); pinPrompt(); }
+  else if(v==='X'){ pn.pts=[]; pn.closed=false; pn.res=null; pinPrompt(); }
+  else checkPin(); }
+function tapPin(e){ if(st.mode!=='pin'||st.locked) return; const r=cv.getBoundingClientRect(); const x=(e.clientX-r.left)*320/r.width, y=(e.clientY-r.top)*288/r.height;
+  let bestPin=null,bd=24; for(let i=0;i<5;i++)for(let j=0;j<5;j++){const d=len(sub(pinXY([i,j]),[x,y]));if(d<bd){bd=d;bestPin=[i,j];}}
+  if(!bestPin) return; const pn=st.pin;
+  if(pn.closed){ pinPrompt('Your shape is closed. Press <b>Undo</b> or <b>Clear</b> to change it.'); return; }
+  const at=pn.pts.findIndex(p=>p[0]===bestPin[0]&&p[1]===bestPin[1]);
+  if(at===0&&pn.pts.length>=3){ pn.closed=true; beep(880,.08); pinPrompt('Shape closed. Press <b>Check</b>.'); return; }
+  if(at>=0){ pinPrompt('You have already used that pin. Each pin once!'); return; }
+  pn.pts.push(bestPin); beep(520+pn.pts.length*40,.06); pn.res=null; pinPrompt();
+}
+cv.addEventListener('pointerdown',tapPin);
+function checkPin(){
+  const pn=st.pin;
+  if(pn.pts.length<3){ pinPrompt('You need at least 3 pins to make a shape.'); sBad(); return; }
+  pn.closed=true; const P=simplify(pn.pts);
+  if(P.length<3){ pn.res=null; pinPrompt('All your pins are in one straight line. Spread them out!'); sBad(); shake(); return; }
+  for(let i=0;i<P.length;i++)for(let j=i+1;j<P.length;j++){ if(Math.abs(i-j)===1||(i===0&&j===P.length-1)) continue;
+    if(segX(P[i],P[(i+1)%P.length],P[j],P[(j+1)%P.length])){ pn.res=null; pinPrompt('Your band crosses over itself. Press <b>Undo</b> and try a different order.'); sBad(); shake(); return; } }
+  const pr=props(P); pn.res={P,pr};
+  const facts=`<div class="facts"><span>${plural(pr.n,'side')}</span><span>${plural(pr.ra.length,'right angle')}</span>${pr.n<=4?`<span>${plural(pr.par.length,'pair')} of parallel sides</span>`:''}${pr.equal?'<span>all sides equal</span>':''}</div>`+(P.length<pn.pts.length?'<span class="note">Tip: a pin in the middle of a straight side is not a corner, so it does not make a new side.</span>':'');
+  const msg=PIN_LEVELS[st.lv].check(pr);
+  if(!msg){ sWin(); saveBest('pin',st.lv+1); const last=st.lv===PIN_LEVELS.length-1;
+    setPrompt(`<span class="big good">${last?'All levels complete!':'Level complete'}</span><span>You made: </span>${facts}`);
+    setButtons(last?[{label:'Back to menu',value:'m',cls:'run wide'}]:[{label:'Next level',value:'n',cls:'run'},{label:'Menu',value:'m'}],v=>v==='n'?startPin(st.lv+1):menu(),last?1:2);
+  } else { sBad(); shake(); setPrompt(`<span class="big bad">Not yet</span><span>${msg}</span>${facts}`); }
+}
+function pinScene(){
+  rrect(36,6,248,248,16,C.board,C.edge,1.5);
+  const pn=st.pin, P=pn.pts.map(pinXY);
+  if(pn.closed&&P.length>=3) poly(P,'rgba(245,196,81,.16)');
+  if(P.length>1){ctx.strokeStyle=C.gold;ctx.lineWidth=4;ctx.lineJoin='round';ctx.beginPath();P.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));if(pn.closed)ctx.closePath();ctx.stroke();}
+  if(pn.res){ const {P:Q,pr}=pn.res, S=Q.map(pinXY);
+    if(pr.n<=4) pr.par.forEach(([a,b],k)=>{const col=PAIR_COL[(k+1)%PAIR_COL.length];let s1=[S[a],S[(a+1)%S.length]],s2=[S[b],S[(b+1)%S.length]];if(dot2(sub(s1[1],s1[0]),sub(s2[1],s2[0]))<0)s2=[s2[1],s2[0]];chevron(s1[0],s1[1],col,k+1);chevron(s2[0],s2[1],col,k+1);});
+    pr.ra.forEach(k=>raMark(S[k],S[(k-1+S.length)%S.length],S[(k+1)%S.length],C.fg,12)); }
+  for(let i=0;i<5;i++)for(let j=0;j<5;j++){const p=pinXY([i,j]);dot(p,5.5,C.pin);dot(p,2.5,'#cfd8e6');}
+  P.forEach((p,i)=>dot(p,7,i===0?C.ok:C.gold));
+  text('Level '+(st.lv+1)+': '+PIN_LEVELS[st.lv].task.replace(/^Make /,'make ').replace(/\.$/,''),160,272,12.5,C.muted,500);
+}
+
+/* ---------- games and menu ---------- */
+
+/* ---------- learn first: short teaching before each game ---------- */
+const easeIO=p=>p>=1?1:(1-Math.cos(Math.PI*Math.max(0,p)))/2;
+function caption(s,col){ text(s,160,272,14,col||C.fg,600); }
+function countUp(t,n,dur){ return Math.min(n,Math.floor((t%((n+3)*dur))/dur)); }
+const CROSS=[[1,0],[0,1],[1,1],[2,1],[3,1],[1,2]], BLOCK=[[0,0],[1,0],[2,0],[0,1],[1,1],[2,1]];
+const cellItems=cells=>layoutItems(cells.map(([x,y])=>({pts:[[x,y],[x+1,y],[x+1,y+1],[x,y+1]]})));
+function pinBoard(){ rrect(36,6,248,248,16,C.board,C.edge,1.5); for(let i=0;i<5;i++)for(let j=0;j<5;j++){const p=pinXY([i,j]);dot(p,5.5,C.pin);dot(p,2.5,'#cfd8e6');} }
+const TEACH={
+  lines:[
+    {title:'Horizontal lines',text:'A '+TYPEWORD.H+' line goes straight <b>across</b>, from left to right, like the horizon.',
+     draw:t=>{ dot([230,112],22,C.gold); rect(30,150,260,90,'rgba(91,155,255,.12)'); line([30,150],[290,150],C.h,7); caption('horizontal: across',C.h); }},
+    {title:'Vertical lines',text:'A '+TYPEWORD.V+' line goes straight <b>up and down</b>. The top is right above the bottom.',
+     draw:t=>{ line([160,30],[160,240],C.v,7); line([90,240],[230,240],C.faint,2,true); caption('vertical: up and down',C.v); }},
+    {title:'Diagonal lines',text:'A '+TYPEWORD.D+' line <b>slopes</b>. It is not horizontal or vertical.',
+     draw:t=>{ const a=R(25+20*Math.sin(t/900)), u=[Math.cos(a),-Math.sin(a)]; line(add([160,140],mul(u,-110)),add([160,140],mul(u,110)),C.d,7); caption('diagonal: it slopes',C.d); }},
+    {title:'It is the direction that counts',text:'Short or long, a line that goes straight across is still horizontal. Look at the letter <b>E</b>: it has 1 vertical line and 3 horizontal lines.',
+     draw:t=>{ const s=22,ox=160-2*s,oy=140-3*s; LETTERS.E.forEach(([x1,y1,x2,y2])=>{const a=[ox+x1*s,oy+y1*s],b=[ox+x2*s,oy+y2*s];line(a,b,C[ltype([a,b]).toLowerCase()],7);}); caption('E: 1 vertical, 3 horizontal'); }}
+  ],
+  para:[
+    {title:'Parallel lines',text:'<b>Parallel</b> lines stay the <b>same distance apart</b> and never meet, however long you make them. Look for the arrow marks.',
+     draw:t=>{ const a=t/2600, u=[Math.cos(a),Math.sin(a)], n=[-u[1],u[0]], L=90+20*Math.sin(t/700);
+       const s1=[add(add([160,140],mul(n,-34)),mul(u,-L)),add(add([160,140],mul(n,-34)),mul(u,L))], s2=[add(add([160,140],mul(n,34)),mul(u,-L)),add(add([160,140],mul(n,34)),mul(u,L))];
+       line(s1[0],s1[1],C.d,6); line(s2[0],s2[1],C.d,6); chevron(s1[0],s1[1],C.fg,1); chevron(s2[0],s2[1],C.fg,1);
+       [-.5,.5].forEach(f=>{const p=add(add([160,140],mul(u,L*f)),mul(n,-34));line(p,add(p,mul(n,68)),C.gold,2,true);}); caption('same distance apart'); }},
+    {title:'Perpendicular lines',text:'<b>Perpendicular</b> lines meet at a <b>right angle</b>, a square corner. A right angle checker fits exactly.',
+     draw:t=>{ const a=t/3000, u=[Math.cos(a),Math.sin(a)], w=[-u[1],u[0]], M=[160,150]; line(add(M,mul(u,-100)),add(M,mul(u,100)),C.fg,6); line(M,add(M,mul(w,-100)),C.fg,6);
+       sector(M,u,mul(w,-1),36,'rgba(245,196,81,.3)'); raMark(M,add(M,u),add(M,mul(w,-1)),C.gold,14); caption('a right angle: perpendicular',C.gold); }},
+    {title:'Neither',text:'Some lines meet, but <b>not</b> at a right angle. They are <b>not perpendicular</b>, and they are not parallel either.',
+     draw:t=>{ const M=[110,200], u=[1,0], w=[Math.cos(R(-55)),Math.sin(R(-55))]; line(M,add(M,mul(u,170)),C.fg,6); line(M,add(M,mul(w,170)),C.fg,6);
+       sector(M,u,[0,-1],40,'rgba(255,138,61,.22)'); caption('the checker does not fit',C.warn); }},
+    {title:'Look inside shapes',text:'A rectangle has <b>2 pairs of parallel sides</b>, and its sides are <b>perpendicular</b> at all 4 corners.',
+     draw:t=>{ const P=[[60,70],[260,70],[260,210],[60,210]]; poly(P,'rgba(63,181,168,.25)',C.fg,3); const k=countUp(t,6,700);
+       if(k>=1){line(P[0],P[1],PAIR_COL[0],6);line(P[3],P[2],PAIR_COL[0],6);chevron(P[0],P[1],C.stage,1);chevron(P[3],P[2],C.stage,1);}
+       if(k>=2){line(P[1],P[2],PAIR_COL[1],6);line(P[0],P[3],PAIR_COL[1],6);chevron(P[1],P[2],C.stage,2);chevron(P[0],P[3],C.stage,2);}
+       for(let i=0;i<Math.min(4,Math.max(0,k-2));i++) raMark(P[i],P[(i+3)%4],P[(i+1)%4],C.gold,14);
+       caption(k<2?'parallel sides':'right angles: perpendicular sides'); }}
+  ],
+  d2:[
+    {title:'Sides',text:'<b>Sides</b> are the straight lines that make a 2D shape. Count round the shape once.',
+     draw:t=>{ const P=fit(reg(5,1),0,{w:190,h:180,max:90}), k=countUp(t,5,600); poly(P,'rgba(63,181,168,.3)',C.fg,3);
+       for(let i=0;i<k;i++){line(P[i],P[(i+1)%5],C.gold,6);badge(add(mul(add(P[i],P[(i+1)%5]),.5),mul(norm(sub(mul(add(P[i],P[(i+1)%5]),.5),centroid(P))),18)),i+1);} caption(k?k+' side'+(k>1?'s':''):'count the sides'); }},
+    {title:'Vertices',text:'A <b>vertex</b> is a corner where two sides meet. More than one are <b>vertices</b>. A shape has the same number of vertices as sides.',
+     draw:t=>{ const P=fit(reg(5,1),0,{w:190,h:180,max:90}), k=countUp(t,5,600); poly(P,'rgba(63,181,168,.3)',C.fg,3);
+       for(let i=0;i<k;i++){dot(P[i],8,C.gold);badge(outward(P,i,22),i+1);} caption(k?k+' verti'+(k>1?'ces':'ex'):'count the corners'); }},
+    {title:'Right angles',text:'Look at each <b>inside</b> corner. A square corner is a right angle. Turning the shape does <b>not</b> change its right angles.',
+     draw:t=>{ const P=fit([[0,0],[6,0],[6,3.6],[0,3.6]],t/80,{w:200,h:170,max:34}), k=countUp(t,4,650); poly(P,'rgba(63,181,168,.3)',C.fg,3);
+       for(let i=0;i<k;i++) raMark(P[i],P[(i+3)%4],P[(i+1)%4],C.gold,13); caption(k+' right angle'+(k===1?'':'s')); }},
+    {title:'Shape names',text:'Count the sides to name a shape: <b>triangle</b> 3, <b>quadrilateral</b> 4, <b>pentagon</b> 5, <b>hexagon</b> 6, <b>octagon</b> 8.',
+     draw:t=>{ const S=[[3,'triangle',[70,80]],[4,'quadrilateral',[160,80]],[5,'pentagon',[250,80]],[6,'hexagon',[110,190]],[8,'octagon',[210,190]]];
+       S.forEach(([n,name,c],i)=>{ const P=fit(reg(n,1),n===4?45:0,{cx:c[0],cy:c[1]-6,w:58,h:58,max:40}); poly(P,i===Math.floor(t/900)%5?'rgba(245,196,81,.55)':'rgba(63,181,168,.3)',C.fg,2.5); text(n+' · '+name,c[0],c[1]+40,12,C.muted,500); }); }},
+    {title:'Parallel sides',text:'Some shapes have sides that are <b>parallel</b>: they go the same way and never meet. A trapezium has exactly 1 pair.',
+     draw:t=>{ const P=fit([[1.6,0],[5,0],[6.6,3.4],[0,3.4]],0,{w:220,h:160,max:40}); poly(P,'rgba(63,181,168,.3)',C.fg,3);
+       line(P[0],P[1],PAIR_COL[0],6); line(P[3],P[2],PAIR_COL[0],6); chevron(P[0],P[1],C.stage,1); chevron(P[3],P[2],C.stage,1); caption('1 pair of parallel sides'); }}
+  ],
+  d3:[
+    {title:'Faces',text:'3D shapes are solid. A <b>face</b> is a flat surface. Do not forget the faces at the back!',
+     draw:t=>{ const k=countUp(t,6,600); drawPoly3(SOLIDS['cube'].poly,t*0.0004,160,142,{type:'f',k}); caption(k+' face'+(k===1?'':'s')+(k===6?': a cube has 6':'')); }},
+    {title:'Edges',text:'An <b>edge</b> is where two faces meet. Dashed lines show the edges at the back.',
+     draw:t=>{ const k=countUp(t,12,380); drawPoly3(SOLIDS['cube'].poly,t*0.0004,160,142,{type:'e',k}); caption(k+' edge'+(k===1?'':'s')+(k===12?': a cube has 12':'')); }},
+    {title:'Vertices',text:'A <b>vertex</b> is a corner where edges meet. A cube has 8 vertices.',
+     draw:t=>{ const k=countUp(t,8,520); drawPoly3(SOLIDS['cube'].poly,t*0.0004,160,142,{type:'v',k}); caption(k+' verti'+(k===1?'ex':'ces')+(k===8?': a cube has 8':'')); }},
+    {title:'Curved surfaces',text:'Cylinders, cones and spheres have a <b>curved surface</b>. A cylinder has 2 flat circle faces. A sphere has none.',
+     draw:t=>{ drawCurved('cylinder',{type:'f',k:countUp(t,2,900)}); caption('cylinder: 2 flat faces + 1 curved surface'); }}
+  ],
+  pin:[
+    {title:'Stretch the band',text:'Tap the pins one at a time to stretch the band. Each pin you tap is a <b>corner</b> of your shape.',
+     draw:t=>{ pinBoard(); const Pp=[[1,1],[3,1],[3,3],[1,3]], k=countUp(t,4,700), P=Pp.slice(0,k).map(pinXY);
+       if(P.length>1){ctx.strokeStyle=C.gold;ctx.lineWidth=4;ctx.beginPath();P.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.stroke();} P.forEach((p,i)=>dot(p,7,i?C.gold:C.ok)); caption('tap, tap, tap…',C.muted); }},
+    {title:'Close it, then check',text:'Tap your <b>first pin</b> (green) again to close the shape. Then press <b>Check</b>. The game shows the sides, right angles and parallel sides.',
+     draw:t=>{ pinBoard(); const P=[[1,1],[3,1],[3,3],[1,3]].map(pinXY); poly(P,'rgba(245,196,81,.16)',C.gold,4); P.forEach((p,i)=>dot(p,7,i?C.gold:C.ok));
+       if(Math.floor(t/1000)%2) P.forEach((p,i)=>raMark(p,P[(i+3)%4],P[(i+1)%4],C.fg,12)); caption('a square: 4 sides, 4 right angles'); }},
+    {title:'Only corners count',text:'A pin in the middle of a straight side is <b>not</b> a corner, so it does not make a new side.',
+     draw:t=>{ pinBoard(); const P=[[1,1],[2,1],[3,1],[3,3],[1,3]].map(pinXY); poly(P,'rgba(245,196,81,.16)',C.gold,4); P.forEach((p,i)=>dot(p,7,i===1?C.warn:C.gold));
+       if(Math.floor(t/800)%2){ctx.strokeStyle=C.warn;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(P[1][0],P[1][1],16,0,Math.PI*2);ctx.stroke();} caption('still 4 sides, not 5',C.warn); }}
+  ],
+  nets:[
+    {title:'What is a net?',text:'A <b>net</b> is a flat 2D pattern. Fold it along the edges and it makes a 3D shape.',
+     draw:t=>{ const items=cellItems(CROSS); items.forEach(it=>drawItem(it,'rgba(63,181,168,.35)',C.fg,2.5)); caption('this net folds into a cube'); }},
+    {title:'Every square is a face',text:'When the net folds, each square becomes <b>one face</b>. A cube needs <b>6 different faces</b>.',
+     draw:t=>{ const items=cellItems(CROSS), f=foldCube(CROSS), k=countUp(t,6,600); items.forEach((it,i)=>{drawItem(it,i<k?FACE_COL[f.face[i]]+'cc':'rgba(63,181,168,.35)',C.fg,2.5); if(i<k) badge(centroid(it.P),i+1);}); caption(k+' of 6 faces'); }},
+    {title:'Will it fold?',text:'If two squares would land on the <b>same face</b>, the cube is left with a hole. This net does <b>not</b> make a cube.',
+     draw:t=>{ const items=cellItems(BLOCK), f=foldCube(BLOCK), cnt={}; f.face.forEach(x=>cnt[x]=(cnt[x]||0)+1);
+       items.forEach((it,i)=>drawItem(it,FACE_COL[f.face[i]]+'cc',C.fg,2.5)); if(Math.floor(t/800)%2) items.forEach((it,i)=>{ if(cnt[f.face[i]]>1) drawItem(it,'rgba(0,0,0,0)',C.warn,5); }); caption('two squares on the same face',C.warn); }},
+    {title:'Other nets',text:'Triangles that meet at a point make a <b>pyramid</b>. Two triangles and three rectangles make a <b>triangular prism</b>. Circles make the ends of a <b>cylinder</b>.',
+     draw:t=>{ const ty=['square-based pyramid','triangular prism','cylinder'][Math.floor(t/2200)%3]; layoutItems(netItems(ty)).forEach(it=>drawItem(it,'rgba(63,181,168,.35)',C.fg,2.5)); caption(ty); }}
+  ]
+};
+function speak(s){ try{ const u=new SpeechSynthesisUtterance((s.title+'. '+s.text).replace(/<[^>]+>/g,'')); u.lang='en-GB'; u.rate=.9; speechSynthesis.cancel(); speechSynthesis.speak(u);}catch(e){} }
+function beginGame(kind){ try{speechSynthesis.cancel();}catch(e){} kind==='pin'?startPin(Math.min(best.pin||0,PIN_LEVELS.length-1)):startQuiz(kind); }
+function startTeach(kind){ st.mode='teach'; st.kind=kind; st.ti=0; st.locked=false; cv.classList.remove('tap'); showTeach(); }
+function showTeach(){ const L=TEACH[st.kind], s=L[st.ti], last=st.ti===L.length-1; st.t0=performance.now();
+  setHud('Learn first', GAMES[st.kind].name+' · '+(st.ti+1)+' / '+L.length);
+  setPrompt(`<span class="big">${s.title}</span><span>${s.text}</span>`);
+  setButtons([{label:st.ti?'Back':'Skip to game',value:'back'},{label:'Read to me',value:'read'},{label:last?'Start the game':'Next',value:'next',cls:last?'run':''}],v=>{
+    if(v==='read') return speak(s);
+    if(v==='back'){ if(st.ti){st.ti--;showTeach();} else beginGame(st.kind); return; }
+    if(last) beginGame(st.kind); else {st.ti++;showTeach();}
+  },3); }
+function teachScene(t){ TEACH[st.kind][st.ti].draw(Math.max(0,t-st.t0)); }
+
+const GAMES={
+  lines:{name:'Line Spotter',sub:'Horizontal and vertical',make:makeLines},
+  para:{name:'Parallel Patrol',sub:'Parallel and perpendicular',make:makePara},
+  d2:{name:'2D Detective',sub:'Sides, vertices, right angles',make:make2D},
+  d3:{name:'3D Detective',sub:'Faces, edges, vertices',make:make3D},
+  pin:{name:'Pinboard Builder',sub:'Stretch the band'},
+  nets:{name:'Net Factory',sub:'Fold it up',make:makeNet}
+};
+/*<SQ2>*/
+/* ---------- extra games (SQ2): angles, symmetry ---------- */
+const rndb=(a,b)=>a+rnd(b-a+1);
+function angleFig(V,base,deg,o){o=o||{};const L=o.len||130,u=[Math.cos(R(base)),-Math.sin(R(base))],w=[Math.cos(R(base+deg)),-Math.sin(R(base+deg))];
+  const A=add(V,mul(u,L)),B=add(V,mul(w,L*(o.len2||1)));
+  if(o.check){sector(V,u,w,52,'rgba(245,196,81,.30)');}
+  ctx.strokeStyle=o.col||C.v;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(V[0],V[1],26,-R(base),-R(base+deg),true);ctx.stroke();
+  line(V,A,C.fg,5);line(V,B,C.fg,5);dot(V,5,C.fg);return {A,B,u,w};}
+function classify(d){return d<90?'acute':d===90?'right':'obtuse';}
+const SYM=[
+ ['square',[[-60,-60],[60,-60],[60,60],[-60,60]],[0,45,90,135]],
+ ['rectangle',[[-85,-48],[85,-48],[85,48],[-85,48]],[0,90]],
+ ['equilateral triangle',[[0,-78],[68,39],[-68,39]],[30,90,150]],
+ ['isosceles triangle',[[0,-80],[55,60],[-55,60]],[90]],
+ ['kite',[[0,-75],[48,-22],[0,85],[-48,-22]],[90]],
+ ['regular hexagon',[0,1,2,3,4,5].map(i=>[75*Math.cos(R(i*60)),75*Math.sin(R(i*60))]),[0,30,60,90,120,150]],
+ ['arrow',[[0,-85],[55,-20],[20,-20],[20,75],[-20,75],[-20,-20],[-55,-20]],[90]],
+ ['T shape',[[-70,-65],[70,-65],[70,-30],[18,-30],[18,75],[-18,75],[-18,-30],[-70,-30]],[90]],
+ ['L shape',[[-45,-75],[-10,-75],[-10,40],[55,40],[55,75],[-45,75]],[]],
+ ['parallelogram',[[-80,45],[35,45],[80,-45],[-35,-45]],[]],
+ ['scalene triangle',[[-70,55],[75,55],[-25,-65]],[]]
+];
+const symOf=s=>s[2].length;
+function rotP(p,a){const c=Math.cos(R(a)),s=Math.sin(R(a));return [p[0]*c-p[1]*s,p[0]*s+p[1]*c];}
+function reflP(p,th){const u=[Math.cos(R(th)),-Math.sin(R(th))],d=2*(p[0]*u[0]+p[1]*u[1]);return [d*u[0]-p[0],d*u[1]-p[1]];}
+function axisLine(O,th,col,dash,L){const u=[Math.cos(R(th)),-Math.sin(R(th))];L=L||120;line(add(O,mul(u,-L)),add(O,mul(u,L)),col,3,dash);}
+const SQ2_GAMES={
+ angles:{name:'Angle Sorter',sub:'Acute, right or obtuse',make(r){r=r||st.round||1;const kind=pick(['acute','right','obtuse']);
+   const deg=kind==='right'?90:kind==='acute'?(r<=4?rndb(20,60):rndb(55,82)):(r<=4?rndb(115,165):rndb(98,130)),base=r<=3?0:pick([0,20,45,90,135,160,200,250,300]);
+   const V=[160-70*Math.cos(R(base+deg/2)),140+70*Math.sin(R(base+deg/2))];
+   const q={answer:kind,cols:3,options:[{label:'Acute<small>less than a right angle</small>',value:'acute'},{label:'Right angle<small>a square corner</small>',value:'right'},{label:'Obtuse<small>more than a right angle</small>',value:'obtuse'}],
+     prompt:'<span>What type of angle is this?</span><span class="note">Imagine a square corner in the angle. Is the angle smaller, the same or bigger?</span>',
+     say:v=>({acute:'acute',right:'a right angle',obtuse:'obtuse'})[v],
+     explain:kind==='right'?'It fits the square corner exactly, so it is a right angle.':kind==='acute'?'It is smaller than the square corner, so it is acute.':'It is bigger than the square corner, so it is obtuse.',
+     draw(){angleFig(V,base,deg,{check:q.k});if(q.k){text(kind==='right'?'right angle':kind,160,268,18,C.ok,700);if(kind==='right'){const u=[Math.cos(R(base)),-Math.sin(R(base))],w=[Math.cos(R(base+90)),-Math.sin(R(base+90))];raMark(V,add(V,u),add(V,w),C.gold,16);}}},
+     reveal:async()=>{q.k=1;sStep(1);await sleep(1100);}};return q;}},
+ symmetry:{name:'Mirror Lines',sub:'Lines of symmetry',make(r){r=r||st.round||1;const S=pick(r<=3?SYM.filter(s=>['square','rectangle','isosceles triangle','kite','arrow','T shape','L shape','parallelogram'].includes(s[0])):SYM);
+   const rot=r<=3?0:pick([0,0,15,30,45,90]),P=S[1].map(p=>rotP(p,-rot)),axes=S[2].map(a=>(a+rot)%180),O=[160,135],n=axes.length;
+   const q={cols:2};
+   if(r<=5){const yes=n>0&&Math.random()<.55;let th;if(yes)th=pick(axes);else{const cand=[0,30,45,60,90,120,135,150].map(a=>(a+rot)%180).filter(a=>!axes.some(b=>Math.abs(((a-b)%180+180)%180)<2||Math.abs(((a-b)%180+180)%180-180)<2));th=pick(cand.length?cand:[(rot+20)%180]);}
+     q.answer=yes?'yes':'no';q.options=[{label:'Yes',value:'yes'},{label:'No',value:'no'}];q.say=v=>v;
+     q.prompt='<span>Is the dashed line a <b>line of symmetry</b>?</span><span class="note">Would both halves match if you folded along it?</span>';
+     q.explain=yes?'Fold along the line and the two halves match exactly.':'Reflect one half across the line: the halves do not match.';
+     q.draw=()=>{poly(P.map(p=>add(O,p)),'rgba(91,155,255,.30)',C.fg,3);if(q.k)poly(P.map(p=>add(O,reflP(p,th))),yes?'rgba(61,214,140,.35)':'rgba(255,138,61,.30)',yes?C.ok:C.warn,2.5,!yes);axisLine(O,th,C.gold,true,125);if(q.k)text(yes?'the halves match':'the halves do not match',160,272,15,yes?C.ok:C.warn,700);};}
+   else{q.answer=String(n);const pool=[...new Set([n,0,1,2,3,4,6].map(String))].filter(x=>x!==String(n));q.options=shuffle([String(n),...shuffle(pool).slice(0,3)]).map(v=>({label:v,value:v}));q.cols=4;q.say=v=>v;
+     q.prompt=`<span>How many <b>lines of symmetry</b> does this ${S[0]} have?</span>`;q.explain=n?`A ${S[0]} has ${n} line${n>1?'s':''} of symmetry.`:`A ${S[0]} has no lines of symmetry. No fold makes the halves match.`;
+     q.draw=()=>{poly(P.map(p=>add(O,p)),'rgba(91,155,255,.30)',C.fg,3);if(q.k){axes.slice(0,q.k).forEach(a=>axisLine(O,a,C.gold,true,120));text(n+' line'+(n===1?'':'s')+' of symmetry',160,272,15,C.ok,700);}};}
+   q.reveal=async()=>{if(r>5){for(let i=1;i<=Math.max(1,n);i++){q.k=i;sStep(i);await sleep(500);}await sleep(500);}else{q.k=1;sStep(1);await sleep(1200);}};return q;}}
+};
+const SQ2_TEACH={
+ angles:[{title:'Right angles',text:'A <b>right angle</b> is a square corner, a quarter turn. We mark it with a small square.',draw:t=>{const V=[90,200];angleFig(V,0,90);raMark(V,add(V,[1,0]),add(V,[0,-1]),C.gold,16);caption('right angle = 90°, a square corner');}},
+  {title:'Acute angles',text:'An <b>acute</b> angle is <b>smaller</b> than a right angle. Hold a square corner against it: the arms are inside.',draw:t=>{angleFig([90,200],0,45,{check:Math.floor(t/1000)%2});caption('acute: smaller than a right angle');}},
+  {title:'Obtuse angles',text:'An <b>obtuse</b> angle is <b>bigger</b> than a right angle, but less than a straight line.',draw:t=>{angleFig([150,200],0,130,{check:Math.floor(t/1000)%2});caption('obtuse: bigger than a right angle');}}],
+ symmetry:[{title:'Line of symmetry',text:'A <b>line of symmetry</b> splits a shape into two halves that are <b>mirror images</b>.',draw:t=>{const S=SYM[4],O=[160,135];poly(S[1].map(p=>add(O,p)),'rgba(91,155,255,.30)',C.fg,3);axisLine(O,90,C.gold,true,120);caption('both halves match');}},
+  {title:'The fold test',text:'Fold along the line. If the halves match exactly, it is a line of symmetry. If not, it is not.',draw:t=>{const S=SYM[1],O=[160,135],th=Math.floor(t/1400)%2?90:35;poly(S[1].map(p=>add(O,p)),'rgba(91,155,255,.30)',C.fg,3);poly(S[1].map(p=>add(O,reflP(p,th))),th===90?'rgba(61,214,140,.35)':'rgba(255,138,61,.30)',th===90?C.ok:C.warn,2.5,th!==90);axisLine(O,th,C.gold,true,125);caption(th===90?'match: a line of symmetry':'no match: not a line of symmetry',th===90?C.ok:C.warn);}},
+  {title:'More than one line',text:'Some shapes have <b>several</b> lines of symmetry. A square has <b>4</b>. Some shapes have <b>none</b>.',draw:t=>{const S=SYM[0],O=[160,135],k=countUp(t,4,700);poly(S[1].map(p=>add(O,p)),'rgba(91,155,255,.30)',C.fg,3);S[2].slice(0,k).forEach(a=>axisLine(O,a,C.gold,true,100));caption('a square has 4 lines of symmetry');}}]
+};
+Object.assign(GAMES,SQ2_GAMES);Object.assign(TEACH,SQ2_TEACH);
+
+/*</SQ2>*/
+function menu(){
+  st.mode='menu'; st.locked=false; st.q=null; cv.classList.remove('tap');
+  setHud('Choose a game',Object.keys(GAMES).length+' games');
+  setPrompt('<span class="big">Choose a game</span><span>Each game starts with a short lesson. Lines are colour coded: '+TYPEWORD.H+' '+TYPEWORD.V+' '+TYPEWORD.D+'</span>');
+  const b=k=>best[k]!=null?`<small>Best ${best[k]}${k==='pin'?' / '+PIN_LEVELS.length+' levels':' / 8'}</small>`:`<small>${GAMES[k].sub}</small>`;
+  setButtons(Object.keys(GAMES).map(k=>({label:GAMES[k].name+b(k),value:k})),v=>startTeach(v),2);
+}
+function menuScene(t){
+  drawPoly3(SOLIDS['cube'].poly,t*0.0006,160,124,null,44);
+  const pts=[[56,56],[264,56],[56,214],[264,214]];
+  poly(fit([[0,0],[4,0],[4,2.4],[0,2.4]],0,{cx:56,cy:56,w:56,h:40}),'rgba(91,155,255,.35)',C.v,2.5);
+  poly(fit(reg(6,1),t*0.0003*57,{cx:264,cy:56,w:50,h:50}),'rgba(61,214,140,.3)',C.d,2.5);
+  poly(fit([[0,0],[0,3],[4,3]],0,{cx:56,cy:214,w:56,h:44}),'rgba(255,107,129,.3)',C.h,2.5);
+  for(let i=0;i<3;i++)for(let j=0;j<3;j++)dot([244+i*20,194+j*20],3.5,C.pin);
+  ctx.strokeStyle=C.gold;ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(244,194);ctx.lineTo(284,194);ctx.lineTo(264,234);ctx.closePath();ctx.stroke();
+  text('Lines · 2D · 3D · Nets',160,262,14,C.muted,500);
+}
+
+/* ---------- quiz engine ---------- */
+function startQuiz(kind){ st.kind=kind; st.round=0; st.score=0; st.hearts=3; cv.classList.remove('tap'); nextQ(); }
+function quizHud(){ setHud(pips(st.hearts), `Question ${st.round} / 8 · Score ${st.score}`); }
+function nextQ(){
+  if(st.round>=8||st.hearts<=0) return endQuiz();
+  st.round++; st.mode='quiz'; st.q=GAMES[st.kind].make(); st.locked=false;
+  quizHud(); setPrompt(st.q.prompt); setButtons(st.q.options,answer,st.q.cols||2);
+}
+async function answer(v){
+  if(st.locked) return; st.locked=true; const q=st.q, ok=v===q.answer;
+  st.btns.forEach(b=>{ if(b.dataset.v===String(v)) b.classList.add('sel'); });
+  setPrompt(q.prompt+'<span class="note">Watch…</span>');
+  await q.reveal();
+  if(ok){ st.score++; sGood(); setPrompt(`<span class="big good">Correct</span><span>${q.explain}</span>`); }
+  else { st.hearts--; sBad(); shake(); setPrompt(`<span class="big bad">Not quite</span><span>The answer is <b>${q.say(q.answer)}</b>. ${q.explain}</span>`); }
+  quizHud();
+  setButtons([{label:st.round>=8||st.hearts<=0?'See my score':'Next question',value:'n',cls:'run wide'}],()=>nextQ(),1);
+}
+function endQuiz(){
+  st.mode='over'; st.q=null;
+  st.stars=st.score>=7?3:st.score>=5?2:st.score>=3?1:0;
+  st.overTitle=st.hearts>0?'Round complete':'Out of lives';
+  st.overScore=st.score+' / 8'; saveBest(st.kind,st.score); st.overBest='Best score: '+best[st.kind]+' / 8';
+  if(st.hearts>0) sWin(); else sBad();
+  setHud(GAMES[st.kind].name, st.stars+' / 3 stars');
+  setPrompt(st.stars===3?'<span class="big good">Brilliant shape work</span><span>Try a different game next.</span>':'<span class="big">Keep practising</span><span>Play again to earn more stars. The answers always show you how to check.</span>');
+  setButtons([{label:'Play again',value:'a',cls:'run'},{label:'Learn again',value:'l'},{label:'Menu',value:'m'}],v=>v==='a'?startQuiz(st.kind):v==='l'?startTeach(st.kind):menu(),3);
+}
+function star(x,y,r,c){ctx.fillStyle=c;ctx.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i%2?r*.45:r;ctx.lineTo(x+rr*Math.cos(a),y+rr*Math.sin(a));}ctx.closePath();ctx.fill();}
+function overScene(){
+  text(st.overTitle,160,50,22,C.fg,600); text('SCORE',160,96,12,C.muted,500); text(st.overScore,160,130,40,C.fg,600);
+  for(let i=0;i<3;i++) star(110+i*50,196,18,i<st.stars?C.gold:C.off);
+  text(st.overBest,160,254,13,C.muted,500);
+}
+
+/* ---------- render loop ---------- */
+function render(t){
+  const dt=Math.min(50,t-(st.lastT||t)); st.lastT=t;
+  bg();
+  try{
+    if(st.mode==='menu') menuScene(t);
+    else if(st.mode==='quiz'&&st.q) st.q.draw(t,dt);
+    else if(st.mode==='pin') pinScene();
+    else if(st.mode==='over') overScene();
+    else if(st.mode==='teach') teachScene(t);
+  }catch(e){ console.error(e); }
+  requestAnimationFrame(render);
+}
+
+/* ---------- top bar and keyboard ---------- */
+$('btnMenu').addEventListener('click',()=>{ if(!st.locked||st.mode==='over'){ sClick(); menu(); } });
+$('btnSound').addEventListener('click',()=>{ muted=!muted; $('btnSound').textContent=muted?'Sound: off':'Sound: on'; if(!muted) sClick(); });
+document.addEventListener('keydown',e=>{
+  const k=e.key;
+  if(k==='ArrowLeft'){move(-1,0);e.preventDefault();}
+  else if(k==='ArrowRight'){move(1,0);e.preventDefault();}
+  else if(k==='ArrowUp'){move(0,-1);e.preventDefault();}
+  else if(k==='ArrowDown'){move(0,1);e.preventDefault();}
+  else if(k==='Escape'){ if(!st.locked||st.mode==='over') menu(); }
+});
+window.__SQ={st,GAMES,HEX_POOL,foldCube,props,PIN_LEVELS,simplify};
+(function(){ const h=location.hash.slice(1); if(TEACH[h]) startTeach(h); else menu(); })();
+requestAnimationFrame(render);
+})();
+</script>
+
+
+</body>
+</html>

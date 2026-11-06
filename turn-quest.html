@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Turn Quest Arcade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap">
+<style>
+*{box-sizing:border-box}
+body{margin:0}
+/* Layout: a calm, dark puzzle-game console. A slim header, one stage panel with a blueprint grid, the question beneath it, and a grid of flat control tiles. Deliberately single-theme (dark) so every classroom screen matches. */
+:root{
+  --bg:#0d1524; --panel:#141f33; --stage:#111b2d; --tile:#1b2840; --tile-hi:#22324d; --edge:#2b3b57;
+  --fg:#e6edf7; --muted:#9aaac2; --faint:#6b7a93;
+  --cw:#5b9bff; --acw:#ff8a3d; --ok:#3dd68c; --ok-ink:#07210f; --gold:#f5c451; --life:#ff5d73;
+  --font:'Lexend', 'Segoe UI', Verdana, sans-serif;
+  color-scheme:dark;
+}
+html,body{min-height:100%}
+body{
+  background:var(--bg); color:var(--fg); font-family:var(--font); font-size:17px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+  padding-block:20px 40px;
+}
+.wrap{max-width:540px; margin:0 auto; display:flex; flex-direction:column; gap:16px}
+.topbar{display:flex; align-items:center; gap:10px}
+.logo{flex:1; min-width:0; margin:0; display:flex; flex-direction:column; gap:2px}
+.logo b{font-size:20px; font-weight:700; letter-spacing:.18em}
+.logo span{font-size:12px; font-weight:500; letter-spacing:.14em; text-transform:uppercase; color:var(--muted)}
+.pill{font:500 14px var(--font); color:var(--fg); background:var(--tile); border:1px solid var(--edge); border-radius:10px; padding:9px 14px; cursor:pointer}
+.pill:hover{background:var(--tile-hi)}
+.panel{background:var(--panel); border:1px solid var(--edge); border-radius:18px; overflow:hidden}
+.hud{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:12px 16px; font-size:14px; font-weight:500; color:var(--muted); font-variant-numeric:tabular-nums}
+.hud .lives{display:flex; align-items:center; gap:6px; text-transform:uppercase; letter-spacing:.12em; font-size:12px}
+.hud .pip{width:10px; height:10px; border-radius:50%; background:var(--life)}
+.hud .pip.off{background:transparent; box-shadow:inset 0 0 0 2px var(--edge)}
+.hud .r{color:var(--fg)}
+.stage{background:var(--stage); border-block:1px solid var(--edge)}
+canvas{display:block; width:100%; height:auto; aspect-ratio:320/288; max-width:100%}
+.prompt{min-height:8em; padding:16px 18px 18px; font-size:19px; line-height:1.5; display:flex; flex-direction:column; gap:6px}
+.prompt b{font-weight:600; color:#ffffff}
+.prompt .big{font-size:22px; font-weight:600; letter-spacing:.01em}
+.prompt .big.good{color:var(--ok)}
+.prompt .big.bad{color:var(--acw)}
+.chip{display:inline-block; padding:0 9px; border-radius:7px; font-weight:600; font-size:.92em}
+.chip.cw{color:var(--cw); background:rgba(91,155,255,.14); border:1px solid rgba(91,155,255,.5)}
+.chip.acw{color:var(--acw); background:rgba(255,138,61,.12); border:1px dashed var(--acw)}
+.code{display:flex; flex-wrap:wrap; gap:6px; min-height:30px}
+.code span{background:var(--tile); border:1px solid var(--edge); padding:2px 10px; font-size:15px; font-weight:500; border-radius:8px}
+.code span.r{border-color:var(--cw); color:var(--cw)}
+.code span.l{border-color:var(--acw); color:var(--acw); border-style:dashed}
+.code .empty{background:none; border:0; color:var(--faint); padding:0}
+.panel.shake canvas{animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-6px)}50%{transform:translateX(6px)}75%{transform:translateX(-3px)}}
+.answers{display:grid; grid-template-columns:repeat(var(--cols,2), minmax(0,1fr)); gap:10px}
+.key{
+  font:500 18px/1.2 var(--font); color:var(--fg); background:var(--tile);
+  border:1px solid var(--edge); border-radius:14px; padding:12px 10px; min-height:62px;
+  cursor:pointer; text-wrap:balance; transition:background .12s, border-color .12s, transform .08s;
+}
+.key small{display:block; font-size:13px; font-weight:400; color:var(--muted); margin-top:3px}
+.key:hover{background:var(--tile-hi)}
+.key:active{transform:scale(.98)}
+.key.sel{border-color:var(--cw)}
+.key:focus-visible{outline:2px solid var(--cw); outline-offset:2px}
+.key.run{background:var(--ok); border-color:var(--ok); color:var(--ok-ink); font-weight:600}
+.key.run small{color:var(--ok-ink); opacity:.75}
+.key.cwk{color:var(--cw)} .key.acwk{color:var(--acw); border-style:dashed}
+.key.wide{grid-column:1 / -1}
+.key .sw{display:inline-block; width:14px; height:14px; border-radius:3px; vertical-align:-1px; margin-right:8px}
+button:focus-visible{outline:2px solid var(--cw); outline-offset:2px}
+@media (prefers-reduced-motion: reduce){ .panel.shake canvas{animation:none} .key{transition:none} }
+@media (max-width:400px){ .key{font-size:16px} .prompt{font-size:17px} }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="topbar">
+    <h1 class="logo"><b>TURN QUEST</b><span>Right angles · Year 3</span></h1>
+    <button class="pill" id="btnSound" type="button">Sound: on</button>
+    <button class="pill" id="btnMenu" type="button">Menu</button>
+  </div>
+
+  <div class="panel" id="card">
+    <div class="hud" id="hud"></div>
+    <div class="stage"><canvas id="cv" width="640" height="576" aria-label="Game picture"></canvas></div>
+    <div class="prompt" id="prompt" aria-live="polite"></div>
+  </div>
+
+  <div class="answers" id="answers"></div>
+</div>
+
+<style id="a11y-css">
+body.big .prompt{font-size:23px;line-height:1.55}
+body.big .prompt .big{font-size:27px}
+body.big .key{font-size:20px;min-height:64px}
+body.big .hud{font-size:16px}
+body.still *{transition:none!important;animation:none!important}
+.a11y-read{background:#f5c451!important;color:#14213d!important;border-color:#f5c451!important;font-weight:700!important}
+.a11y-panel{position:fixed;z-index:30;top:60px;right:12px;width:min(320px,calc(100vw - 24px));background:#16233a;border:1px solid #2b3b57;border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px;box-shadow:0 12px 30px rgba(0,0,0,.4);font-size:16px}
+.a11y-panel[hidden]{display:none}
+.a11y-panel h2{margin:0;font-size:17px}
+.a11y-panel label{display:flex;gap:10px;align-items:center;cursor:pointer;min-height:40px}
+.a11y-panel input{width:22px;height:22px;accent-color:#f5c451}
+.topbar{flex-wrap:wrap;row-gap:8px}
+.topbar .logo{flex:1 1 230px;min-width:200px}
+.topbar .logo b{white-space:nowrap}
+</style>
+<script id="mh-voice">/* Maths Hub voice: picks the most natural English voice on this device and applies the reader's settings */
+(function(){var ss=window.speechSynthesis;if(!ss||ss.__mh)return;ss.__mh=1;var orig=ss.speak.bind(ss);
+function A(){try{return JSON.parse(localStorage.getItem('mh-a11y')||'{}')||{};}catch(e){return {};}}
+var BAD=/compact|espeak|robot|novelty|bad news|bells|whisper|zarvox|trinoids|albert|jester|organ|cellos|bubbles|boing|deranged|hysterical|superstar|wobble|grandma|grandpa|eddy|flo\b|reed|rocko|sandy|shelley|good news|junior|ralph|fred|kathy|vicki|victoria/;
+function rank(v){var n=v.name.toLowerCase(),l=(v.lang||'').toLowerCase().replace('_','-'),s=0;if(l.indexOf('en')!==0)return -1;
+  if(l==='en-gb')s+=30;else if(l==='en-ie'||l==='en-au'||l==='en-nz')s+=16;else s+=10;
+  if(/natural|neural/.test(n))s+=45;if(/online/.test(n))s+=8;if(/premium/.test(n))s+=42;if(/enhanced/.test(n))s+=36;if(/siri/.test(n))s+=30;
+  if(/google uk english female/.test(n))s+=26;else if(/google uk english/.test(n))s+=22;else if(/google/.test(n))s+=12;
+  if(/sonia|libby|maisie|abbi|bella|hollie|olivia|serena|kate|stephanie|martha|daniel|arthur|oliver|jamie/.test(n))s+=12;
+  if(BAD.test(n))s-=80;return s;}
+function list(){return ss.getVoices().filter(function(v){return rank(v)>=0;}).sort(function(a,b){return rank(b)-rank(a);});}
+function best(){var a=A(),vs=ss.getVoices();if(a.voice){var f=vs.filter(function(v){return v.name===a.voice;})[0];if(f)return f;}return list()[0]||null;}
+ss.speak=function(u){try{var v=best();if(v){u.voice=v;u.lang=v.lang;}var a=A();u.rate=a.slow?0.8:0.97;u.pitch=1;
+  if(u.text)u.text=u.text.replace(/\s*\n+\s*/g,'. ').replace(/\s{2,}/g,' ');}catch(e){}return orig(u);};
+window.MH_VOICES=list;window.MH_VOICE_RANK=rank;
+try{ss.getVoices();if(typeof ss.addEventListener==='function')ss.addEventListener('voiceschanged',function(){});}catch(e){}
+})();
+</script>
+<script>
+function speakable(t){
+  var D={2:['half','halves'],3:['third','thirds'],4:['quarter','quarters'],5:['fifth','fifths'],6:['sixth','sixths'],7:['seventh','sevenths'],8:['eighth','eighths'],9:['ninth','ninths'],10:['tenth','tenths'],12:['twelfth','twelfths'],100:['hundredth','hundredths']};
+  var N=['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve'];
+  t=String(t).replace(/½/g,' 1/2').replace(/¼/g,' 1/4').replace(/¾/g,' 3/4').replace(/\s+/g,' ').trim();
+  t=t.replace(/(\d)\s?mm\b/g,'$1 millimetres').replace(/(\d)\s?cm\b/g,'$1 centimetres').replace(/(\d)\s?km\b/g,'$1 kilometres').replace(/(\d)\s?kg\b/g,'$1 kilograms').replace(/(\d)\s?ml\b/g,'$1 millilitres').replace(/(\d)\s?g\b/g,'$1 grams').replace(/(\d)\s?l\b/g,'$1 litres').replace(/(\d)\s?m\b/g,'$1 metres').replace(/(\d)p\b/g,'$1 pence');
+  t=t.replace(/(^|[^\d\/])(\d{1,2})\/(\d{1,3})(?![\d\/])/g,function(m,p,a,b){a=+a;b=+b;var w=D[b]?(N[a]||a)+' '+D[b][a===1?0:1]:a+' over '+b;if(a===b&&b>1)w+=', one whole';return p+w;});
+  t=t.replace(/_{2,}|☐/g,' blank ');
+  t=t.replace(/(^|[\s(=+\-−×÷])\?(?=\s*[+\-−×÷=])/g,'$1 what number ').replace(/([=+\-−×÷]\s*)\?/g,'$1 what number');
+  t=t.replace(/=\s*$/,' equals what?').replace(/…\s*$/,' what?').replace(/…/g,', ');
+  t=t.replace(/×/g,' times ').replace(/÷/g,' divided by ').replace(/−/g,' minus ').replace(/\s\+\s|\+/g,' plus ').replace(/=/g,' equals ').replace(/\s<\s/g,' is less than ').replace(/\s>\s/g,' is greater than ');
+  t=t.replace(/(^|[^\d,.\/])1 (millimetre|centimetre|kilometre|kilogram|millilitre|gram|litre|metre)s\b/g,'$1one $2').replace(/(half|quarter|third|fifth|tenth) (millimetre|centimetre|kilometre|kilogram|millilitre|gram|litre|metre)s\b/g,'$1 a $2').replace(/\bone half a /g,'half a ').replace(/\bone (quarter|third|fifth|tenth) a /g,'a $1 of a ');
+  t=t.replace(/[↻↺→←↑↓✓✗★☆♥]/g,'').replace(/\s+/g,' ').trim();
+  return t;
+}
+
+(function(){
+  var A={};try{A=JSON.parse(localStorage.getItem('mh-a11y')||'{}')||{};}catch(e){}
+  window.A11Y=A;
+  if(A.low)A.still=true;if(A.still){var mm=window.matchMedia;window.matchMedia=function(q){if(/prefers-reduced-motion/.test(q))return {matches:true,media:q,addListener:function(){},removeListener:function(){},addEventListener:function(){},removeEventListener:function(){}};return mm.call(window,q);};}
+  try{if(window.speechSynthesis){var sp=speechSynthesis.speak.bind(speechSynthesis);speechSynthesis.speak=function(u){if(A.slow)u.rate=Math.min(u.rate||1,.7);return sp(u);};}}catch(e){}
+  var SKIP=/^(Next|Back|Skip to game|Read to me|Menu|Play again|Learn again|Start|Play|Read aloud)\b/i;
+  function textOf(el){var c=el.cloneNode(true);c.querySelectorAll('.fr').forEach(function(f){var b=f.querySelector('b'),i=f.querySelector('i');f.textContent=' '+(b?b.textContent:'')+'/'+(i?i.textContent:'')+' ';});c.querySelectorAll('small').forEach(function(s){s.textContent=', '+s.textContent;});c.querySelectorAll('span,b,div').forEach(function(s){s.insertAdjacentText('afterend',' ');});return c.textContent.replace(/\s+/g,' ').trim();}
+  function promptText(p){return [].slice.call(p.children).map(function(c){var x=textOf(c);return x&&!/[.?!:]$/.test(x)?x+'.':x;}).join(' ')||textOf(p);}
+  function tidy(x){return x.replace(/equals\s*\./g,'equals what?').replace(/\s+([.,?!])/g,'$1').replace(/([?!.])\.+/g,'$1').replace(/\s+/g,' ').trim();}
+  function readNow(){var p=document.getElementById('prompt'),a=document.getElementById('answers');if(!p)return;
+    var t=promptText(p),opts=[].slice.call(a?a.querySelectorAll('button'):[]).map(textOf).filter(function(x){return x&&!SKIP.test(x);});
+    if(/^Choose a game/.test(t))opts=[];
+    var s=tidy(speakable(t)+(opts.length&&opts.length<=8?' Is it '+opts.map(speakable).join(', or ')+'?':''));
+    try{var u=new SpeechSynthesisUtterance(s);u.lang='en-GB';u.rate=.9;speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}}
+  window.A11Y.read=readNow;
+  function save(){try{localStorage.setItem('mh-a11y',JSON.stringify({big:A.big,slow:A.slow,still:A.still,auto:A.auto}));}catch(e){}}
+  document.addEventListener('DOMContentLoaded',function(){
+    document.body.classList.toggle('big',!!A.big);document.body.classList.toggle('still',!!A.still);
+    var bar=document.querySelector('.topbar'),menu=document.getElementById('btnMenu');if(!bar)return;
+    var rb=document.createElement('button');rb.className='pill a11y-read';rb.type='button';rb.id='btnRead';rb.textContent='Read aloud';rb.onclick=readNow;
+    var sb=document.createElement('button');sb.className='pill';sb.type='button';sb.id='btnA11y';sb.textContent='Settings';sb.setAttribute('aria-expanded','false');
+    bar.insertBefore(rb,bar.querySelector('.pill'));bar.insertBefore(sb,menu);
+    var pn=document.createElement('div');pn.className='a11y-panel';pn.hidden=true;pn.setAttribute('role','dialog');pn.setAttribute('aria-label','Settings');
+    var opts=[['big','Bigger text'],['slow','Slower speech'],['still','Less movement'],['auto','Read each question out automatically']];
+    pn.innerHTML='<h2>Settings</h2>'+opts.map(function(o){return '<label><input type="checkbox" data-k="'+o[0]+'"'+(A[o[0]]?' checked':'')+'> '+o[1]+'</label>';}).join('')+'<button class="pill" type="button" id="a11yDone">Done</button>';
+    document.body.appendChild(pn);
+    sb.onclick=function(){pn.hidden=!pn.hidden;sb.setAttribute('aria-expanded',String(!pn.hidden));};
+    pn.querySelector('#a11yDone').onclick=function(){pn.hidden=true;sb.setAttribute('aria-expanded','false');};
+    pn.querySelectorAll('input').forEach(function(c){c.onchange=function(){A[c.dataset.k]=c.checked;save();
+      if(c.dataset.k==='big')document.body.classList.toggle('big',c.checked);
+      if(c.dataset.k==='still'){document.body.classList.toggle('still',c.checked);}};});
+    var p=document.getElementById('prompt'),tm;
+    if(p)new MutationObserver(function(){if(!A.auto)return;clearTimeout(tm);tm=setTimeout(function(){if(!/^Choose a game/.test(p.textContent.trim()))readNow();},350);}).observe(p,{childList:true,subtree:true,characterData:true});
+  });
+})();
+</script>
+<script>
+(function(){
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+ctx.setTransform(2,0,0,2,0,0);
+const C={fg:'#e6edf7',muted:'#9aaac2',stage:'#111b2d',grid:'#1a2740',cw:'#5b9bff',acw:'#ff8a3d',gold:'#f5c451',off:'#2b3b57',
+  body:'#e6edf7',visor:'#0d1524',wheel:'#6b7a93',wall:'#0b1322',wallLine:'#18243a',path:'#22324b',start:'#2e4266',line:'#30425f',ring:'#3a4a63'};
+const SHAPE_FILL=['#7fbf7a','#3fb5a8','#b39ddb','#74b9e8']; // circle, square, rectangle, triangle
+const Q=Math.PI/2;
+const SHAPES=['circle','square','rectangle','triangle']; // index = facing: 0 up, 1 right, 2 down, 3 left
+const DIRS=['north','east','south','west'];
+const NS=[1,1,1,2,2,2,3,3];
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $=id=>document.getElementById(id);
+const promptEl=$('prompt'), hudEl=$('hud'), answersEl=$('answers'), cardEl=$('card');
+const sleep=ms=>new Promise(r=>setTimeout(r,reduce?Math.min(ms,150):ms));
+const rnd=n=>Math.floor(Math.random()*n);
+
+/* ---------- sound ---------- */
+let actx=null, muted=false;
+function beep(f,d,vol){ if(muted) return; try{
+  actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+  const o=actx.createOscillator(), g=actx.createGain(), t=actx.currentTime;
+  o.type='sine'; o.frequency.value=f; g.gain.setValueAtTime(vol||.12,t); g.gain.exponentialRampToValueAtTime(.0001,t+(d||.12));
+  o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t+(d||.12)+.02);
+}catch(e){} }
+const tune=n=>n.forEach(([f,t,d])=>setTimeout(()=>beep(f,d||.14),t));
+const sGood=()=>tune([[587,0],[880,110,.25]]);
+const sBad=()=>tune([[294,0,.2],[220,150,.28]]);
+const sClick=()=>beep(1200,.03,.04);
+const sWin=()=>tune([[523,0],[659,120],[784,240],[1047,360,.4]]);
+
+/* ---------- storage ---------- */
+let best={};
+try{ best=JSON.parse(localStorage.getItem('turnquest-best')||'{}')||{}; }catch(e){ best={}; }
+function saveBest(k,v){ if(!(best[k]>=v)){ best[k]=v; try{ localStorage.setItem('turnquest-best',JSON.stringify(best)); }catch(e){} } }
+
+/* ---------- state ---------- */
+const st={mode:'menu',angle:0,target:0,step:'',arc:0,finish:null,btns:[],focus:-1,cols:2,handler:null,locked:false,px:0,py:0,tx:0,ty:0};
+
+/* ---------- drawing helpers ---------- */
+function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(x,y,w,h);}
+function rrect(x,y,w,h,r,fill,stroke,lw){ctx.beginPath();ctx.roundRect?ctx.roundRect(x,y,w,h,r):ctx.rect(x,y,w,h);if(fill){ctx.fillStyle=fill;ctx.fill();}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw||2;ctx.stroke();}}
+function text(s,x,y,size,c,weight,align){ctx.fillStyle=c||C.fg;ctx.font=(weight||500)+' '+size+'px Lexend, sans-serif';ctx.textAlign=align||'center';ctx.textBaseline='middle';ctx.fillText(s,x,y);}
+function bg(){
+  rect(0,0,320,288,C.stage); ctx.strokeStyle=C.grid; ctx.lineWidth=1;
+  for(let x=16;x<320;x+=24){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,288);ctx.stroke();}
+  for(let y=12;y<288;y+=24){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(320,y);ctx.stroke();}
+}
+function robot(x,y,a,s){
+  ctx.save(); ctx.translate(x,y); ctx.rotate(a); ctx.scale(s||1,s||1);
+  rrect(-26,-13,7,26,3,C.wheel); rrect(19,-13,7,26,3,C.wheel);
+  rrect(-18,-17,36,36,8,C.body);
+  rrect(-12,-9,24,8,4,C.visor);
+  ctx.fillStyle=C.gold; ctx.beginPath(); ctx.moveTo(0,-40); ctx.lineTo(10,-23); ctx.lineTo(-10,-23); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+function shape(i,x,y){
+  ctx.fillStyle=SHAPE_FILL[i]; ctx.beginPath();
+  if(i===0) ctx.arc(x,y,21,0,Math.PI*2);
+  else if(i===1) ctx.rect(x-19,y-19,38,38);
+  else if(i===2) ctx.rect(x-27,y-15,54,30);
+  else { ctx.moveTo(x,y-22); ctx.lineTo(x+25,y+18); ctx.lineTo(x-25,y+18); ctx.closePath(); }
+  ctx.fill();
+}
+const SPOS=[[160,40],[268,144],[160,244],[52,144]];
+function shapesScene(){
+  SHAPES.forEach((n,i)=>{ const [x,y]=SPOS[i]; shape(i,x,y); text(n,x,i===0?76:y+36,13,C.muted,500); });
+  if(st.finish!==null && Math.floor(performance.now()/420)%2){
+    const [x,y]=SPOS[st.finish]; ctx.strokeStyle=C.gold; ctx.lineWidth=3; ctx.lineCap='round'; const o=34,k=10;
+    [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([sx,sy])=>{ctx.beginPath();ctx.moveTo(x+sx*o,y+sy*(o-k));ctx.lineTo(x+sx*o,y+sy*o);ctx.lineTo(x+sx*(o-k),y+sy*o);ctx.stroke();});
+  }
+}
+function arcArrow(sign){
+  if(!sign) return;
+  const col=sign>0?C.cw:C.acw, cx=160,cy=144,r=60,a0=-Math.PI*5/6,a1=-Math.PI/6;
+  ctx.strokeStyle=col; ctx.lineWidth=3.5; ctx.lineCap='round'; ctx.setLineDash(sign>0?[]:[8,6]);
+  ctx.beginPath(); ctx.arc(cx,cy,r,a0,a1); ctx.stroke(); ctx.setLineDash([]);
+  const ae=sign>0?a1:a0, ex=cx+r*Math.cos(ae), ey=cy+r*Math.sin(ae);
+  const tx=sign>0?-Math.sin(ae):Math.sin(ae), ty=sign>0?Math.cos(ae):-Math.cos(ae), nx=-ty, ny=tx;
+  ctx.fillStyle=col; ctx.beginPath(); ctx.moveTo(ex+tx*12,ey+ty*12); ctx.lineTo(ex+nx*8,ey+ny*8); ctx.lineTo(ex-nx*8,ey-ny*8); ctx.closePath(); ctx.fill();
+}
+function stepBadge(){ if(!st.step) return; ctx.fillStyle=st.arc>0?C.cw:C.acw; ctx.beginPath(); ctx.arc(224,98,16,0,Math.PI*2); ctx.fill(); text(st.step,224,99,17,C.stage,700); }
+function compassScene(){
+  ctx.strokeStyle=C.ring; ctx.lineWidth=6; ctx.beginPath(); ctx.arc(160,144,110,0,Math.PI*2); ctx.stroke();
+  [[160,34,'N'],[270,144,'E'],[160,254,'S'],[50,144,'W']].forEach(([x,y,l])=>{ ctx.fillStyle=C.stage; ctx.strokeStyle=C.fg; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(x,y,17,0,Math.PI*2); ctx.fill(); ctx.stroke(); text(l,x,y+1,17,C.fg,600); });
+}
+function star(x,y,r,c){ctx.fillStyle=c;ctx.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i%2?r*.45:r;ctx.lineTo(x+rr*Math.cos(a),y+rr*Math.sin(a));}ctx.closePath();ctx.fill();}
+
+/* ---------- mazes ---------- */
+const LEVELS=[
+  {name:'Level 1 · The Corner', map:['########','#S...###','####.###','####.###','####G###','########']},
+  {name:'Level 2 · Zig Zag', map:['########','S..#####','##.#####','##....##','#####.##','#####G##']},
+  {name:'Level 3 · Shoe Shop', map:['########','S.....#.','##.#.##.','#..#....','##.####.','#######G']}
+];
+const CELL=36, OX=16, OY=40;
+const cx_=c=>OX+c*CELL+CELL/2, cy_=r=>OY+r*CELL+CELL/2;
+function mazeScene(){
+  const L=LEVELS[st.lv];
+  text(L.name,160,21,14,C.fg,600);
+  L.map.forEach((row,r)=>[...row].forEach((ch,c)=>{
+    const x=OX+c*CELL,y=OY+r*CELL;
+    if(ch==='#'){ rect(x,y,CELL,CELL,C.wall); ctx.strokeStyle=C.wallLine; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(x+6,y+CELL-6); ctx.lineTo(x+CELL-6,y+6); ctx.stroke(); }
+    else rect(x,y,CELL,CELL,ch==='S'?C.start:C.path);
+    if(ch==='G') star(x+18,y+18,13,C.gold);
+  }));
+  ctx.strokeStyle=C.line; ctx.lineWidth=1;
+  for(let c=0;c<=8;c++){ctx.beginPath();ctx.moveTo(OX+c*CELL,OY);ctx.lineTo(OX+c*CELL,OY+6*CELL);ctx.stroke();}
+  for(let r=0;r<=6;r++){ctx.beginPath();ctx.moveTo(OX,OY+r*CELL);ctx.lineTo(OX+8*CELL,OY+r*CELL);ctx.stroke();}
+  robot(st.px,st.py,st.angle,.5);
+  text(st.lv===2?'Goal: the shoe shop':'Goal: reach the star',160,272,13,C.muted,500);
+}
+
+/* ---------- render loop ---------- */
+function render(t){
+  const k=reduce?1:.16;
+  st.angle+=(st.target-st.angle)*k; st.px+=(st.tx-st.px)*k; st.py+=(st.ty-st.py)*k;
+  bg();
+  if(st.mode==='menu'){
+    const q=Math.floor(t/1100)%4; st.target=q*Q+Math.floor(t/4400)*Math.PI*2;
+    if(Math.abs(st.target-st.angle)>Math.PI) st.angle=st.target;
+    SHAPES.forEach((n,i)=>{ const [x,y]=SPOS[i]; shape(i,x,y); });
+    arcArrow(1); robot(160,144,st.angle,1);
+  } else if(st.mode==='shapes'||st.mode==='count'){ shapesScene(); arcArrow(st.arc); robot(160,144,st.angle,1); stepBadge(); }
+  else if(st.mode==='compass'){ compassScene(); arcArrow(st.arc); robot(160,144,st.angle,1); stepBadge(); }
+  else if(st.mode==='maze'){ mazeScene(); }
+  else if(st.mode==='over'){ overScene(); }
+  else if(st.mode==='teach'){ teachScene(t); }
+  requestAnimationFrame(render);
+}
+function overScene(){
+  text(st.overTitle,160,50,22,C.fg,600);
+  text('SCORE',160,96,12,C.muted,500);
+  text(st.overScore,160,130,40,C.fg,600);
+  for(let i=0;i<3;i++) star(110+i*50,196,18,i<st.stars?C.gold:C.off);
+  text(st.overBest,160,254,13,C.muted,500);
+}
+
+/* ---------- UI plumbing ---------- */
+function setPrompt(html){ promptEl.innerHTML=html; }
+function setHud(l,r){ hudEl.innerHTML='<span class="lives">'+l+'</span><span class="r">'+r+'</span>'; }
+const pips=n=>'Lives '+[0,1,2].map(i=>`<span class="pip${i<n?'':' off'}"></span>`).join('');
+function setButtons(list,handler,cols){
+  answersEl.innerHTML=''; st.btns=[]; st.cols=cols||2; answersEl.style.setProperty('--cols',st.cols);
+  list.forEach((b,i)=>{ const el=document.createElement('button'); el.className='key'+(b.cls?' '+b.cls:''); el.id='key-'+i; el.type='button'; el.innerHTML=b.label;
+    el.addEventListener('click',()=>{ st.focus=i; mark(); sClick(); handler(b.value); }); answersEl.appendChild(el); st.btns.push(el); });
+  st.focus=-1; st.handler=handler; mark();
+}
+function mark(){ st.btns.forEach((b,i)=>b.classList.toggle('sel',i===st.focus)); }
+function move(dx,dy){ if(!st.btns.length) return; let f=st.focus<0?0:st.focus+dx+dy*st.cols; f=Math.max(0,Math.min(st.btns.length-1,f)); st.focus=f; mark(); st.btns[f].focus(); }
+function shake(){ cardEl.classList.remove('shake'); void cardEl.offsetWidth; cardEl.classList.add('shake'); }
+const dirChip=s=>s>0?'<span class="chip cw">↻ clockwise</span>':'<span class="chip acw">↺ anticlockwise</span>';
+function turnWords(n){ return Math.random()<.5 ? `<b>${n} right angle${n>1?'s':''}</b>` : `<b>${['','a quarter','a half','a three-quarter'][n]} turn</b>`; }
+const sw=i=>`<span class="sw" style="background:${SHAPE_FILL[i]}"></span>`;
+
+
+/* ---------- learn first: short teaching before each game ---------- */
+const easeIO=p=>p>=1?1:(1-Math.cos(Math.PI*Math.max(0,p)))/2;
+function stepState(t,n,dur){ const cyc=(n+2)*dur, tt=t%cyc, k=Math.floor(tt/dur), p=Math.min(1,(tt%dur)/dur*1.6);
+  if(k===0) return {a:0,c:0}; if(k<=n) return {a:k-1+easeIO(p),c:k}; return {a:n,c:n}; }
+function tBadge(n,sign){ if(!n) return; ctx.fillStyle=sign>0?C.cw:C.acw; ctx.beginPath(); ctx.arc(224,98,16,0,Math.PI*2); ctx.fill(); text(String(n),224,99,17,C.stage,700); }
+function shapesBase(){ SHAPES.forEach((n,i)=>{ const [x,y]=SPOS[i]; shape(i,x,y); text(n,x,i===0?76:y+36,13,C.muted,500); }); }
+function finishMark(i){ const [x,y]=SPOS[i]; ctx.strokeStyle=C.gold; ctx.lineWidth=3; ctx.lineCap='round'; const o=34,k=10;
+  [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([sx,sy])=>{ctx.beginPath();ctx.moveTo(x+sx*o,y+sy*(o-k));ctx.lineTo(x+sx*o,y+sy*o);ctx.lineTo(x+sx*(o-k),y+sy*o);ctx.stroke();}); }
+function caption(s,col){ ctx.font='600 13px Lexend, sans-serif'; const w=ctx.measureText(s).width+20; rrect(160-w/2,2,w,20,10,'rgba(13,21,36,.85)'); text(s,160,12.5,13,col||C.fg,600); }
+function compassRing(i){ const P=[[160,34],[270,144],[160,254],[50,144]][i]; ctx.strokeStyle=C.gold; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(P[0],P[1],23,0,Math.PI*2); ctx.stroke(); }
+const MG={c:4,r:3,s:56}; const mgx=c=>160-MG.c*MG.s/2+c*MG.s+MG.s/2, mgy=r=>140-MG.r*MG.s/2+r*MG.s+MG.s/2;
+function miniGrid(path,goal){ for(let r=0;r<MG.r;r++)for(let c=0;c<MG.c;c++){ const x=mgx(c)-MG.s/2,y=mgy(r)-MG.s/2; const on=path&&path.some(p=>p[0]===c&&p[1]===r);
+  rect(x,y,MG.s,MG.s,on?C.path:C.wall); ctx.strokeStyle=C.line; ctx.lineWidth=1; ctx.strokeRect(x,y,MG.s,MG.s); }
+  if(goal) star(mgx(goal[0]),mgy(goal[1]),15,C.gold); }
+function keyframes(t,K,dur){ const n=K.length, cyc=(n+1)*dur, tt=t%cyc, k=Math.min(n-1,Math.floor(tt/dur)), p=easeIO(Math.min(1,(tt%dur)/dur*1.5));
+  const A=K[k], B=K[Math.min(n-1,k+1)]; if(k>=n-1) return {c:A.c,r:A.r,a:A.a,i:n-1}; return {c:A.c+(B.c-A.c)*p,r:A.r+(B.r-A.r)*p,a:A.a+(B.a-A.a)*p,i:k}; }
+const TEACH={
+  shapes:[
+    {title:'What is a turn?',text:'A turn is when you move round to face a new way. The gold arrow on the robot shows which way it is facing.',
+     draw:t=>{ shapesBase(); robot(160,144,t/1400,1); caption('the robot is turning'); }},
+    {title:'A quarter turn',text:'A quarter turn is <b>1 right angle</b>. The robot moves round to face the next shape.',
+     draw:t=>{ shapesBase(); const s=stepState(t,1,1100); arcArrow(1); robot(160,144,s.a*Q,1); tBadge(s.c,1); caption(s.c?'1 right angle: circle to square':'start: facing the circle'); }},
+    {title:'Clockwise and anticlockwise',text:'<span class="chip cw">↻ clockwise</span> turns the same way as the hands on a clock. <span class="chip acw">↺ anticlockwise</span> turns the other way.',
+     draw:t=>{ shapesBase(); const sign=Math.floor(t/3300)%2?-1:1, s=stepState(t%3300,1,1100); arcArrow(sign); robot(160,144,sign*s.a*Q,1); caption(sign>0?'clockwise':'anticlockwise',sign>0?C.cw:C.acw); }},
+    {title:'Count the right angles',text:'Count each right angle as you turn: 1, 2, 3. <b>2 right angles</b> make a half turn. <b>3 right angles</b> make a three-quarter turn.',
+     draw:t=>{ shapesBase(); const s=stepState(t,3,950); arcArrow(1); robot(160,144,s.a*Q,1); tBadge(s.c,1); caption(['start','1 right angle: a quarter turn','2 right angles: a half turn','3 right angles: a three-quarter turn'][s.c]); }}
+  ],
+  compass:[
+    {title:'The four compass points',text:'North is at the top. Going clockwise: <b>north, east, south, west</b>. Remember: <b>N</b>ever <b>E</b>at <b>S</b>oggy <b>W</b>affles.',
+     draw:t=>{ compassScene(); const i=Math.floor(t/900)%4; compassRing(i); robot(160,144,0,1); caption(['north','east','south','west'][i]); }},
+    {title:'A quarter turn clockwise',text:'Facing north, make a quarter turn <span class="chip cw">↻ clockwise</span>. Now you are facing <b>east</b>.',
+     draw:t=>{ compassScene(); const s=stepState(t,1,1100); arcArrow(1); robot(160,144,s.a*Q,1); tBadge(s.c,1); caption(s.c?'north to east':'facing north'); }},
+    {title:'A quarter turn anticlockwise',text:'Facing north, make a quarter turn <span class="chip acw">↺ anticlockwise</span>. Now you are facing <b>west</b>.',
+     draw:t=>{ compassScene(); const s=stepState(t,1,1100); arcArrow(-1); robot(160,144,-s.a*Q,1); tBadge(s.c,-1); caption(s.c?'north to west':'facing north'); }},
+    {title:'A half turn',text:'A half turn is <b>2 right angles</b>. You end up facing the opposite way, so north becomes <b>south</b>.',
+     draw:t=>{ compassScene(); const s=stepState(t,2,950); arcArrow(1); robot(160,144,s.a*Q,1); tBadge(s.c,1); caption(['facing north','1 right angle: east','2 right angles: south'][s.c]); }}
+  ],
+  count:[
+    {title:'Start and finish',text:'The robot starts facing one shape. The finish shape has <b>gold corners</b>.',
+     draw:t=>{ shapesBase(); finishMark(2); robot(160,144,0,1); caption('start: circle   finish: rectangle'); }},
+    {title:'Count each jump',text:'Follow the arrow. Each jump to the next shape is <b>1 right angle</b>. Stop counting when you reach the gold shape.',
+     draw:t=>{ shapesBase(); finishMark(2); const s=stepState(t,2,1050); arcArrow(1); robot(160,144,s.a*Q,1); tBadge(s.c,1); caption(s.c===2?'2 right angles':'counting…'); }},
+    {title:'The direction matters',text:'Circle to square is <b>1 right angle</b> <span class="chip cw">↻ clockwise</span>, but <b>3 right angles</b> <span class="chip acw">↺ anticlockwise</span>. Look at the arrow before you count.',
+     draw:t=>{ shapesBase(); finishMark(1); const s=stepState(t,3,950); arcArrow(-1); robot(160,144,-s.a*Q,1); tBadge(s.c,-1); caption(s.c===3?'3 right angles anticlockwise':'counting anticlockwise…',C.acw); }}
+  ],
+  maze:[
+    {title:'Forward',text:'<b>Forward</b> moves the robot <b>1 square</b> in the way it is facing.',
+     draw:t=>{ miniGrid([[0,1],[1,1],[2,1],[3,1]]); const k=keyframes(t,[{c:0,r:1,a:Q},{c:1,r:1,a:Q},{c:2,r:1,a:Q},{c:3,r:1,a:Q}],900); robot(mgx(k.c),mgy(k.r),k.a,.6); caption('forward '+k.i); }},
+    {title:'Turning on the spot',text:'<span class="chip cw">↻ clockwise</span> turns the robot right. <span class="chip acw">↺ anticlockwise</span> turns it left. Turning does <b>not</b> move it to a new square.',
+     draw:t=>{ miniGrid([[1,1]]); const k=keyframes(t,[{c:1,r:1,a:Q},{c:1,r:1,a:2*Q},{c:1,r:1,a:Q},{c:1,r:1,a:0}],1100); robot(mgx(1),mgy(1),k.a,.6); caption(['facing right','↻ clockwise: now facing down','back to facing right','↺ anticlockwise: now facing up'][k.i],[C.fg,C.cw,C.fg,C.acw][k.i]); }},
+    {title:'Plan your code',text:'Build all the steps first, then press <b>Run</b>. This robot uses: forward 2, ↻ clockwise, forward 1.',
+     draw:t=>{ miniGrid([[0,0],[1,0],[2,0],[2,1]],[2,1]); const k=keyframes(t,[{c:0,r:0,a:Q},{c:1,r:0,a:Q},{c:2,r:0,a:Q},{c:2,r:0,a:2*Q},{c:2,r:1,a:2*Q}],900); robot(mgx(k.c),mgy(k.r),k.a,.6); caption(['start','forward 1','forward 2','↻ clockwise','forward 1: star!'][k.i]); }}
+  ]
+};
+const TNAME={shapes:'Shape Spin',compass:'Compass Quest',count:'Count the Turns',maze:'Robot Route'};
+function speak(s){ try{ const u=new SpeechSynthesisUtterance((s.title+'. '+s.text).replace(/<[^>]+>/g,'').replace(/[↻↺→]/g,'')); u.lang='en-GB'; u.rate=.9; speechSynthesis.cancel(); speechSynthesis.speak(u);}catch(e){} }
+function beginGame(kind){ try{speechSynthesis.cancel();}catch(e){} kind==='maze'?startMaze(0):startQuiz(kind); }
+function startTeach(kind){ st.mode='teach'; st.kind=kind; st.ti=0; st.locked=false; showTeach(); }
+function showTeach(){ const L=TEACH[st.kind], s=L[st.ti], last=st.ti===L.length-1; st.t0=performance.now();
+  setHud('Learn first', TNAME[st.kind]+' · '+(st.ti+1)+' / '+L.length);
+  setPrompt(`<span class="big">${s.title}</span><span>${s.text}</span>`);
+  setButtons([{label:st.ti?'Back':'Skip to game',value:'back'},{label:'Read to me',value:'read'},{label:last?'Start the game':'Next',value:'next',cls:last?'run':''}],v=>{
+    if(v==='read') return speak(s);
+    if(v==='back'){ if(st.ti){st.ti--;showTeach();} else beginGame(st.kind); return; }
+    if(last) beginGame(st.kind); else {st.ti++;showTeach();}
+  },3); }
+function teachScene(t){ TEACH[st.kind][st.ti].draw(Math.max(0,t-st.t0)); }
+
+/* ---------- menu ---------- */
+const GAMES={ shapes:{name:'Shape Spin'}, compass:{name:'Compass Quest'}, count:{name:'Count the Turns'} };
+function menu(){
+  st.mode='menu'; st.step=''; st.arc=0; st.finish=null; st.locked=false;
+  setHud('Choose a game','4 games');
+  setPrompt('<span class="big">Choose a game</span><span>Each game starts with a short lesson. Every game uses the same colours: <span class="chip cw">↻ clockwise</span> and <span class="chip acw">↺ anticlockwise</span>.</span>');
+  const b=k=>best[k]!=null?`<small>Best ${best[k]}${k==='maze'?' / 3 levels':' / 8'}</small>`:'<small>Learn, then play</small>';
+  setButtons([
+    {label:'Shape Spin'+b('shapes'),value:'shapes'},
+    {label:'Compass Quest'+b('compass'),value:'compass'},
+    {label:'Count the Turns'+b('count'),value:'count'},
+    {label:'Robot Route'+b('maze'),value:'maze'}
+  ],v=>startTeach(v),2);
+}
+
+/* ---------- quiz games ---------- */
+function makeQ(kind,round){
+  const s=rnd(4), n=NS[round-1], sign=Math.random()<.5?1:-1, f=(s+n*sign+8)%4;
+  if(kind==='shapes') return {s,n,sign,answer:f,
+    prompt:`<span>Start facing the <b>${SHAPES[s]}</b>.</span><span>Turn ${turnWords(n)} ${dirChip(sign)}</span><span>Which shape are you facing?</span>`,
+    options:[0,1,3,2].map(i=>({label:sw(i)+SHAPES[i],value:i})), say:i=>'the '+SHAPES[i]};
+  if(kind==='compass') return {s,n,sign,answer:f,
+    prompt:`<span>You are facing <b>${DIRS[s]}</b>.</span><span>Make ${turnWords(n)} ${dirChip(sign)}</span><span>Which way are you facing now?</span>`,
+    options:[0,1,2,3].map(i=>({label:DIRS[i][0].toUpperCase()+DIRS[i].slice(1),value:i})), say:i=>DIRS[i]};
+  const cs=Math.random()<.75?1:-1, cf=(s+n*cs+8)%4;
+  return {s,n,sign:cs,answer:n,finish:cf,
+    prompt:`<span>Start: <b>${SHAPES[s]}</b>. Finish: <b>${SHAPES[cf]}</b> (marked in gold).</span><span>The robot turns ${dirChip(cs)}</span><span>How many right angles?</span>`,
+    options:[1,2,3].map(i=>({label:i+' right angle'+(i>1?'s':''),value:i})), say:i=>i+' right angle'+(i>1?'s':'')};
+}
+function startQuiz(kind){ st.kind=kind; st.round=0; st.score=0; st.hearts=3; nextQ(); }
+function quizHud(){ setHud(pips(st.hearts), `Question ${st.round} / 8 · Score ${st.score}`); }
+function nextQ(){
+  if(st.round>=8||st.hearts<=0) return endQuiz();
+  st.round++; st.mode=st.kind; st.q=makeQ(st.kind,st.round); st.locked=false; st.step='';
+  st.angle=st.target=st.q.s*Q; st.arc=st.q.sign; st.finish=st.kind==='count'?st.q.finish:null;
+  quizHud(); setPrompt(st.q.prompt);
+  setButtons(st.q.options,pick,st.q.options.length===3?1:2);
+}
+async function pick(v){
+  if(st.locked) return; st.locked=true;
+  const q=st.q, ok=v===q.answer;
+  setPrompt(q.prompt+'<span style="color:var(--muted)">Watch the turn…</span>');
+  for(let i=1;i<=q.n;i++){ st.target+=q.sign*Q; st.step=String(i); beep(440+i*120,.1); await sleep(580); }
+  await sleep(200); st.step='';
+  if(ok){ st.score++; sGood(); setPrompt(`<span class="big good">Correct</span><span>${q.n} right angle${q.n>1?'s':''} ${dirChip(q.sign)} lands on <b>${q.say(q.answer)}</b>.</span>`); }
+  else { st.hearts--; sBad(); shake(); setPrompt(`<span class="big bad">Not quite</span><span>The answer was <b>${q.say(q.answer)}</b>. Count the turns: ${q.n===1?'1':q.n===2?'1, 2':'1, 2, 3'}.</span>`); }
+  quizHud();
+  setButtons([{label:st.round>=8||st.hearts<=0?'See my score':'Next question',value:'n',cls:'run wide'}],()=>nextQ(),1);
+}
+function endQuiz(){
+  st.mode='over'; st.arc=0; st.finish=null;
+  st.stars=st.score>=7?3:st.score>=5?2:st.score>=3?1:0;
+  st.overTitle=st.hearts>0?'Round complete':'Out of lives';
+  st.overScore=st.score+' / 8'; saveBest(st.kind,st.score); st.overBest='Best score: '+best[st.kind]+' / 8';
+  if(st.hearts>0) sWin(); else sBad();
+  setHud(GAMES[st.kind].name, st.stars+' / 3 stars');
+  setPrompt(st.stars===3?'<span class="big good">Excellent turning</span><span>Try a different game next.</span>':'<span class="big">Keep practising</span><span>Play again to earn more stars. Count each right angle as you turn.</span>');
+  setButtons([{label:'Play again',value:'a',cls:'run'},{label:'Learn again',value:'l'},{label:'Menu',value:'m'}],v=>v==='a'?startQuiz(st.kind):v==='l'?startTeach(st.kind):menu(),3);
+}
+
+/* ---------- robot route ---------- */
+const DR=[-1,0,1,0], DC=[0,1,0,-1];
+function findCh(map,ch){ for(let r=0;r<map.length;r++){ const c=map[r].indexOf(ch); if(c>=0) return [r,c]; } }
+function startMaze(i){ st.mode='maze'; st.lv=i; st.prog=[]; st.locked=false; resetBot(true); mazeHud(); mazeUI(); }
+function resetBot(snap){
+  const [r,c]=findCh(LEVELS[st.lv].map,'S'); st.r=r; st.c=c; st.dir=1; st.target=Q; st.tx=cx_(c); st.ty=cy_(r);
+  if(snap){ st.angle=Q; st.px=st.tx; st.py=st.ty; }
+}
+function mazeHud(){ setHud('Robot Route', 'Level '+(st.lv+1)+' / 3'); }
+function codeHtml(){
+  if(!st.prog.length) return '<span class="empty">Your code will appear here.</span>';
+  const out=[]; st.prog.forEach(p=>{ const last=out[out.length-1]; if(p==='F'&&last&&last.k==='F') last.n++; else out.push({k:p,n:1}); });
+  return out.map(o=>o.k==='F'?`<span>Forward ${o.n}</span>`:o.k==='R'?'<span class="r">↻ Clockwise</span>':'<span class="l">↺ Anticlockwise</span>').join('');
+}
+function mazePrompt(msg){
+  setPrompt(`<span>${msg||'The robot starts facing <b>→</b>. Clockwise turns right; anticlockwise turns left.'}</span><div class="code">${codeHtml()}</div>`);
+}
+function mazeUI(){
+  mazePrompt();
+  setButtons([
+    {label:'Forward<small>1 square</small>',value:'F'},{label:'↻ Turn<small>clockwise</small>',value:'R',cls:'cwk'},{label:'↺ Turn<small>anticlockwise</small>',value:'L',cls:'acwk'},
+    {label:'Undo',value:'U'},{label:'Run',value:'RUN',cls:'run'},{label:'Clear',value:'X'}
+  ],mazeKey,3);
+}
+function mazeKey(v){
+  if(st.locked) return;
+  if(v==='F'||v==='R'||v==='L'){ if(st.prog.length<20) st.prog.push(v); }
+  else if(v==='U') st.prog.pop();
+  else if(v==='X') st.prog=[];
+  else if(v==='RUN') return runProg();
+  mazePrompt();
+}
+async function runProg(){
+  if(!st.prog.length){ mazePrompt('Add some steps first, then press <b>Run</b>.'); return; }
+  st.locked=true; resetBot(true); mazePrompt('Running your code…'); await sleep(250);
+  const map=LEVELS[st.lv].map;
+  for(const p of st.prog){
+    if(p==='R'){ st.dir=(st.dir+1)%4; st.target+=Q; beep(660,.08); }
+    else if(p==='L'){ st.dir=(st.dir+3)%4; st.target-=Q; beep(520,.08); }
+    else { const nr=st.r+DR[st.dir], nc=st.c+DC[st.dir];
+      if(nr<0||nr>5||nc<0||nc>7||map[nr][nc]==='#'){ sBad(); shake(); await sleep(500); mazePrompt('<b>Blocked.</b> The robot hit a wall. Change your code and run it again.'); resetBot(false); st.locked=false; return; }
+      st.r=nr; st.c=nc; st.tx=cx_(nc); st.ty=cy_(nr); beep(392,.06); }
+    await sleep(420);
+  }
+  if(map[st.r][st.c]==='G'){
+    sWin(); saveBest('maze',Math.max(best.maze||0,st.lv+1)); mazeHud();
+    const last=st.lv===LEVELS.length-1;
+    setPrompt(`<span class="big good">${last?'Shoe shop reached':'Level complete'}</span><div class="code">${codeHtml()}</div>`);
+    setButtons(last?[{label:'Back to menu',value:'m',cls:'run wide'}]:[{label:'Next level',value:'n',cls:'run'},{label:'Menu',value:'m'}],
+      v=>v==='n'?startMaze(st.lv+1):menu(),last?1:2);
+  } else { sBad(); mazePrompt('Not there yet. Add more steps to reach the star.'); await sleep(900); resetBot(false); st.locked=false; }
+}
+
+/* ---------- top bar and keyboard ---------- */
+$('btnMenu').addEventListener('click',()=>{ if(!st.locked||st.mode==='over'){ sClick(); menu(); } });
+$('btnSound').addEventListener('click',()=>{ muted=!muted; $('btnSound').textContent=muted?'Sound: off':'Sound: on'; if(!muted) sClick(); });
+document.addEventListener('keydown',e=>{
+  const k=e.key;
+  if(k==='ArrowLeft'){move(-1,0);e.preventDefault();}
+  else if(k==='ArrowRight'){move(1,0);e.preventDefault();}
+  else if(k==='ArrowUp'){move(0,-1);e.preventDefault();}
+  else if(k==='ArrowDown'){move(0,1);e.preventDefault();}
+  else if(k==='Escape'){ if(!st.locked||st.mode==='over') menu(); }
+});
+
+window.__TQ={get st(){return st;},LEVELS:typeof LEVELS!=='undefined'?LEVELS:null};
+(function(){ const h=location.hash.slice(1); if(TEACH[h]) startTeach(h); else menu(); })();
+requestAnimationFrame(render);
+})();
+</script>
+
+</body>
+</html>

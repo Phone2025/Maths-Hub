@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Number Quest Arcade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap">
+<style>
+*{box-sizing:border-box}
+body{margin:0}
+/* Layout: a calm, dark puzzle-game console. A slim header, one stage panel with a blueprint grid, the question beneath it, and a grid of flat control tiles. Deliberately single-theme (dark) so every classroom screen matches. */
+:root{
+  --bg:#0d1524; --panel:#141f33; --stage:#111b2d; --tile:#1b2840; --tile-hi:#22324d; --edge:#2b3b57;
+  --fg:#e6edf7; --muted:#9aaac2; --faint:#6b7a93;
+  --cw:#5b9bff; --acw:#ff8a3d; --ok:#3dd68c; --ok-ink:#07210f; --gold:#f5c451; --life:#ff5d73;
+  --font:'Lexend', 'Segoe UI', Verdana, sans-serif;
+  color-scheme:dark;
+}
+html,body{min-height:100%}
+body{
+  background:var(--bg); color:var(--fg); font-family:var(--font); font-size:17px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+  padding-block:20px 40px;
+}
+.wrap{max-width:540px; margin:0 auto; display:flex; flex-direction:column; gap:16px}
+.topbar{display:flex; align-items:center; gap:10px}
+.logo{flex:1; min-width:0; margin:0; display:flex; flex-direction:column; gap:2px}
+.logo b{font-size:20px; font-weight:700; letter-spacing:.18em}
+.logo span{font-size:12px; font-weight:500; letter-spacing:.14em; text-transform:uppercase; color:var(--muted)}
+.pill{font:500 14px var(--font); color:var(--fg); background:var(--tile); border:1px solid var(--edge); border-radius:10px; padding:9px 14px; cursor:pointer}
+.pill:hover{background:var(--tile-hi)}
+.panel{background:var(--panel); border:1px solid var(--edge); border-radius:18px; overflow:hidden}
+.hud{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:12px 16px; font-size:14px; font-weight:500; color:var(--muted); font-variant-numeric:tabular-nums}
+.hud .lives{display:flex; align-items:center; gap:6px; text-transform:uppercase; letter-spacing:.12em; font-size:12px}
+.hud .pip{width:10px; height:10px; border-radius:50%; background:var(--life)}
+.hud .pip.off{background:transparent; box-shadow:inset 0 0 0 2px var(--edge)}
+.hud .r{color:var(--fg)}
+.stage{background:var(--stage); border-block:1px solid var(--edge)}
+canvas{display:block; width:100%; height:auto; aspect-ratio:320/288; max-width:100%}
+.prompt{min-height:8em; padding:16px 18px 18px; font-size:19px; line-height:1.5; display:flex; flex-direction:column; gap:6px}
+.prompt b{font-weight:600; color:#ffffff}
+.prompt .big{font-size:22px; font-weight:600; letter-spacing:.01em}
+.prompt .big.good{color:var(--ok)}
+.prompt .big.bad{color:var(--acw)}
+.prompt .note{color:var(--muted);font-size:16px}
+.chip{display:inline-block; padding:0 9px; border-radius:7px; font-weight:600; font-size:.92em}
+.chip.cw{color:var(--cw); background:rgba(91,155,255,.14); border:1px solid rgba(91,155,255,.5)}
+.chip.acw{color:var(--acw); background:rgba(255,138,61,.12); border:1px dashed var(--acw)}
+.code{display:flex; flex-wrap:wrap; gap:6px; min-height:30px}
+.code span{background:var(--tile); border:1px solid var(--edge); padding:2px 10px; font-size:15px; font-weight:500; border-radius:8px}
+.code span.r{border-color:var(--cw); color:var(--cw)}
+.code span.l{border-color:var(--acw); color:var(--acw); border-style:dashed}
+.code .empty{background:none; border:0; color:var(--faint); padding:0}
+.panel.shake canvas{animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-6px)}50%{transform:translateX(6px)}75%{transform:translateX(-3px)}}
+.answers{display:grid; grid-template-columns:repeat(var(--cols,2), minmax(0,1fr)); gap:10px}
+.key{
+  font:500 18px/1.2 var(--font); color:var(--fg); background:var(--tile);
+  border:1px solid var(--edge); border-radius:14px; padding:12px 10px; min-height:62px;
+  cursor:pointer; text-wrap:balance; transition:background .12s, border-color .12s, transform .08s;
+}
+.key small{display:block; font-size:13px; font-weight:400; color:var(--muted); margin-top:3px}
+.key:hover{background:var(--tile-hi)}
+.key:active{transform:scale(.98)}
+.key.sel{border-color:var(--cw)}
+.key:focus-visible{outline:2px solid var(--cw); outline-offset:2px}
+.key.run{background:var(--ok); border-color:var(--ok); color:var(--ok-ink); font-weight:600}
+.key.run small{color:var(--ok-ink); opacity:.75}
+.key.cwk{color:var(--cw)} .key.acwk{color:var(--acw); border-style:dashed}
+.key.wide{grid-column:1 / -1}
+.key .sw{display:inline-block; width:14px; height:14px; border-radius:3px; vertical-align:-1px; margin-right:8px}
+button:focus-visible{outline:2px solid var(--cw); outline-offset:2px}
+@media (prefers-reduced-motion: reduce){ .panel.shake canvas{animation:none} .key{transition:none} }
+@media (max-width:400px){ .key{font-size:16px} .prompt{font-size:17px} }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="topbar">
+    <h1 class="logo"><b>NUMBER QUEST</b><span>Place value · + − × ÷ · Statistics · Year 3</span></h1>
+    <button class="pill" id="btnSound" type="button">Sound: on</button>
+    <button class="pill" id="btnMenu" type="button">Menu</button>
+  </div>
+
+  <div class="panel" id="card">
+    <div class="hud" id="hud"></div>
+    <div class="stage"><canvas id="cv" width="640" height="576" aria-label="Game picture"></canvas></div>
+    <div class="prompt" id="prompt" aria-live="polite"></div>
+  </div>
+
+  <div class="answers" id="answers"></div>
+</div>
+
+<style id="a11y-css">
+body.big .prompt{font-size:23px;line-height:1.55}
+body.big .prompt .big{font-size:27px}
+body.big .key{font-size:20px;min-height:64px}
+body.big .hud{font-size:16px}
+body.still *{transition:none!important;animation:none!important}
+.a11y-read{background:#f5c451!important;color:#14213d!important;border-color:#f5c451!important;font-weight:700!important}
+.a11y-panel{position:fixed;z-index:30;top:60px;right:12px;width:min(320px,calc(100vw - 24px));background:#16233a;border:1px solid #2b3b57;border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px;box-shadow:0 12px 30px rgba(0,0,0,.4);font-size:16px}
+.a11y-panel[hidden]{display:none}
+.a11y-panel h2{margin:0;font-size:17px}
+.a11y-panel label{display:flex;gap:10px;align-items:center;cursor:pointer;min-height:40px}
+.a11y-panel input{width:22px;height:22px;accent-color:#f5c451}
+.topbar{flex-wrap:wrap;row-gap:8px}
+.topbar .logo{flex:1 1 230px;min-width:200px}
+.topbar .logo b{white-space:nowrap}
+</style>
+<script id="mh-voice">/* Maths Hub voice: picks the most natural English voice on this device and applies the reader's settings */
+(function(){var ss=window.speechSynthesis;if(!ss||ss.__mh)return;ss.__mh=1;var orig=ss.speak.bind(ss);
+function A(){try{return JSON.parse(localStorage.getItem('mh-a11y')||'{}')||{};}catch(e){return {};}}
+var BAD=/compact|espeak|robot|novelty|bad news|bells|whisper|zarvox|trinoids|albert|jester|organ|cellos|bubbles|boing|deranged|hysterical|superstar|wobble|grandma|grandpa|eddy|flo\b|reed|rocko|sandy|shelley|good news|junior|ralph|fred|kathy|vicki|victoria/;
+function rank(v){var n=v.name.toLowerCase(),l=(v.lang||'').toLowerCase().replace('_','-'),s=0;if(l.indexOf('en')!==0)return -1;
+  if(l==='en-gb')s+=30;else if(l==='en-ie'||l==='en-au'||l==='en-nz')s+=16;else s+=10;
+  if(/natural|neural/.test(n))s+=45;if(/online/.test(n))s+=8;if(/premium/.test(n))s+=42;if(/enhanced/.test(n))s+=36;if(/siri/.test(n))s+=30;
+  if(/google uk english female/.test(n))s+=26;else if(/google uk english/.test(n))s+=22;else if(/google/.test(n))s+=12;
+  if(/sonia|libby|maisie|abbi|bella|hollie|olivia|serena|kate|stephanie|martha|daniel|arthur|oliver|jamie/.test(n))s+=12;
+  if(BAD.test(n))s-=80;return s;}
+function list(){return ss.getVoices().filter(function(v){return rank(v)>=0;}).sort(function(a,b){return rank(b)-rank(a);});}
+function best(){var a=A(),vs=ss.getVoices();if(a.voice){var f=vs.filter(function(v){return v.name===a.voice;})[0];if(f)return f;}return list()[0]||null;}
+ss.speak=function(u){try{var v=best();if(v){u.voice=v;u.lang=v.lang;}var a=A();u.rate=a.slow?0.8:0.97;u.pitch=1;
+  if(u.text)u.text=u.text.replace(/\s*\n+\s*/g,'. ').replace(/\s{2,}/g,' ');}catch(e){}return orig(u);};
+window.MH_VOICES=list;window.MH_VOICE_RANK=rank;
+try{ss.getVoices();if(typeof ss.addEventListener==='function')ss.addEventListener('voiceschanged',function(){});}catch(e){}
+})();
+</script>
+<script>
+function speakable(t){
+  var D={2:['half','halves'],3:['third','thirds'],4:['quarter','quarters'],5:['fifth','fifths'],6:['sixth','sixths'],7:['seventh','sevenths'],8:['eighth','eighths'],9:['ninth','ninths'],10:['tenth','tenths'],12:['twelfth','twelfths'],100:['hundredth','hundredths']};
+  var N=['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve'];
+  t=String(t).replace(/½/g,' 1/2').replace(/¼/g,' 1/4').replace(/¾/g,' 3/4').replace(/\s+/g,' ').trim();
+  t=t.replace(/(\d)\s?mm\b/g,'$1 millimetres').replace(/(\d)\s?cm\b/g,'$1 centimetres').replace(/(\d)\s?km\b/g,'$1 kilometres').replace(/(\d)\s?kg\b/g,'$1 kilograms').replace(/(\d)\s?ml\b/g,'$1 millilitres').replace(/(\d)\s?g\b/g,'$1 grams').replace(/(\d)\s?l\b/g,'$1 litres').replace(/(\d)\s?m\b/g,'$1 metres').replace(/(\d)p\b/g,'$1 pence');
+  t=t.replace(/(^|[^\d\/])(\d{1,2})\/(\d{1,3})(?![\d\/])/g,function(m,p,a,b){a=+a;b=+b;var w=D[b]?(N[a]||a)+' '+D[b][a===1?0:1]:a+' over '+b;if(a===b&&b>1)w+=', one whole';return p+w;});
+  t=t.replace(/_{2,}|☐/g,' blank ');
+  t=t.replace(/(^|[\s(=+\-−×÷])\?(?=\s*[+\-−×÷=])/g,'$1 what number ').replace(/([=+\-−×÷]\s*)\?/g,'$1 what number');
+  t=t.replace(/=\s*$/,' equals what?').replace(/…\s*$/,' what?').replace(/…/g,', ');
+  t=t.replace(/×/g,' times ').replace(/÷/g,' divided by ').replace(/−/g,' minus ').replace(/\s\+\s|\+/g,' plus ').replace(/=/g,' equals ').replace(/\s<\s/g,' is less than ').replace(/\s>\s/g,' is greater than ');
+  t=t.replace(/(^|[^\d,.\/])1 (millimetre|centimetre|kilometre|kilogram|millilitre|gram|litre|metre)s\b/g,'$1one $2').replace(/(half|quarter|third|fifth|tenth) (millimetre|centimetre|kilometre|kilogram|millilitre|gram|litre|metre)s\b/g,'$1 a $2').replace(/\bone half a /g,'half a ').replace(/\bone (quarter|third|fifth|tenth) a /g,'a $1 of a ');
+  t=t.replace(/[↻↺→←↑↓✓✗★☆♥]/g,'').replace(/\s+/g,' ').trim();
+  return t;
+}
+
+(function(){
+  var A={};try{A=JSON.parse(localStorage.getItem('mh-a11y')||'{}')||{};}catch(e){}
+  window.A11Y=A;
+  if(A.low)A.still=true;if(A.still){var mm=window.matchMedia;window.matchMedia=function(q){if(/prefers-reduced-motion/.test(q))return {matches:true,media:q,addListener:function(){},removeListener:function(){},addEventListener:function(){},removeEventListener:function(){}};return mm.call(window,q);};}
+  try{if(window.speechSynthesis){var sp=speechSynthesis.speak.bind(speechSynthesis);speechSynthesis.speak=function(u){if(A.slow)u.rate=Math.min(u.rate||1,.7);return sp(u);};}}catch(e){}
+  var SKIP=/^(Next|Back|Skip to game|Read to me|Menu|Play again|Learn again|Start|Play|Read aloud)\b/i;
+  function textOf(el){var c=el.cloneNode(true);c.querySelectorAll('.fr').forEach(function(f){var b=f.querySelector('b'),i=f.querySelector('i');f.textContent=' '+(b?b.textContent:'')+'/'+(i?i.textContent:'')+' ';});c.querySelectorAll('small').forEach(function(s){s.textContent=', '+s.textContent;});c.querySelectorAll('span,b,div').forEach(function(s){s.insertAdjacentText('afterend',' ');});return c.textContent.replace(/\s+/g,' ').trim();}
+  function promptText(p){return [].slice.call(p.children).map(function(c){var x=textOf(c);return x&&!/[.?!:]$/.test(x)?x+'.':x;}).join(' ')||textOf(p);}
+  function tidy(x){return x.replace(/equals\s*\./g,'equals what?').replace(/\s+([.,?!])/g,'$1').replace(/([?!.])\.+/g,'$1').replace(/\s+/g,' ').trim();}
+  function readNow(){var p=document.getElementById('prompt'),a=document.getElementById('answers');if(!p)return;
+    var t=promptText(p),opts=[].slice.call(a?a.querySelectorAll('button'):[]).map(textOf).filter(function(x){return x&&!SKIP.test(x);});
+    if(/^Choose a game/.test(t))opts=[];
+    var s=tidy(speakable(t)+(opts.length&&opts.length<=8?' Is it '+opts.map(speakable).join(', or ')+'?':''));
+    try{var u=new SpeechSynthesisUtterance(s);u.lang='en-GB';u.rate=.9;speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}}
+  window.A11Y.read=readNow;
+  function save(){try{localStorage.setItem('mh-a11y',JSON.stringify({big:A.big,slow:A.slow,still:A.still,auto:A.auto}));}catch(e){}}
+  document.addEventListener('DOMContentLoaded',function(){
+    document.body.classList.toggle('big',!!A.big);document.body.classList.toggle('still',!!A.still);
+    var bar=document.querySelector('.topbar'),menu=document.getElementById('btnMenu');if(!bar)return;
+    var rb=document.createElement('button');rb.className='pill a11y-read';rb.type='button';rb.id='btnRead';rb.textContent='Read aloud';rb.onclick=readNow;
+    var sb=document.createElement('button');sb.className='pill';sb.type='button';sb.id='btnA11y';sb.textContent='Settings';sb.setAttribute('aria-expanded','false');
+    bar.insertBefore(rb,bar.querySelector('.pill'));bar.insertBefore(sb,menu);
+    var pn=document.createElement('div');pn.className='a11y-panel';pn.hidden=true;pn.setAttribute('role','dialog');pn.setAttribute('aria-label','Settings');
+    var opts=[['big','Bigger text'],['slow','Slower speech'],['still','Less movement'],['auto','Read each question out automatically']];
+    pn.innerHTML='<h2>Settings</h2>'+opts.map(function(o){return '<label><input type="checkbox" data-k="'+o[0]+'"'+(A[o[0]]?' checked':'')+'> '+o[1]+'</label>';}).join('')+'<button class="pill" type="button" id="a11yDone">Done</button>';
+    document.body.appendChild(pn);
+    sb.onclick=function(){pn.hidden=!pn.hidden;sb.setAttribute('aria-expanded',String(!pn.hidden));};
+    pn.querySelector('#a11yDone').onclick=function(){pn.hidden=true;sb.setAttribute('aria-expanded','false');};
+    pn.querySelectorAll('input').forEach(function(c){c.onchange=function(){A[c.dataset.k]=c.checked;save();
+      if(c.dataset.k==='big')document.body.classList.toggle('big',c.checked);
+      if(c.dataset.k==='still'){document.body.classList.toggle('still',c.checked);}};});
+    var p=document.getElementById('prompt'),tm;
+    if(p)new MutationObserver(function(){if(!A.auto)return;clearTimeout(tm);tm=setTimeout(function(){if(!/^Choose a game/.test(p.textContent.trim()))readNow();},350);}).observe(p,{childList:true,subtree:true,characterData:true});
+  });
+})();
+</script>
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const cv=$('cv'), ctx=cv.getContext('2d'); ctx.setTransform(2,0,0,2,0,0);
+const C={fg:'#e6edf7',muted:'#9aaac2',faint:'#6b7a93',stage:'#111b2d',grid:'#1a2740',edge:'#2b3b57',tile:'#1b2840',gold:'#f5c451',ok:'#3dd68c',warn:'#ff8a3d',off:'#2b3b57'};
+const HC='#5b9bff', TC='#3dd68c', OC='#f5c451', COLS=[HC,TC,OC], CN=['H','T','O'], CW=['hundreds','tens','ones'];
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const promptEl=$('prompt'), hudEl=$('hud'), answersEl=$('answers'), cardEl=$('card');
+const sleep=ms=>new Promise(r=>setTimeout(r,reduce?Math.min(ms,150):ms));
+const rnd=n=>Math.floor(Math.random()*n), between=(a,b)=>a+rnd(b-a+1), pick=a=>a[rnd(a.length)];
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;};
+const D3=n=>[Math.floor(n/100)%10,Math.floor(n/10)%10,n%10];
+const fmt=n=>n>=1000?String(n).replace(/\B(?=(\d{3})+(?!\d))/g,','):String(n);
+
+/* ---------- sound ---------- */
+let actx=null, muted=false;
+function beep(f,d,vol){ if(muted) return; try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+  const o=actx.createOscillator(), g=actx.createGain(), t=actx.currentTime; o.type='sine'; o.frequency.value=f; g.gain.setValueAtTime(vol||.12,t); g.gain.exponentialRampToValueAtTime(.0001,t+(d||.12));
+  o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t+(d||.12)+.02);}catch(e){} }
+const tune=n=>n.forEach(([f,t,d])=>setTimeout(()=>beep(f,d||.14),t));
+const sGood=()=>tune([[587,0],[880,110,.25]]), sBad=()=>tune([[294,0,.2],[220,150,.28]]), sClick=()=>beep(1200,.03,.04), sWin=()=>tune([[523,0],[659,120],[784,240],[1047,360,.4]]), sStep=i=>beep(440+i*70,.09);
+
+/* ---------- storage ---------- */
+let best={}; try{ best=JSON.parse(localStorage.getItem('numberquest-best')||'{}')||{}; }catch(e){ best={}; }
+function saveBest(k,v){ if(!(best[k]>=v)){ best[k]=v; try{ localStorage.setItem('numberquest-best',JSON.stringify(best)); }catch(e){} } }
+
+/* ---------- drawing ---------- */
+function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(x,y,w,h);}
+function rrect(x,y,w,h,r,fill,stroke,lw){ctx.beginPath();ctx.roundRect?ctx.roundRect(x,y,w,h,r):ctx.rect(x,y,w,h);if(fill){ctx.fillStyle=fill;ctx.fill();}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw||2;ctx.stroke();}}
+function text(s,x,y,size,c,weight,align){ctx.fillStyle=c||C.fg;ctx.font=(weight||500)+' '+size+'px Lexend, sans-serif';ctx.textAlign=align||'center';ctx.textBaseline='middle';ctx.fillText(s,x,y);}
+function line(a,b,c,w,dash){ctx.strokeStyle=c;ctx.lineWidth=w||3;ctx.lineCap='round';ctx.setLineDash(dash?[6,6]:[]);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();ctx.setLineDash([]);}
+function dot(x,y,r,c){ctx.fillStyle=c;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();}
+function badge(x,y,s,c){dot(x,y,11,c||C.gold);text(String(s),x,y+1,12,C.stage,700);}
+function caption(s,col){ctx.font='600 13px Lexend, sans-serif';const w=ctx.measureText(s).width+20;rrect(160-w/2,264,w,20,10,'rgba(13,21,36,.9)');text(s,160,274.5,13,col||C.fg,600);}
+function bg(){rect(0,0,320,288,C.stage);ctx.strokeStyle=C.grid;ctx.lineWidth=1;for(let x=16;x<320;x+=24){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,288);ctx.stroke();}for(let y=12;y<288;y+=24){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(320,y);ctx.stroke();}}
+const countUp=(t,n,dur)=>Math.min(n,Math.floor((t%((n+3)*dur))/dur));
+/* place value chart */
+function pvChart(n,x0,y0,w,o){o=o||{};const cw=w/3,d=D3(n);
+  for(let i=0;i<3;i++){const x=x0+i*cw;rrect(x+3,y0,cw-6,30,8,COLS[i]+'33');text(CN[i],x+cw/2,y0+16,15,COLS[i],700);
+    rrect(x+3,y0+36,cw-6,64,10,C.tile,o.hl===i?C.gold:C.edge,o.hl===i?3:1.5);
+    text(o.hide===i?'?':String(d[i]),x+cw/2,y0+69,40,o.hl===i?C.gold:C.fg,700);
+    if(o.vals&&o.vals>i) text(String(d[i]*[100,10,1][i]),x+cw/2,y0+118,15,COLS[i],600);}}
+/* Dienes blocks */
+function dienes(h,t,o,x,y,s){s=s||1;let cx=x;const S=40*s;
+  for(let i=0;i<h;i++){rect(cx,y,S,S,HC+'55');ctx.strokeStyle=HC;ctx.lineWidth=1;for(let k=0;k<=10;k++){ctx.beginPath();ctx.moveTo(cx+k*S/10,y);ctx.lineTo(cx+k*S/10,y+S);ctx.stroke();ctx.beginPath();ctx.moveTo(cx,y+k*S/10);ctx.lineTo(cx+S,y+k*S/10);ctx.stroke();}cx+=S+6;}
+  for(let i=0;i<t;i++){rect(cx,y,S/10+2,S,TC+'66');ctx.strokeStyle=TC;ctx.lineWidth=1;ctx.strokeRect(cx,y,S/10+2,S);for(let k=1;k<10;k++){ctx.beginPath();ctx.moveTo(cx,y+k*S/10);ctx.lineTo(cx+S/10+2,y+k*S/10);ctx.stroke();}cx+=S/10+6;}
+  cx+=4;for(let i=0;i<o;i++){const c=i%3,r=Math.floor(i/3);rect(cx+c*(S/10+5),y+S-(r+1)*(S/10+5)+5,S/10+2,S/10+2,OC);}}
+/* number line */
+function NLine(a,b,step,y,lab){const x0=30,x1=290,X=v=>x0+(v-a)/(b-a)*(x1-x0);
+  line([x0-8,y],[x1+8,y],C.fg,3);for(let v=a;v<=b+1e-9;v+=step){line([X(v),y-9],[X(v),y+9],C.fg,2.5);}
+  (lab||[a,b]).forEach(v=>text(fmt(v),X(v),y+24,13,C.muted,600));return X;}
+function arrowDown(x,y,c){line([x,y-38],[x,y-12],c||C.gold,4);ctx.fillStyle=c||C.gold;ctx.beginPath();ctx.moveTo(x-8,y-16);ctx.lineTo(x+8,y-16);ctx.lineTo(x,y-4);ctx.closePath();ctx.fill();}
+function hop(x1,x2,y,lbl,c){const m=(x1+x2)/2,hgt=Math.min(40,Math.abs(x2-x1)*.6+12);ctx.strokeStyle=c||C.gold;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x1,y-6);ctx.quadraticCurveTo(m,y-6-hgt*2,x2,y-6);ctx.stroke();
+  const dir=Math.sign(x2-x1);ctx.fillStyle=c||C.gold;ctx.beginPath();ctx.moveTo(x2,y-4);ctx.lineTo(x2-dir*9,y-14);ctx.lineTo(x2+dir*2,y-16);ctx.closePath();ctx.fill();if(lbl)text(lbl,m,y-14-hgt,14,c||C.gold,700);}
+/* column method */
+function colCalc(a,b,op,k,cols){cols=cols||colWork(a,b,op);const x0=110,cw=50,yT=66,yB=110,yA=168;
+  text(op,x0-30,yB,30,C.fg,600);
+  for(let i=0;i<3;i++){const x=x0+i*cw+cw/2;text(CN[i],x,14,13,COLS[i],700);
+    const tv=cols.top[i];text(String(D3(a)[i]),x,yT,30,(k>2-i&&tv.ch)?C.faint:C.fg,700);if(k>2-i&&tv.ch){line([x-12,yT+12],[x+12,yT-12],C.warn,2.5);text(String(tv.v),x+2,yT-30,16,C.warn,700);}
+    text(String(D3(b)[i]),x,yB,30,C.fg,700);
+    if(k>2-i){text(String(cols.ans[i]),x,yA,32,C.ok,700);if(cols.carry[i])text(String(cols.carry[i]),x,yA+26,15,C.gold,700);}}
+  line([x0-6,136],[x0+3*cw+6,136],C.fg,3);line([x0-6,208],[x0+3*cw+6,208],C.fg,1.5);}
+function colWork(a,b,op){const A=D3(a),Bd=D3(b),ans=[0,0,0],carry=[0,0,0],top=[{v:A[0]},{v:A[1]},{v:A[2]}];
+  if(op==='+'){let c=0;for(let i=2;i>=0;i--){const s=A[i]+Bd[i]+c;ans[i]=s%10;c=s>=10?1:0;if(c&&i>0)carry[i-1]=1;}}
+  else{const T=A.slice();for(let i=2;i>=0;i--){if(T[i]<Bd[i]){let j=i-1;while(T[j]===0){T[j]=9;top[j]={v:9,ch:true};j--;}T[j]--;top[j]={v:T[j],ch:true};T[i]+=10;top[i]={v:T[i],ch:true};}ans[i]=T[i]-Bd[i];}}
+  return {ans,carry,top};}
+/* bar model */
+function barModel(whole,p1,p2,hide){const x0=40,w=240,y1=70,y2=130,h=40,f=p1/whole;
+  rrect(x0,y1,w,h,6,'rgba(91,155,255,.25)',HC,2);text(hide==='w'?'?':fmt(whole),x0+w/2,y1+h/2,20,hide==='w'?C.gold:C.fg,700);
+  rrect(x0,y2,w*f,h,6,'rgba(61,214,140,.2)',TC,2);text(hide==='a'?'?':fmt(p1),x0+w*f/2,y2+h/2,20,hide==='a'?C.gold:C.fg,700);
+  rrect(x0+w*f,y2,w*(1-f),h,6,'rgba(245,196,81,.2)',OC,2);text(hide==='b'?'?':fmt(p2),x0+w*f+w*(1-f)/2,y2+h/2,20,hide==='b'?C.gold:C.fg,700);}
+/* pictogram */
+function symbol(x,y,frac,c){ctx.fillStyle=c||C.gold;ctx.beginPath();if(frac>=1)ctx.arc(x,y,10,0,Math.PI*2);else{ctx.moveTo(x,y-10);ctx.arc(x,y,10,-Math.PI/2,Math.PI/2,true);ctx.closePath();}ctx.fill();}
+function picto(cats,vals,key,o){o=o||{};cats.forEach((c,i)=>{const y=40+i*48;text(c,48,y,14,o.hl===i?C.gold:C.fg,600);rect(84,y+22,220,1,C.edge);
+  const n=vals[i]/key;for(let k=0;k<Math.ceil(n-1e-9);k++)symbol(98+k*26,y,Math.min(1,n-k),o.hl===i?C.gold:'#f5c451cc');
+  if(o.shown&&o.shown.includes(i))text('= '+vals[i],300,y,15,C.ok,700,'right');});
+  symbol(110,238,1);text('= '+key+(key===1?' child':' children'),126,239,14,C.fg,600,'left');text('Key',72,239,13,C.muted,600);}
+/* bar chart */
+function bars(cats,vals,scale,steps,o){o=o||{};const x0=50,yb=228,ht=190,max=scale*steps,Y=v=>yb-v/max*ht;
+  for(let s=0;s<=steps;s++){const y=Y(s*scale);rect(x0,y,250,1,C.grid);line([x0-5,y],[x0,y],C.fg,2);text(String(s*scale),x0-10,y,12,C.muted,600,'right');}
+  line([x0,yb-ht-8],[x0,yb],C.fg,2.5);line([x0,yb],[300,yb],C.fg,2.5);
+  cats.forEach((c,i)=>{const x=x0+16+i*60;rrect(x,Y(vals[i]),40,yb-Y(vals[i]),4,o.hl&&o.hl.includes(i)?'rgba(245,196,81,.75)':'rgba(91,155,255,.6)');text(c,x+20,yb+14,12,C.fg,600);
+    if(o.read&&o.read.includes(i)){line([x0,Y(vals[i])],[x,Y(vals[i])],C.gold,2,true);text(String(vals[i]),x+20,Y(vals[i])-10,14,C.gold,700);}});}
+
+/* ---------- state + UI plumbing ---------- */
+const st={mode:'menu',btns:[],focus:-1,cols:2,locked:false,q:null,t0:0};
+function setPrompt(h){promptEl.innerHTML=h;}
+function setHud(l,r){hudEl.innerHTML='<span class="lives">'+l+'</span><span class="r">'+r+'</span>';}
+const pips=n=>'Lives '+[0,1,2].map(i=>`<span class="pip${i<n?'':' off'}"></span>`).join('');
+function setButtons(list,handler,cols){answersEl.innerHTML='';st.btns=[];st.cols=cols||2;answersEl.style.setProperty('--cols',st.cols);
+  list.forEach((b,i)=>{const el=document.createElement('button');el.className='key'+(b.cls?' '+b.cls:'');el.type='button';el.innerHTML=b.label;el.dataset.v=String(b.value);
+    el.addEventListener('click',()=>{st.focus=i;mark();sClick();handler(b.value);});answersEl.appendChild(el);st.btns.push(el);});st.focus=-1;mark();}
+function mark(){st.btns.forEach((b,i)=>b.classList.toggle('sel',i===st.focus));}
+function move(dx,dy){if(!st.btns.length)return;let f=st.focus<0?0:st.focus+dx+dy*st.cols;f=Math.max(0,Math.min(st.btns.length-1,f));st.focus=f;mark();st.btns[f].focus();}
+function shake(){cardEl.classList.remove('shake');void cardEl.offsetWidth;cardEl.classList.add('shake');}
+function opts(ans,wrongs,f){const s=[ans];wrongs.forEach(w=>{if(w!==ans&&w>=0&&(typeof w!=='number'||Number.isInteger(w))&&!s.includes(w)&&s.length<4)s.push(w);});return shuffle(s).map(v=>({label:(f||fmt)(v),value:v}));}
+
+/* =====================================================================  GAMES  ===================================================================== */
+const SETS=[[['Banana','bananas'],['Apple','apples'],['Grape','grapes'],['Pear','pears']],[['Cat','cats'],['Dog','dogs'],['Fish','fish'],['Rabbit','rabbits']],[['Football','football'],['Swim','swimming'],['Run','running'],['Bike','cycling']]];
+const GAMES={
+ digits:{name:'Digit Detective',unit:'Place value',make(){const q={cols:2};
+   if(Math.random()<.5){let n;do{n=between(102,987);}while(new Set(String(n)).size<3||String(n).includes('0'));const p=rnd(3),d=D3(n)[p],v=d*[100,10,1][p];
+     q.prompt=`<span>What is the <b>${d}</b> worth in <b>${n}</b>?</span>`;q.answer=v;q.options=opts(v,[d,d*10,d*100,d*1000]);
+     q.say=v=>fmt(v);q.explain=`The ${d} is in the ${CW[p]} column, so it is worth ${fmt(v)}.`;q.draw=()=>{pvChart(n,40,40,240,{hl:q.k?p:-1,vals:q.k?3:0});};q.reveal=async()=>{q.k=1;sStep(1);await sleep(900);};}
+   else{const h=between(1,3),t=between(0,9),o=between(0,9),n=h*100+t*10+o;q.prompt='<span>What number do these <b>Dienes blocks</b> show?</span>';q.answer=n;
+     q.options=opts(n,[o*100+t*10+h,h*100+o*10+t,h*10+t+o,n+10,n+100]);q.say=v=>fmt(v);q.explain=`${h} hundreds, ${t} tens and ${o} ones make ${n}.`;
+     q.draw=()=>{const sc=Math.min(1.5,250/(h*46+t*10+40));dienes(h,t,o,22,60,sc);if(q.k)text(`${h*100} + ${t*10} + ${o} = ${n}`,160,190,20,C.gold,700);};q.reveal=async()=>{q.k=1;sStep(1);await sleep(1000);};}
+   return q;}},
+ moreless:{name:'More or Less',unit:'Place value',make(){const q={cols:2},sz=pick([1,10,100]),up=Math.random()<.5;let n=between(110,889);
+   if(Math.random()<.3){n=sz===1?(up?between(1,8)*100+99:between(1,9)*100):sz===10?(up?between(1,8)*100+90+between(0,9):between(1,9)*100+between(0,9)):n;}
+   const a=up?n+sz:n-sz,col=[100,10,1].indexOf(sz);q.prompt=`<span>What is <b>${sz} ${up?'more':'less'}</b> than <b>${n}</b>?</span>`;q.answer=a;
+   q.options=opts(a,[n+(up?1:-1)*[1,10,100][(col+1)%3],n+(up?1:-1)*[1,10,100][(col+2)%3],up?a+sz:a-sz,n]);q.say=fmt;
+   q.explain=`${sz} ${up?'more':'less'} changes the ${CW[col]} digit${(up&&D3(n)[col]===9)||(!up&&D3(n)[col]===0)?', and here it crosses into the next column':''}.`;
+   q.draw=()=>{pvChart(q.k?a:n,40,50,240,{hl:col});text(q.k?`${n} ${up?'+':'−'} ${sz} = ${a}`:`${n} ${up?'+':'−'} ${sz}`,160,200,22,q.k?C.gold:C.fg,700);};q.reveal=async()=>{q.k=1;sStep(1);await sleep(900);};return q;}},
+ nline:{name:'Number Line',unit:'Place value',make(){const q={cols:2},kind=pick([0,1,2]);let a,b,step,v,lab;
+   if(kind===0){a=0;b=100;step=10;v=between(1,9)*10;lab=[0,50,100];}else if(kind===1){a=0;b=1000;step=100;v=between(1,9)*100;lab=[0,500,1000];}else{a=between(1,8)*100;b=a+100;step=10;v=a+between(1,9)*10;lab=[a,b];}
+   q.prompt='<span>What number is the arrow pointing to?</span><span class="note">Check the start, the end and what each interval is worth.</span>';q.answer=v;
+   q.options=opts(v,[v+step,v-step,(v-a)/step+a,a+(v-a)/10]);q.say=fmt;q.explain=`Each interval is worth ${step}. Count ${(v-a)/step} jumps from ${fmt(a)}.`;
+   q.draw=t=>{const X=NLine(a,b,step,170,lab);arrowDown(X(v),160);if(q.k){for(let i=0;i<q.k;i++)hop(X(a+i*step),X(a+(i+1)*step),170,null,C.gold);badge(X(a+q.k*step),210,q.k);}};
+   q.reveal=async()=>{const n=(v-a)/step;for(let i=1;i<=n;i++){q.k=i;sStep(i);await sleep(Math.max(180,1600/n));}await sleep(300);};return q;}},
+ round:{name:'Round It',unit:'Place value',make(){const q={cols:2},to=Math.random()<.55?10:100;let n=to===10?between(11,98):between(110,980);if(n%to===0)n+=to===10?3:30;
+   const lo=Math.floor(n/to)*to,hi=lo+to,ans=(n-lo)>=to/2?hi:lo;q.prompt=`<span>Round <b>${n}</b> to the nearest <b>${to}</b>.</span>`;q.answer=ans;q.options=opts(ans,[ans===lo?hi:lo]).sort((x,y)=>x.value-y.value);q.cols=2;q.say=fmt;
+   q.explain=(n-lo)===to/2?`${n} is exactly halfway, so we round up to ${hi}.`:`${n} is closer to ${ans} than to ${ans===lo?hi:lo}.`;
+   q.draw=()=>{const X=NLine(lo,hi,to/10,170,[lo,lo+to/2,hi]);arrowDown(X(n),160,C.fg);text(String(n),X(n),112,16,C.fg,700);line([X(lo+to/2),130],[X(lo+to/2),190],C.gold,2,true);
+     if(q.k){hop(X(n),X(ans),170,'',C.ok);text('rounds to '+ans,160,236,18,C.ok,700);}};q.reveal=async()=>{q.k=1;sStep(1);await sleep(900);};return q;}},
+ compare:{name:'Compare It',unit:'Place value',make(){const q={cols:3};let a=between(100,999),b;const r=Math.random();
+   b=r<.15?a:r<.55?Math.floor(a/100)*100+between(0,99):between(100,999);if(b===a&&r>=.15)b=a+between(1,9);
+   const ans=a<b?'<':a>b?'>':'=';q.prompt=`<span>Which symbol goes in the box?</span><span><b>${a}</b> ☐ <b>${b}</b></span>`;q.answer=ans;
+   q.options=['<','>','='].map(s=>({label:s+'<small>'+{'<':'less than','>':'greater than','=':'equal to'}[s]+'</small>',value:s}));q.say=s=>s;
+   const da=D3(a),db=D3(b),first=[0,1,2].find(i=>da[i]!==db[i]);q.explain=ans==='='?'Every digit is the same.':`Compare the ${CW[first]}: ${da[first]} ${ans} ${db[first]}, so ${a} ${ans} ${b}.`;
+   q.draw=()=>{pvChart(a,20,30,130,{hl:q.k&&first!==undefined?first:-1});pvChart(b,170,30,130,{hl:q.k&&first!==undefined?first:-1});text(q.k?ans:'?',160,80,30,q.k?C.gold:C.muted,700);
+     if(q.k)text(`${a} ${ans} ${b}`,160,190,28,C.gold,700);};q.reveal=async()=>{q.k=1;sStep(1);await sleep(900);};return q;}},
+ coladd:{name:'Column Addition',unit:'Addition and subtraction',make(r){const q={cols:2},E=r<=2?0:r<=5?1:2;let a,b,c;
+   do{a=between(101,899);b=between(101,999-a);const A=D3(a),Bd=D3(b);const c1=A[2]+Bd[2]>=10?1:0,c2=A[1]+Bd[1]+c1>=10?1:0;c=c1+c2;}while(c!==E||a+b>999);
+   const w=colWork(a,b,'+'),ans=a+b,A=D3(a),Bd=D3(b),noEx=Number(A.map((d,i)=>(d+Bd[i])%10).join(''));
+   q.prompt=`<span>Use the <b>column method</b>.</span><span><b>${a} + ${b}</b></span>`+(E?`<span class="note">${E===1?'There is 1 exchange.':'There are 2 exchanges.'}</span>`:'');
+   q.answer=ans;q.options=opts(ans,[noEx,ans+10,ans-10,ans+100,ans-1]);q.say=fmt;
+   q.explain=E===0?'No exchanges: add the ones, then the tens, then the hundreds.':E===1?'When a column makes 10 or more, exchange 10 for 1 in the next column.':'Exchange in the ones and again in the tens.';
+   q.k=0;q.draw=()=>colCalc(a,b,'+',q.k,w);q.reveal=async()=>{for(let i=1;i<=3;i++){q.k=i;sStep(i);await sleep(700);}};return q;}},
+ colsub:{name:'Column Subtraction',unit:'Addition and subtraction',make(r){const q={cols:2},E=r<=2?0:r<=5?1:2,zero=r>=7&&Math.random()<.6;let a,b,c;
+   do{a=between(201,989);if(zero)a=Math.floor(a/100)*100+between(0,9);b=between(101,a-30);const A=D3(a),Bd=D3(b);const b1=A[2]<Bd[2]?1:0,b2=A[1]-b1<Bd[1]?1:0;c=b1+b2;}while(c!==E||(zero&&D3(a)[1]!==0));
+   const w=colWork(a,b,'−'),ans=a-b,A=D3(a),Bd=D3(b),flip=Number(A.map((d,i)=>Math.abs(d-Bd[i])).join(''));
+   q.prompt=`<span>Use the <b>column method</b>.</span><span><b>${a} − ${b}</b></span>`+(E?`<span class="note">${E===1?'There is 1 exchange.':'There are 2 exchanges.'}${zero?' Watch the zero!':''}</span>`:'');
+   q.answer=ans;q.options=opts(ans,[flip,ans+10,ans-10,ans+100,a+b>999?ans+1:ans-1]);q.say=fmt;
+   q.explain=E===0?'No exchanges: subtract the ones, then the tens, then the hundreds.':zero?'There are no tens to exchange, so exchange 1 hundred for 10 tens first, then 1 ten for 10 ones.':E===1?'When the top digit is too small, exchange 1 from the next column.':'Exchange in the ones and again in the tens.';
+   q.k=0;q.draw=()=>colCalc(a,b,'−',q.k,w);q.reveal=async()=>{for(let i=1;i<=3;i++){q.k=i;sStep(i);await sleep(700);}};return q;}},
+ bridge:{name:'Bridge It',unit:'Addition and subtraction',make(){const q={cols:2},up=Math.random()<.55;let a,b,ans,m;
+   if(up){a=between(2,9)*10+between(5,9);if(Math.random()<.4)a=between(1,8)*100+90+between(4,9);b=between(10-a%10+1,9);ans=a+b;m=Math.ceil(a/10)*10;}
+   else{a=between(3,9)*10+between(1,4);if(Math.random()<.4)a=between(2,9)*100+between(1,4);b=between(a%10+1,9);ans=a-b;m=Math.floor(a/10)*10;}
+   q.prompt=`<span>Use bridging to work out <b>${a} ${up?'+':'−'} ${b}</b>.</span>`;q.answer=ans;q.options=opts(ans,[ans+1,ans-1,up?ans+10:ans-10]);q.say=fmt;
+   const s1=Math.abs(m-a),s2=b-s1;q.explain=`${a} ${up?'+':'−'} ${s1} = ${m}, then ${m} ${up?'+':'−'} ${s2} = ${ans}.`;
+   q.draw=()=>{const lo=Math.min(a,ans)-2,hi=Math.max(a,ans)+2,X=NLine(lo,hi,1,180,[a,m,ans]);dot(X(a),180,6,C.fg);if(q.k>=1)hop(X(a),X(m),180,(up?'+':'−')+s1,C.gold);if(q.k>=2)hop(X(m),X(ans),180,(up?'+':'−')+s2,C.ok);};
+   q.reveal=async()=>{q.k=1;sStep(1);await sleep(800);q.k=2;sStep(2);await sleep(800);};return q;}},
+ inverse:{name:'Inverse Check',unit:'Addition and subtraction',make(){const q={cols:2},kind=rnd(4);let w=between(4,9)*100+between(0,9)*10,p1=between(1,w/10-1)*10,p2=w-p1;
+   if(Math.random()<.5){w=between(30,99);p1=between(10,w-10);p2=w-p1;}
+   const S=[[`? + ${p1} = ${w}`,p2,'b',`${w} − ${p1} = ${p2}`],[`${p1} + ? = ${w}`,p2,'b',`${w} − ${p1} = ${p2}`],[`? − ${p1} = ${p2}`,w,'w',`${p2} + ${p1} = ${w}`],[`${w} − ? = ${p2}`,p1,'a',`${w} − ${p2} = ${p1}`]][kind];
+   q.prompt=`<span>Find the missing number.</span><span><b>${S[0]}</b></span>`;q.answer=S[1];q.options=opts(S[1],[kind===2?w-p1-p1:w+p1,S[1]+10,S[1]-10,S[1]+1]);q.say=fmt;q.explain=`Use the inverse: ${S[3]}.`;
+   q.draw=()=>{barModel(w,p1,p2,q.k?'':S[2]);text(q.k?S[3]:S[0],160,214,22,q.k?C.gold:C.fg,700);};q.reveal=async()=>{q.k=1;sStep(1);await sleep(1000);};return q;}},
+ picto:{name:'Pictogram Reader',unit:'Statistics',make(r){const q={cols:2},S=pick(SETS),set=S.map(s=>s[0]);
+   const key=r<=2?1:r<=4?2:pick([2,10]),halves=r>=5&&key>1,maxN=r<=2?6:7;
+   let vals;do{vals=set.map(()=>key*between(1,maxN)+(halves&&Math.random()<.5?key/2:0));}while(new Set(vals).size<4);
+   const i=rnd(4);
+   if(r<=5){q.prompt=`<span>How many children chose <b>${S[i][1]}</b>?</span>`+(r<=2?'<span class="note">Count the circles. Each circle is 1 child.</span>':r<=4?'<span class="note">Each circle is 2 children. Count in 2s.</span>':'<span class="note">Read the key first.</span>');
+     q.answer=vals[i];q.options=opts(vals[i],key===1?[vals[i]+1,vals[i]-1,vals[i]+2]:[vals[i]/key,vals[i]+key,vals[i]-key/2,Math.ceil(vals[i]/key)]);q.show=[i];
+     q.explain=key===1?`There are ${vals[i]} circles, so ${vals[i]} children chose ${S[i][1]}.`:`Each circle is ${key}. Count in ${key}s along the row${halves?' (half a circle is '+key/2+')':''}.`;q.say=fmt;}
+   else if(r===6){const most=Math.random()<.6,t=vals.indexOf(most?Math.max(...vals):Math.min(...vals));q.prompt=`<span>Which was chosen the <b>${most?'most':'least'}</b>?</span>`;q.answer=t;q.options=set.map((s,k)=>({label:s,value:k}));q.show=[t];q.say=v=>set[v];
+     q.explain=`${set[t]} has the ${most?'longest':'shortest'} row: ${vals[t]} children.`;}
+   else{let a=i,b=(i+1+rnd(3))%4;if(vals[a]<vals[b])[a,b]=[b,a];
+     if(r===7){q.prompt=`<span>How many <b>more</b> children chose <b>${S[a][1]}</b> than <b>${S[b][1]}</b>?</span>`;q.answer=vals[a]-vals[b];q.options=opts(q.answer,[vals[a]+vals[b],q.answer+key,vals[a]]);q.explain=`${vals[a]} − ${vals[b]} = ${q.answer}.`;}
+     else{q.prompt=`<span>How many children chose <b>${S[a][1]}</b> or <b>${S[b][1]}</b> altogether?</span>`;q.answer=vals[a]+vals[b];q.options=opts(q.answer,[vals[a]-vals[b],q.answer+key,q.answer-key]);q.explain=`${vals[a]} + ${vals[b]} = ${q.answer}.`;}
+     q.show=[a,b];q.say=fmt;}
+   q.draw=()=>picto(set,vals,key,{shown:q.k?q.show:[],hl:r<=5?i:undefined});q.reveal=async()=>{q.k=1;sStep(1);await sleep(1000);};return q;}},
+ bars:{name:'Bar Chart Reader',unit:'Statistics',make(r){const q={cols:2},S=pick(SETS),set=S.map(s=>s[0]);
+   const scale=r<=2?1:r<=4?2:pick([2,5,10]),steps=scale===1?10:pick([5,6,8]),half=r>=5;
+   let vals;do{vals=set.map(()=>scale*between(1,steps)-(half&&Math.random()<.5?scale/2:0)).map(v=>scale===5&&half?v:v);}while(new Set(vals).size<4||vals.some(v=>v!==Math.round(v)));
+   const i=rnd(4);q.say=fmt;
+   if(r<=5){q.prompt=`<span>How many children chose <b>${S[i][1]}</b>?</span>`+(r<=2?'<span class="note">Go across from the top of the bar to the numbers.</span>':r<=4?'<span class="note">This scale counts in 2s.</span>':'<span class="note">Check the scale. Some bars stop halfway.</span>');
+     q.answer=vals[i];q.options=opts(vals[i],[vals[i]+scale,vals[i]-scale,vals[i]/scale,vals[i]+1]);q.read=[i];
+     q.explain=scale===1?`The ${set[i]} bar stops at ${vals[i]}.`:`The scale counts in ${scale}s. The ${set[i]} bar stops at ${vals[i]}.`;}
+   else if(r===6){const most=Math.random()<.6,t=vals.indexOf(most?Math.max(...vals):Math.min(...vals));q.prompt=`<span>Which was chosen the <b>${most?'most':'least'}</b>?</span>`;q.answer=t;q.options=set.map((s,k)=>({label:s,value:k}));q.read=[t];q.say=v=>set[v];
+     q.explain=`The ${most?'tallest':'shortest'} bar is ${set[t]}.`;}
+   else{let a=i,b=(i+1+rnd(3))%4;if(vals[a]<vals[b])[a,b]=[b,a];q.read=[a,b];
+     if(r===7){q.prompt=`<span>How many <b>more</b> children chose <b>${S[a][1]}</b> than <b>${S[b][1]}</b>?</span>`;q.answer=vals[a]-vals[b];q.options=opts(q.answer,[vals[a]+vals[b],q.answer+scale,vals[a]]);q.explain=`${vals[a]} − ${vals[b]} = ${q.answer}.`;}
+     else{q.prompt=`<span>How many children chose <b>${S[a][1]}</b> or <b>${S[b][1]}</b> altogether?</span>`;q.answer=vals[a]+vals[b];q.options=opts(q.answer,[vals[a]-vals[b],q.answer+scale,q.answer-scale]);q.explain=`${vals[a]} + ${vals[b]} = ${q.answer}.`;}}
+   q.draw=()=>bars(set,vals,scale,Math.max(steps,Math.ceil(Math.max(...vals)/scale)),{hl:q.k?q.read:[],read:q.k?q.read:[]});q.reveal=async()=>{q.k=1;sStep(1);await sleep(1000);};return q;}}
+};
+
+/* =====================================================================  LEARN FIRST  ===================================================================== */
+const TEACH={
+ digits:[
+  {title:'Hundreds, tens and ones',text:'In a 3-digit number, the first digit is the <b>hundreds</b>, the next is the <b>tens</b> and the last is the <b>ones</b>.',draw:t=>{pvChart(352,40,40,240,{vals:countUp(t,3,700)});caption('352 = 300 + 50 + 2');}},
+  {title:'Dienes blocks',text:'A <b>flat</b> is 100, a <b>rod</b> is 10 and a <b>cube</b> is 1. Count each kind to find the number.',draw:t=>{dienes(2,4,3,40,50,1.55);const k=countUp(t,3,800);if(k)text(['200','200 + 40','200 + 40 + 3 = 243'][k-1],160,200,22,C.gold,700);caption('2 flats, 4 rods, 3 cubes');}},
+  {title:'What is a digit worth?',text:'In 352, the 5 is in the <b>tens</b> column, so it is worth 5 tens, or <b>50</b>.',draw:t=>{pvChart(352,40,40,240,{hl:1,vals:Math.floor(t/900)%2?3:0});caption('the 5 is worth 50',C.gold);}}],
+ moreless:[
+  {title:'10 more',text:'When you add <b>10</b>, the <b>tens</b> digit goes up by 1. The other digits stay the same.',draw:t=>{const on=Math.floor(t/1200)%2;pvChart(on?355:345,40,50,240,{hl:1});caption(on?'345 + 10 = 355':'345');}},
+  {title:'100 less',text:'When you take away <b>100</b>, the <b>hundreds</b> digit goes down by 1.',draw:t=>{const on=Math.floor(t/1200)%2;pvChart(on?462:562,40,50,240,{hl:0});caption(on?'562 − 100 = 462':'562');}},
+  {title:'Crossing a boundary',text:'1 more than <b>299</b>: 10 ones make a new ten, and 10 tens make a new hundred. The answer is <b>300</b>.',draw:t=>{const on=Math.floor(t/1300)%2;pvChart(on?300:299,40,50,240,{hl:on?0:2});caption(on?'299 + 1 = 300':'299 + 1');}}],
+ nline:[
+  {title:'Start, end and intervals',text:'Check the <b>start</b> and the <b>end</b>. Then count the <b>intervals</b>. Every interval is worth the same.',draw:t=>{const X=NLine(0,100,10,170,[0,50,100]);const k=countUp(t,10,350);for(let i=0;i<k;i++)hop(X(i*10),X(i*10+10),170);if(k)badge(X(k*10),210,k);caption('10 intervals, each worth 10');}},
+  {title:'Bigger number lines',text:'From 0 to 1000 with 10 intervals, each interval is worth <b>100</b>.',draw:t=>{const X=NLine(0,1000,100,170,[0,500,1000]);arrowDown(X(700),160);caption('the arrow points to 700');}},
+  {title:'Estimating',text:'Find the <b>midpoint</b> first. Is the arrow before or after it? Then make a sensible estimate.',draw:t=>{const X=NLine(0,1000,500,170,[0,500,1000]);line([X(500),120],[X(500),200],C.gold,2,true);arrowDown(X(620),160,C.fg);caption('just after 500: about 600');}}],
+ round:[
+  {title:'Find the two multiples',text:'<b>73</b> sits between <b>70</b> and <b>80</b>.',draw:t=>{const X=NLine(70,80,1,170,[70,75,80]);arrowDown(X(73),160,C.fg);caption('73 is between 70 and 80');}},
+  {title:'Which is closer?',text:'73 is closer to 70, so it <b>rounds down</b> to 70.',draw:t=>{const X=NLine(70,80,1,170,[70,75,80]);arrowDown(X(73),160,C.fg);line([X(75),130],[X(75),200],C.gold,2,true);if(Math.floor(t/900)%2)hop(X(73),X(70),170,'',C.ok);caption('73 rounds to 70',C.ok);}},
+  {title:'Halfway rounds up',text:'<b>75</b> is exactly halfway, so we <b>round up</b> to 80. Rounding to 100 works the same way: look at the tens digit.',draw:t=>{const X=NLine(70,80,1,170,[70,75,80]);arrowDown(X(75),160,C.gold);if(Math.floor(t/900)%2)hop(X(75),X(80),170,'',C.ok);caption('75 rounds up to 80',C.ok);}}],
+ compare:[
+  {title:'Start with the hundreds',text:'Compare the <b>hundreds</b> first. The bigger hundreds digit means the greater number.',draw:t=>{pvChart(426,20,30,130,{hl:0});pvChart(381,170,30,130,{hl:0});text('>',160,80,30,C.gold,700);caption('4 hundreds > 3 hundreds');}},
+  {title:'Then the tens',text:'If the hundreds are the same, compare the <b>tens</b>.',draw:t=>{pvChart(538,20,30,130,{hl:1});pvChart(583,170,30,130,{hl:1});text('<',160,80,30,C.gold,700);caption('3 tens < 8 tens');}},
+  {title:'The symbols',text:'<b>&gt;</b> means greater than and <b>&lt;</b> means less than. The open side faces the bigger number.',draw:t=>{text('583 > 538',160,100,34,C.fg,700);text('406 < 460',160,170,34,C.fg,700);caption('the open side faces the bigger number');}}],
+ coladd:[
+  {title:'Line up the columns',text:'Put <b>ones under ones</b>, tens under tens and hundreds under hundreds.',draw:t=>{colCalc(324,153,'+',0);caption('324 + 153');}},
+  {title:'Start with the ones',text:'Add the <b>ones</b> first, then the tens, then the hundreds.',draw:t=>{colCalc(324,153,'+',countUp(t,3,800));caption('ones, then tens, then hundreds');}},
+  {title:'Exchanging',text:'If a column makes 10 or more, <b>exchange</b> 10 ones for 1 ten. Write the 1 under the next column and add it in.',draw:t=>{colCalc(248,135,'+',countUp(t,3,900));caption('8 + 5 = 13: write 3, exchange 1 ten');}},
+  {title:'Two exchanges',text:'Sometimes you exchange in the ones <b>and</b> in the tens. Remember to add the exchanged 1 each time.',draw:t=>{colCalc(467,285,'+',countUp(t,3,900));caption('467 + 285 = 752');}}],
+ colsub:[
+  {title:'Larger number on top',text:'Put the <b>larger number on top</b>. Line up ones under ones, tens under tens and hundreds under hundreds.',draw:t=>{colCalc(687,254,'−',0);caption('687 − 254');}},
+  {title:'Start with the ones',text:'Subtract the <b>ones</b> first, then the tens, then the hundreds.',draw:t=>{colCalc(687,254,'−',countUp(t,3,800));caption('7 − 4, then 8 − 5, then 6 − 2');}},
+  {title:'Exchanging',text:'If the top digit is too small, <b>exchange</b> 1 ten for 10 ones. Cross out and write the new numbers.',draw:t=>{colCalc(352,127,'−',countUp(t,3,900));caption('2 − 7? Exchange: 12 − 7 = 5');}},
+  {title:'Exchanging across a zero',text:'No tens to exchange? Exchange <b>1 hundred for 10 tens</b> first, then 1 ten for 10 ones.',draw:t=>{colCalc(503,128,'−',countUp(t,3,900));caption('503 − 128 = 375');}}],
+ bridge:[
+  {title:'Jump to the next ten',text:'<b>37 + 8</b>: first jump <b>3</b> to reach 40.',draw:t=>{const X=NLine(35,47,1,180,[37,40,45]);dot(X(37),180,6,C.fg);hop(X(37),X(40),180,'+3');caption('37 + 3 = 40');}},
+  {title:'Then add the rest',text:'8 is 3 and <b>5</b>. So 40 + 5 = <b>45</b>.',draw:t=>{const X=NLine(35,47,1,180,[37,40,45]);dot(X(37),180,6,C.fg);hop(X(37),X(40),180,'+3');if(Math.floor(t/900)%2||t>1800)hop(X(40),X(45),180,'+5',C.ok);caption('37 + 8 = 45',C.ok);}},
+  {title:'Back across a ten',text:'<b>43 − 6</b>: jump back 3 to 40, then 3 more to <b>37</b>.',draw:t=>{const X=NLine(35,45,1,180,[37,40,43]);dot(X(43),180,6,C.fg);hop(X(43),X(40),180,'−3');if(Math.floor(t/900)%2||t>1800)hop(X(40),X(37),180,'−3',C.ok);caption('43 − 6 = 37',C.ok);}}],
+ inverse:[
+  {title:'Inverse operations',text:'Addition and subtraction are <b>inverses</b>: one undoes the other. 8 + 3 = 11, so 11 − 3 = 8.',draw:t=>{barModel(11,8,3,'');text(Math.floor(t/1200)%2?'11 − 3 = 8':'8 + 3 = 11',160,214,22,C.gold,700);}},
+  {title:'Missing numbers',text:'<b>? + 26 = 70</b>. Use the inverse: 70 − 26 = <b>44</b>.',draw:t=>{const on=Math.floor(t/1200)%2;barModel(70,26,44,on?'':'b');text(on?'70 − 26 = 44':'26 + ? = 70',160,214,22,on?C.gold:C.fg,700);}},
+  {title:'Check your answers',text:'To check 645 − 230 = 415, add <b>415 + 230</b>. If you get 645, it is right.',draw:t=>{barModel(645,230,415,'');text('415 + 230 = 645 ✓',160,214,20,C.ok,700);}}],
+ picto:[
+  {title:'Count the circles',text:'Each row shows how many children chose that fruit. Here, <b>1 circle = 1 child</b>, so count the circles.',draw:t=>{picto(['Banana','Apple'],[4,6],1,{shown:Math.floor(t/1000)%2?[0,1]:[]});caption('4 children chose bananas');}},
+  {title:'Read the key first',text:'The <b>key</b> tells you what one circle is worth. Here, 1 circle = <b>2</b> children.',draw:t=>{picto(['Banana'],[6],2,{});caption('1 circle = 2 children');}},
+  {title:'Count the symbols',text:'Count in 2s along the row. <b>Half</b> a circle is half of 2, which is 1.',draw:t=>{picto(['Banana','Apple'],[6,7],2,{shown:Math.floor(t/1000)%2?[0,1]:[]});caption('3 circles = 6, 3½ circles = 7');}},
+  {title:'Compare rows',text:'To find <b>how many more</b>, subtract the smaller total from the bigger one.',draw:t=>{picto(['Banana','Apple','Grape'],[6,7,10],2,{shown:[1,2]});caption('10 − 7 = 3 more chose grapes');}}],
+ bars:[
+  {title:'Read the top of the bar',text:'Go straight across from the top of the bar to the numbers. That is how many children chose it.',draw:t=>{bars(['Banana','Apple','Grape','Pear'],[4,7,3,5],1,10,{read:[0],hl:[0]});caption('4 children chose bananas');}},
+  {title:'Read the scale',text:'Find what each step on the <b>axis</b> is worth. This scale counts in <b>2s</b>.',draw:t=>{bars(['Banana','Apple','Grape','Pear'],[6,9,4,8],2,5,{});caption('0, 2, 4, 6, 8, 10');}},
+  {title:'Halfway',text:'If a bar stops between two marks, it is <b>halfway</b>. Halfway between 8 and 10 is 9.',draw:t=>{bars(['Banana','Apple','Grape','Pear'],[6,9,4,8],2,5,{read:[1],hl:[1]});caption('apple: 9 children');}},
+  {title:'Compare bars',text:'The tallest bar is the most. <b>Subtract</b> to find how many more. <b>Add</b> to find the total.',draw:t=>{bars(['Banana','Apple','Grape','Pear'],[6,9,4,8],2,5,{read:[1,2],hl:[1,2]});caption('9 − 4 = 5 more chose apples');}}]
+};
+
+function sopts(ans,wr,f){const s=[ans];wr.forEach(w=>{if(w&&!s.includes(w)&&s.length<4)s.push(w);});return shuffle(s).map(v=>({label:f?f(v):v,value:v}));}
+
+/* ---------- multiplication and division ---------- */
+function arr(r,c,o){o=o||{};const sp=Math.min(240/c,170/r,30),x0=160-(c-1)*sp/2,y0=115-(r-1)*sp/2;for(let i=0;i<r;i++){for(let j=0;j<c;j++)dot(x0+j*sp,y0+i*sp,sp*.32,o.rows!=null&&i<o.rows?C.gold:o.grp&&Math.floor(j/(c/o.grp))%2?'#5b9bff':'#f5c451aa');if(o.rows!=null&&i<o.rows)text(String((i+1)*c),x0+(c-1)*sp+sp*.9,y0+i*sp,12,C.gold,700,'left');}}
+function groups(n,g,k,o){o=o||{};const per=Math.floor(n/g),rem=n-per*g,cols=Math.min(g,4),rows=Math.ceil(g/cols),W=280/cols,H=Math.min(80,(rem?170:200)/rows);
+  for(let i=0;i<g;i++){const cx=20+W*(i%cols)+W/2,cy=40+H*Math.floor(i/cols)+H/2;rrect(cx-W/2+6,cy-H/2+4,W-12,H-8,12,null,i<(k||0)?C.gold:C.edge,i<(k||0)?2.5:1.5);
+    if(i<(k||0)||o.all){for(let j=0;j<per;j++){const pc=Math.min(per,5);dot(cx-(pc-1)*7+(j%5)*14,cy-(Math.ceil(per/5)-1)*7+Math.floor(j/5)*14,5.5,C.gold);}text(String(per),cx+W/2-16,cy-H/2+16,12,C.gold,700);}}
+  if(rem&&o.all){for(let j=0;j<rem;j++)dot(160-(rem-1)*9+j*18,230,6,C.warn);text('left over',160,250,12,C.warn,700);}}
+function pv4(n,x0,y0,w,hl){const cw=w/4,d=[Math.floor(n/1000)%10,Math.floor(n/100)%10,Math.floor(n/10)%10,n%10],cols=['#b39ddb',HC,TC,OC],nm=['Th','H','T','O'];let lead=true;
+  for(let i=0;i<4;i++){const x=x0+i*cw;rrect(x+3,y0,cw-6,26,7,cols[i]+'33');text(nm[i],x+cw/2,y0+14,13,cols[i],700);rrect(x+3,y0+32,cw-6,52,9,C.tile,C.edge,1.5);if(d[i]||!lead||i===3){lead=false;text(String(d[i]),x+cw/2,y0+60,30,hl?C.gold:C.fg,700);}}}
+function gridM(a,b,k){const parts=String(a).split('').map((d,i,s)=>Number(d)*Math.pow(10,s.length-1-i)).filter(v=>v>0),cw=Math.min(80,230/parts.length),x0=160-(parts.length*cw)/2+15,y0=60;
+  rrect(x0-50,y0,50,40,0,'rgba(245,196,81,.25)',C.fg,2);text('×',x0-25,y0+20,20,C.fg,700);rrect(x0-50,y0+40,50,50,0,'rgba(245,196,81,.25)',C.fg,2);text(String(b),x0-25,y0+65,22,C.gold,700);
+  parts.forEach((p,i)=>{rrect(x0+i*cw,y0,cw,40,0,'rgba(91,155,255,.25)',C.fg,2);text(String(p),x0+i*cw+cw/2,y0+20,18,C.fg,700);rrect(x0+i*cw,y0+40,cw,50,0,'rgba(230,237,247,.04)',C.fg,2);if(k>i)text(String(p*b),x0+i*cw+cw/2,y0+65,20,C.ok,700);});
+  if(k>parts.length)text(parts.map(p=>p*b).join(' + ')+' = '+a*b,160,200,20,C.ok,700);return parts.length;}
+function balance(L,R,tilt){const y=150;line([160,y],[160,250],C.fg,4);ctx.fillStyle=C.fg;ctx.beginPath();ctx.moveTo(140,250);ctx.lineTo(180,250);ctx.lineTo(160,232);ctx.fill();
+  const t=tilt||0;line([50,y+t],[270,y-t],C.fg,4);rrect(20,y+t-58,120,44,10,C.tile,C.gold,2);rrect(180,y-t-58,120,44,10,C.tile,C.gold,2);text(L,80,y+t-36,20,C.fg,700);text(R,240,y-t-36,20,C.fg,700);dot(160,y,7,C.gold);}
+const MD_GAMES={
+ times:{name:'Times Tables',unit:'Multiplication and division',make(r){const q={cols:2},t=r<=2?pick([2,5,10]):r<=4?pick([3,4]):r<=6?8:pick([2,3,4,5,8,10]),a=between(2,12),p=a*t,miss=r>=7&&Math.random()<.6;
+   q.prompt=miss?`<span>Find the missing number.</span><span><b>? × ${t} = ${p}</b></span>`:`<span>What is <b>${a} × ${t}</b>?</span>`+(r<=6?`<span class="note">Count in ${t}s: ${t}, ${2*t}, ${3*t}…</span>`:'');q.answer=miss?a:p;
+   q.options=miss?opts(a,[a+1,a-1,p-t,t]):opts(p,[p+t,p-t,a+t,(a+1)*(t+1)]);q.say=fmt;q.explain=`${a} × ${t} = ${p}.`+(miss?` So ${p} ÷ ${t} = ${a}.`:'');
+   q.draw=()=>{arr(a,t,{rows:q.k||0});if(q.k===a)text(`${a} × ${t} = ${p}`,160,268,18,C.ok,700);};q.reveal=async()=>{for(let i=1;i<=a;i++){q.k=i;sStep(i);await sleep(Math.max(150,1300/a));}await sleep(300);};return q;}},
+ arrays:{name:'Array Reader',unit:'Multiplication and division',make(r){const q={cols:2},R=r<=4?between(2,5):between(3,6),Cc=r<=4?between(2,6):between(3,8),p=R*Cc;let kind=r<=3?0:r<=6?1:2;if(R===Cc&&kind===1)kind=0;
+   if(kind===0){q.prompt='<span>How many dots are there <b>altogether</b>?</span><span class="note">Count the dots in one row, then count in that number.</span>';q.answer=p;q.options=opts(p,[R+Cc,p+Cc,p-R]);q.say=fmt;}
+   else if(kind===1){q.prompt='<span>Which number sentence matches this array?</span>';q.answer=`${R} × ${Cc} = ${p}`;q.options=sopts(q.answer,[`${R} + ${Cc} = ${R+Cc}`,`${R} × ${Cc+1} = ${R*(Cc+1)}`,`${Cc} × ${Cc} = ${Cc*Cc}`]);q.say=v=>v;}
+   else{q.prompt=`<span>${p} dots in ${R} equal rows. How many in each row?</span>`;q.answer=Cc;q.options=opts(Cc,[R,Cc+1,p-R]);q.say=fmt;}
+   q.explain=`${R} rows of ${Cc}: ${R} × ${Cc} = ${p}${kind===2?`, so ${p} ÷ ${R} = ${Cc}`:''}.`;
+   q.draw=()=>arr(R,Cc,{rows:q.k||0});q.reveal=async()=>{for(let i=1;i<=R;i++){q.k=i;sStep(i);await sleep(450);}};return q;}},
+ divide:{name:'Share It',unit:'Multiplication and division',make(r){const q={cols:2},g=r<=3?pick([2,3,4]):pick([3,4,5,8]),per=r<=3?between(2,5):between(2,r<=6?10:9),rem=r>=7?between(1,g-1):0,n=g*per+rem;
+   q.prompt=`<span>Share <b>${n}</b> equally into <b>${g}</b> groups.</span><span>How many in each group?</span>`+(r>=7?'<span class="note">Some may be left over.</span>':'');
+   q.answer=rem?`${per} r ${rem}`:per;q.options=rem?sopts(q.answer,[`${per}`,`${per+1} r ${rem}`,`${per} r ${(rem+1)%g||g}`,`${per-1} r ${rem+g}`].filter(s=>!/r 0$/.test(s))):opts(per,[per+1,per-1,n-g,g]);q.say=v=>String(v);
+   q.explain=rem?`${per} × ${g} = ${per*g}, with ${rem} left over.`:`${n} ÷ ${g} = ${per}, because ${per} × ${g} = ${n}.`;
+   q.draw=()=>{groups(n,g,q.k,{all:q.k>=g});};q.reveal=async()=>{for(let i=1;i<=g;i++){q.k=i;sStep(i);await sleep(500);}await sleep(300);};return q;}},
+ x10:{name:'Times 10 and 100',unit:'Multiplication and division',make(r){const q={cols:2};let a,op,b,ans;
+   if(r<=3){a=between(2,99);op='×';b=10;}else if(r<=5){a=between(2,r===4?9:99);op='×';b=100;}else if(r<=7){a=between(2,99)*10;op='÷';b=10;}else{a=between(2,9)*100;op='÷';b=100;}
+   ans=op==='×'?a*b:a/b;q.prompt=`<span>What is <b>${a} ${op} ${b}</b>?</span><span class="note">The digits move ${b===10?'one place':'two places'} to the ${op==='×'?'left':'right'}.</span>`;q.answer=ans;
+   q.options=opts(ans,op==='×'?[a*(b===10?100:10),a+b,Number(String(a)+(b===10?'':'0'))*1+1]:[a/(b===10?100:10),a-b,ans*10]);q.say=fmt;q.explain=`Each digit moves ${b===10?'one place':'two places'} ${op==='×'?'left, and a zero holds the empty place':'right'}.`;
+   q.draw=()=>{pv4(q.k?ans:a,30,50,260,q.k);text(q.k?`${a} ${op} ${b} = ${fmt(ans)}`:`${a} ${op} ${b}`,160,190,22,q.k?C.ok:C.fg,700);if(q.k){const dir=op==='×'?-1:1;line([160-dir*40,224],[160+dir*40,224],C.gold,3);ctx.fillStyle=C.gold;ctx.beginPath();ctx.moveTo(160+dir*48,224);ctx.lineTo(160+dir*36,216);ctx.lineTo(160+dir*36,232);ctx.fill();}};
+   q.reveal=async()=>{q.k=1;sStep(1);await sleep(1000);};return q;}},
+ grid:{name:'Grid Method',unit:'Multiplication and division',make(r){const q={cols:2},b=r<=3?pick([2,3,5]):r<=6?pick([3,4,8]):pick([2,3,4]),a=r<=6?between(12,49):between(112,329),p=a*b;
+   const parts=String(a).split('').map((d,i,s)=>Number(d)*Math.pow(10,s.length-1-i)).filter(v=>v>0);
+   q.prompt=`<span>Use the <b>grid method</b>: <b>${a} × ${b}</b></span><span class="note">Partition ${a}, multiply each part by ${b}, then add.</span>`;q.answer=p;q.options=opts(p,[p+10,p-10,parts[0]*b+parts.slice(1).reduce((x,y)=>x+y,0),p+b]);q.say=fmt;
+   q.explain=parts.map(x=>`${x} × ${b} = ${x*b}`).join(', ')+`. Add them: ${p}.`;q.k=0;q.draw=()=>gridM(a,b,q.k);q.reveal=async()=>{for(let i=1;i<=parts.length+1;i++){q.k=i;sStep(i);await sleep(650);}};return q;}},
+ balance:{name:'Balance It',unit:'Multiplication and division',make(r){const q={cols:2};let L,Rl,Rf,v,ans;
+   if(r<=4){const a=between(3,12),b=between(2,9);v=a+b;const c=between(1,v-1);if(Math.random()<.5){L=`${a} + ${b}`;Rf=x=>`${x} + ${c}`;ans=v-c;}else{L=`${a} + ${b}`;Rf=x=>`${v+c} − ${x}`;ans=c;}}
+   else{const a=between(2,6),b=pick([2,4,6,8,12]);v=a*b;const fs=[[2,v/2],[4,v/4],[3,v/3],[6,v/6]].filter(f=>Number.isInteger(f[1])&&f[0]!==a&&f[0]!==b);if(fs.length&&Math.random()<.6){const f=pick(fs);L=`${a} × ${b}`;Rf=x=>`${f[0]} × ${x}`;ans=f[1];}else{const c=between(1,v-1);L=`${a} × ${b}`;Rf=x=>`${x} + ${c}`;ans=v-c;}}
+   q.prompt=`<span>What number makes both sides balance?</span><span><b>${L} = ${Rf('?')}</b></span>`;q.answer=ans;q.options=opts(ans,[v,ans+1,ans-1,ans+2]);q.say=fmt;q.explain=`${L} = ${v}, and ${Rf(ans)} = ${v}. Both sides equal ${v}.`;
+   q.draw=()=>{balance(L,Rf(q.k?ans:'?'),q.k?0:10);if(q.k)text(`both sides = ${v}`,160,276,16,C.ok,700);};q.reveal=async()=>{q.k=1;sStep(1);await sleep(1000);};return q;}}
+};
+const MD_TEACH={
+ times:[{title:'Count in equal steps',text:'A times table counts in <b>equal steps</b>. The 4 times table goes 4, 8, 12, 16…',draw:t=>{arr(4,4,{rows:countUp(t,4,700)});}},
+  {title:'Rows of an array',text:'<b>3 × 4</b> means 3 rows of 4. Count in 4s down the rows: 4, 8, 12.',draw:t=>{arr(3,4,{rows:countUp(t,3,800)});caption('3 × 4 = 12');}},
+  {title:'Doubling',text:'The 4 times table is <b>double</b> the 2 times table. The 8 times table is double the 4 times table.',draw:t=>{text('3 × 2 = 6',160,80,22,C.fg,700);text('3 × 4 = 12',160,130,22,C.gold,700);text('3 × 8 = 24',160,180,22,C.ok,700);caption('double, double again');}}],
+ arrays:[{title:'What is an array?',text:'An <b>array</b> is objects in equal rows and columns.',draw:t=>{arr(3,5);caption('3 rows of 5');}},
+  {title:'Count the rows',text:'Count one row, then count in that number. 3 rows of 5 = <b>15</b>.',draw:t=>{arr(3,5,{rows:countUp(t,3,800)});caption('5, 10, 15');}},
+  {title:'Turn it round',text:'Turn the array round and the total stays the same: <b>3 × 5 = 5 × 3</b>.',draw:t=>{const on=Math.floor(t/1300)%2;on?arr(5,3):arr(3,5);caption(on?'5 × 3 = 15':'3 × 5 = 15');}}],
+ divide:[{title:'Sharing',text:'<b>Sharing</b> means giving out equally. 12 shared between 3 groups is 4 each.',draw:t=>{groups(12,3,countUp(t,3,700),{});caption('12 ÷ 3 = 4');}},
+  {title:'Use your times tables',text:'4 × 3 = 12, so <b>12 ÷ 3 = 4</b>. Division is the inverse of multiplication.',draw:t=>{text('4 × 3 = 12',160,100,24,C.fg,700);text('12 ÷ 3 = 4',160,160,24,C.gold,700);}},
+  {title:'Remainders',text:'If it does not share exactly, the ones <b>left over</b> are the remainder. 14 ÷ 4 = 3 r 2.',draw:t=>{groups(14,4,4,{all:true});caption('14 ÷ 4 = 3 r 2');}}],
+ x10:[{title:'× 10',text:'When you multiply by <b>10</b>, every digit moves <b>one place left</b>. A zero holds the ones place.',draw:t=>{const on=Math.floor(t/1300)%2;pv4(on?230:23,30,60,260,on);caption(on?'23 × 10 = 230':'23');}},
+  {title:'× 100',text:'Multiply by <b>100</b>: every digit moves <b>two places left</b>.',draw:t=>{const on=Math.floor(t/1300)%2;pv4(on?2300:23,30,60,260,on);caption(on?'23 × 100 = 2,300':'23');}},
+  {title:'÷ 10 and ÷ 100',text:'Divide by 10: digits move <b>one place right</b>. Divide by 100: two places right.',draw:t=>{const on=Math.floor(t/1300)%2;pv4(on?45:450,30,60,260,on);caption(on?'450 ÷ 10 = 45':'450');}}],
+ grid:[{title:'Partition',text:'Split the bigger number into tens and ones. <b>23 = 20 + 3</b>.',draw:t=>{gridM(23,4,0);caption('23 × 4');}},
+  {title:'Multiply each part',text:'Multiply each part by 4: 20 × 4 = 80 and 3 × 4 = 12.',draw:t=>{gridM(23,4,Math.min(2,countUp(t,2,900)));}},
+  {title:'Add the products',text:'Add the answers in the grid: <b>80 + 12 = 92</b>.',draw:t=>{gridM(23,4,3);}}],
+ balance:[{title:'The equals sign',text:'The <b>equals sign</b> means both sides have the same value, like a balance.',draw:t=>{balance('3 + 4','5 + 2',0);caption('7 = 7');}},
+  {title:'Work out one side',text:'Work out the side you can: <b>8 + 4 = 12</b>. The other side must be 12 too.',draw:t=>{balance('8 + 4','? + 5',10);caption('8 + 4 = 12');}},
+  {title:'Find the missing number',text:'What + 5 = 12? <b>7</b>. Now it balances. This works for × and ÷ too.',draw:t=>{balance('8 + 4','7 + 5',0);caption('12 = 12',C.ok);}}]
+};
+Object.assign(GAMES,MD_GAMES);Object.assign(TEACH,MD_TEACH);
+
+/*<NQ2>*/
+/* ---------- extra games (NQ2): bonds to 100s, word problems ---------- */
+function bondItem(type,x,y,col){if(type==='one')dot(x+10,y+10,8,col);else if(type==='ten'){rrect(x+6,y-14,8,48,2,col);}else{rrect(x,y-6,22,22,2,col);ctx.strokeStyle='rgba(13,21,36,.35)';ctx.lineWidth=.7;for(let k=1;k<4;k++){ctx.beginPath();ctx.moveTo(x+k*5.5,y-6);ctx.lineTo(x+k*5.5,y+16);ctx.stroke();ctx.beginPath();ctx.moveTo(x,y-6+k*5.5);ctx.lineTo(x+22,y-6+k*5.5);ctx.stroke();}}}
+function bondRow(a,b,type,show,minus){const W=28,x0=160-5*W;for(let i=0;i<10;i++){const x=x0+i*W,inA=i<a,inB=!minus&&i>=a&&i<a+b,cross=minus&&i>=a-b&&i<a;
+    rrect(x+1,92,W-2,64,6,null,C.edge,1);
+    if(inA)bondItem(type,x+3,114,C.gold);else if(inB&&show)bondItem(type,x+3,114,C.ok);else if(!minus)bondItem(type,x+3,114,'rgba(230,237,247,.10)');
+    if(cross&&show){line([x+3,96],[x+W-3,152],C.warn,3);}}}
+const WORDS2=[['apples','bag','bags'],['eggs','box','boxes'],['pencils','pot','pots'],['cakes','plate','plates'],['stickers','sheet','sheets'],['flowers','vase','vases'],['marbles','jar','jars']];
+const EXTRA=['Each {c} costs £2.','It is a sunny day.','The shop opens at 9 o\'clock.','There are 30 children in the class.','The {c} are red.'];
+function grpDraw(G,E,fill,mode){const cols=Math.min(G,5),R=E>6?27:23,W=300/cols;for(let g=0;g<G;g++){const cx=10+W*(g%cols)+W/2,cy=(G>5?82:120)+Math.floor(g/cols)*68;dot(cx,cy,R,'rgba(91,155,255,.18)');ctx.strokeStyle='#5b9bff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);ctx.stroke();
+    const n=fill?E:0;for(let k=0;k<n;k++){const a=k/E*Math.PI*2,r=E===1?0:R*.58;dot(cx+r*Math.sin(a),cy-r*Math.cos(a),E>6?3.6:4.4,C.gold);}}
+  if(mode)text(mode,160,256,15,C.ok,700);}
+const NQ2_GAMES={
+ bonds:{name:'Bonds to 100s',unit:'Addition and subtraction',make(r){const q={cols:2};let a,b,type,unit,minus=false,s='';
+   a=between(1,9);b=10-a;
+   if(r<=2){type='one';unit=1;q.prompt=`<span><b>${a} + ? = 10</b></span><span class="note">How many more make 10?</span>`;q.answer=b;}
+   else if(r<=4){type='ten';unit=10;q.prompt=`<span><b>${a*10} + ? = 100</b></span><span class="note">${a} + ${b} = 10, so think in tens.</span>`;q.answer=b*10;}
+   else if(r<=6){type=pick(['ten','hun']);unit=type==='ten'?10:100;minus=Math.random()<.5;const c=between(4,9),d=between(1,c-1);
+     if(minus){a=c;b=d;q.prompt=`<span>If <b>${c} − ${d} = ${c-d}</b>,</span><span>then <b>${c*unit} − ${d*unit}</b> = ?</span>`;q.answer=(c-d)*unit;}
+     else{a=d;b=between(1,10-d);q.prompt=`<span>If <b>${a} + ${b} = ${a+b}</b>,</span><span>then <b>${a*unit} + ${b*unit}</b> = ?</span>`;q.answer=(a+b)*unit;}}
+   else{type='hun';unit=100;q.prompt=`<span><b>${a*100} + ? = 1000</b></span><span class="note">${a} + ${b} = 10, so think in hundreds.</span>`;q.answer=b*100;}
+   const ans=q.answer;q.options=opts(ans,[ans+unit,ans-unit,ans*10,unit===1?ans+2:Math.round(ans/10),10*unit-ans+unit].filter(x=>x>0));q.say=fmt;
+   const nm={one:'ones',ten:'tens',hun:'hundreds'}[type];
+   q.explain=r<=4||r>=7?`${a} ${nm} + ${b} ${nm} = 10 ${nm} = ${fmt(10*unit)}.`:minus?`${a} ${nm} − ${b} ${nm} = ${a-b} ${nm} = ${fmt(ans)}.`:`${a} ${nm} + ${b} ${nm} = ${a+b} ${nm} = ${fmt(ans)}.`;
+   q.draw=()=>{text({one:'ones',ten:'tens (10)',hun:'hundreds (100)'}[type],160,64,13,C.muted,600);bondRow(a,b,type,q.k,minus);if(q.k)text('= '+fmt(ans),160,200,24,C.ok,700);};
+   q.reveal=async()=>{q.k=1;sStep(1);await sleep(1000);};return q;}},
+ wordmd:{name:'Word Problems',unit:'Multiplication and division',make(r){const q={cols:2},w=pick(WORDS2),G=between(2,r<=4?5:6),E=between(2,r<=4?5:8),N=G*E,kind=pick(r<=2?['x']:r<=6?['x','share','group']:['x','share','group','scale']);
+   const extra=r>=7?' '+pick(EXTRA).replace('{c}',w[1]):'';let story,ans,calc,wrong;
+   if(kind==='x'){story=`There are <b>${G} ${w[2]}</b> with <b>${E} ${w[0]}</b> in each.${extra} How many ${w[0]} altogether?`;ans=N;calc=`${G} × ${E}`;wrong=[`${G} + ${E}`,`${E} − ${G}`,`${N} ÷ ${G}`];}
+   else if(kind==='share'){story=`<b>${N} ${w[0]}</b> are shared equally into <b>${G} ${w[2]}</b>.${extra} How many ${w[0]} in each ${w[1]}?`;ans=E;calc=`${N} ÷ ${G}`;wrong=[`${N} × ${G}`,`${N} − ${G}`,`${N} + ${G}`];}
+   else if(kind==='group'){story=`There are <b>${N} ${w[0]}</b>. You put <b>${E}</b> in each ${w[1]}.${extra} How many ${w[2]} do you need?`;ans=G;calc=`${N} ÷ ${E}`;wrong=[`${N} × ${E}`,`${N} − ${E}`,`${N} + ${E}`];}
+   else{story=`Sam has <b>${E} ${w[0]}</b>. Mia has <b>${G} times as many</b>.${extra} How many ${w[0]} does Mia have?`;ans=N;calc=`${E} × ${G}`;wrong=[`${E} + ${G}`,`${E} + ${E}`,`${N} ÷ ${G}`];}
+   const askCalc=r%2===1;q.prompt=`<span>${story}</span>${askCalc?'<span class="note">Which calculation do you need?</span>':''}`;
+   if(askCalc){q.answer=calc;q.options=sopts(calc,wrong);q.say=v=>v;}else{q.answer=ans;q.options=opts(ans,[ans+1,ans-1,G+E,N+G,ans*2].filter(x=>x>0));q.say=fmt;}
+   q.explain=(kind==='x'?`${G} groups of ${E} is ${calc} = ${N}.`:kind==='share'?`Sharing ${N} into ${G} equal groups is ${calc} = ${E}.`:kind==='group'?`Grouping ${N} into ${E}s is ${calc} = ${G}.`:`${G} times as many as ${E} is ${calc} = ${N}.`)+(extra?' The extra fact is not needed.':'');
+   q.draw=()=>{if(kind==='scale'){rrect(40,70,E*12,30,4,C.gold);text('Sam',34,85,13,C.muted,600,'right');for(let i=0;i<G;i++)rrect(40+i*E*12*Math.min(1,240/(G*E*12)),130,E*12*Math.min(1,240/(G*E*12)),30,4,q.k?C.ok:'rgba(91,155,255,.5)',C.stage,2);text('Mia',34,145,13,C.muted,600,'right');if(q.k)text(calc+' = '+N,160,220,22,C.ok,700);}
+     else if(kind==='group'&&!q.k){for(let i=0;i<N;i++)dot(40+(i%10)*26,80+Math.floor(i/10)*26,8,C.gold);}
+     else grpDraw(G,E,kind==='x'||!!q.k,q.k?calc+' = '+(kind==='group'?G:kind==='share'?E:N):null);};
+   q.reveal=async()=>{q.k=1;sStep(1);await sleep(1000);};return q;}}
+};
+const NQ2_TEACH={
+ bonds:[{title:'Number bonds to 10',text:'Two numbers that make 10 are a <b>number bond</b>. 7 + 3 = 10.',draw:t=>{bondRow(7,3,'one',Math.floor(t/900)%2);caption('7 + 3 = 10');}},
+  {title:'Bonds to 100',text:'Use the bond to 10 and think in <b>tens</b>. 7 tens + 3 tens = 10 tens. So 70 + 30 = <b>100</b>.',draw:t=>{bondRow(7,3,'ten',Math.floor(t/900)%2);caption('70 + 30 = 100');}},
+  {title:'Bonds to 1000',text:'Think in <b>hundreds</b>. 7 hundreds + 3 hundreds = 10 hundreds. So 700 + 300 = <b>1000</b>. If 7 − 3 = 4, then 700 − 300 = 400.',draw:t=>{bondRow(7,3,'hun',Math.floor(t/900)%2);caption('700 + 300 = 1000');}}],
+ wordmd:[{title:'Read and picture it',text:'Read the problem. <b>Picture</b> the groups. 4 bags with 5 apples in each.',draw:t=>{grpDraw(4,5,true);}},
+  {title:'Multiply or divide?',text:'Know the groups and how many in each? <b>Multiply</b>. Sharing out or making groups? <b>Divide</b>.',draw:t=>{text('groups × in each = total',160,100,17,C.gold,700);text('total ÷ groups = in each',160,150,17,C.ok,700);text('total ÷ in each = groups',160,200,17,C.ok,700);}},
+  {title:'Ignore extra facts',text:'Some problems have facts you <b>do not need</b>. Cross them out before you calculate.',draw:t=>{text('4 bags with 5 apples in each.',160,100,15,C.fg,600);text('Each bag costs £2.',160,140,15,C.muted,600);if(Math.floor(t/900)%2)line([84,140],[236,140],C.warn,3);text('4 × 5 = 20',160,200,22,C.ok,700);}}]
+};
+Object.assign(GAMES,NQ2_GAMES);Object.assign(TEACH,NQ2_TEACH);
+
+/*</NQ2>*/
+/*<NQ3>*/
+/* ---------- curriculum gap games (NQ3): number words, estimating, correspondence, tables ---------- */
+const ONES=['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'],TENSW=['','','twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety'];
+function words2(n){if(n<20)return ONES[n];const t=Math.floor(n/10),o=n%10;return TENSW[t]+(o?'-'+ONES[o]:'');}
+function toWords(n){if(n===1000)return 'one thousand';const h=Math.floor(n/100),r=n%100;if(!h)return words2(r);return ONES[h]+' hundred'+(r?' and '+words2(r):'');}
+function wrapText(s,x,y,maxW,size,col){ctx.font='600 '+size+'px Lexend, sans-serif';const ws=s.split(' ');let line1='',yy=y;ws.forEach(w=>{const tst=line1?line1+' '+w:w;if(ctx.measureText(tst).width>maxW&&line1){text(line1,x,yy,size,col,600);line1=w;yy+=size*1.35;}else line1=tst;});if(line1)text(line1,x,yy,size,col,600);}
+const CTX3=[['tops','pairs of shorts','#e0485f','#2f6fdf','outfits'],['types of bread','fillings','#e8c27a','#3dd68c','sandwiches'],['ice cream flavours','types of cone','#ff9fb8','#d9a35f','choices'],['pizza bases','toppings','#f5c451','#e0485f','pizzas']];
+const TBL=[['Favourite fruit',['apple','banana','grapes','mango']],['Favourite sport',['football','tennis','swimming','climbing']],['How we travel',['walk','car','bus','bike']]];
+const NQ3_GAMES={
+ numwords:{name:'Number Words',unit:'Place value',make(r){const q={cols:1};let n;
+   if(r<=2)n=between(21,99);else if(r<=4){do{n=between(111,999);}while(n%10===0||Math.floor(n/10)%10===0);}else if(r<=6){n=pick([between(1,9)*100+between(1,9),between(1,9)*100+between(1,9)*10,between(1,9)*100+between(11,19)]);}else n=between(101,999);
+   const W=toWords(n),h=Math.floor(n/100),t=Math.floor(n/10)%10,o=n%10;
+   const alts=[...new Set([n<100?o*10+t:h*100+o*10+t,n+10,n-10,n<100?n+1:n+100,n<100?n-1:(o?h*100+t*10:h*100+t)].filter(x=>x>9&&x<1000&&x!==n))];
+   if(r<=6){q.prompt=`<span>How do you write <b>${fmt(n)}</b> in words?</span><span class="note">${n<100?'Say the tens, then the ones. Use a hyphen: forty-two.':'Say the hundreds, then "and", then the tens and ones.'}</span>`;
+     q.answer=W;q.options=sopts(W,alts.map(toWords).concat(n>=100&&r>=5?[W.replace(' and ',' ')]:[]));q.say=v=>v;}
+   else{q.prompt=`<span>Write this number in numerals:</span><span><b>${W}</b></span>`;q.answer=n;q.cols=2;q.options=opts(n,alts.concat(n>=100?[Number(String(h)+'0'+String(t*10+o).padStart(2,'0'))]:[]));q.say=fmt;}
+   q.explain=n<100?`${t} tens and ${o} ones: ${W}.`:`${h} hundreds, ${t} tens and ${o} ones: ${W}.`+(t===0&&o?' The 0 holds the tens place.':'');
+   q.draw=()=>{if(r<=6||q.k)pvChart(n,30,60,260,{vals:q.k?3:0,hide:r>6&&!q.k?0:undefined});else wrapText(W,160,110,270,22,C.gold);if(q.k&&r<=6)wrapText(W,160,214,280,15,C.ok);};
+   q.reveal=async()=>{q.k=1;sStep(1);await sleep(1100);};return q;}},
+ estimate:{name:'Estimate It',unit:'Addition and subtraction',make(r){const q={cols:2},near=r<=3?10:100,op=r>=4&&Math.random()<.5?'−':'+';let a,b;
+   if(near===10){a=between(12,68);b=between(12,28);a+=a%10===5?1:0;b+=b%10===5?1:0;}else if(op==='−'){a=between(360,890);b=between(110,a-160);}else{a=between(150,780);b=between(110,a>400?190:390);if(a%100===50)a+=7;if(b%100===50)b-=7;}
+   const ra=Math.round(a/near)*near,rb=Math.round(b/near)*near,est=op==='+'?ra+rb:ra-rb,exact=op==='+'?a+b:a-b;
+   if(r<=6){q.prompt=`<span>Estimate <b>${fmt(a)} ${op} ${fmt(b)}</b>.</span><span class="note">Round each number to the nearest ${near} first.</span>`;q.answer=est;q.options=opts(est,[est+near,est-near,est+2*near,op==='+'?ra-rb:ra+rb]);q.say=fmt;
+     q.explain=`${fmt(a)} rounds to ${fmt(ra)} and ${fmt(b)} rounds to ${fmt(rb)}. ${fmt(ra)} ${op} ${fmt(rb)} = ${fmt(est)}.`;}
+   else{const ok=Math.random()<.5,shown=ok?exact:exact+pick([300,200,-200,90,100])*(op==='+'?1:1);const s2=Math.max(1,shown);q.prompt=`<span>Someone says <b>${fmt(a)} ${op} ${fmt(b)} = ${fmt(s2)}</b>.</span><span>Is that answer sensible?</span>`;q.answer=Math.abs(s2-est)<=100?'yes':'no';
+     q.options=[{label:'Yes<small>close to the estimate</small>',value:'yes'},{label:'No<small>too far from the estimate</small>',value:'no'}];q.say=v=>v;q.explain=`Estimate: ${fmt(ra)} ${op} ${fmt(rb)} = ${fmt(est)}. ${q.answer==='yes'?fmt(s2)+' is close, so it is sensible.':fmt(s2)+' is too far away, so it is not sensible.'}`;}
+   q.draw=()=>{text(`${fmt(a)} ${op} ${fmt(b)}`,160,70,30,C.fg,700);if(q.k){text(`${fmt(a)} → ${fmt(ra)}`,100,130,17,C.gold,700);text(`${fmt(b)} → ${fmt(rb)}`,220,130,17,C.gold,700);text(`≈ ${fmt(ra)} ${op} ${fmt(rb)} = ${fmt(est)}`,160,184,20,C.ok,700);}else text('round, then calculate',160,130,14,C.muted,600);};
+   q.reveal=async()=>{q.k=1;sStep(1);await sleep(1100);};return q;}},
+ combos:{name:'Combination Maker',unit:'Multiplication and division',make(r){const q={cols:2},c=pick(CTX3),A=between(2,r<=4?3:4),Bn=between(2,r<=4?3:4),N=A*Bn,rev=r>=7;
+   if(!rev){q.prompt=`<span>There are <b>${A} ${c[0]}</b> and <b>${Bn} ${c[1]}</b>.</span><span>How many different ${c[4]} can you make?</span><span class="note">Match each one on the left with every one on the right.</span>`;q.answer=N;q.options=opts(N,[A+Bn,N+A,N-Bn,N+1]);q.explain=`Each of the ${A} goes with ${Bn}: ${A} × ${Bn} = ${N}.`;}
+   else{q.prompt=`<span>You can make <b>${N} ${c[4]}</b> from <b>${A} ${c[0]}</b>.</span><span>How many ${c[1]} are there?</span>`;q.answer=Bn;q.options=opts(Bn,[N-A,Bn+1,Bn-1,A]);q.explain=`${A} × ? = ${N}. ${N} ÷ ${A} = ${Bn}.`;}
+   q.say=fmt;
+   q.draw=t=>{const LY=i=>130-(A-1)*26+i*52,RY=j=>130-(Bn-1)*26+j*52;let k=0;
+     if(q.k)for(let i=0;i<A;i++)for(let j=0;j<Bn;j++){k++;if(k<=q.k)line([92,LY(i)],[228,RY(j)],C.gold,2);}
+     for(let i=0;i<A;i++){rrect(40,LY(i)-18,52,36,8,c[2],C.stage,2);text(String.fromCharCode(65+i),66,LY(i)+1,16,'#14213d',700);}
+     for(let j=0;j<Bn;j++){rrect(228,RY(j)-18,52,36,8,rev&&!q.k?'rgba(230,237,247,.10)':c[3],C.stage,2);text(rev&&!q.k?'?':String(j+1),254,RY(j)+1,16,rev&&!q.k?C.muted:'#14213d',700);}
+     if(q.k)text(Math.min(q.k,N)+' '+c[4],160,262,18,C.ok,700);};
+   q.reveal=async()=>{for(let i=1;i<=N;i++){q.k=i;if(i%2)sStep(i);await sleep(Math.max(120,900/N));}await sleep(500);};return q;}},
+ tables:{name:'Table Reader',unit:'Statistics',make(r){const q={cols:2},T=pick(TBL),cats=T[1].slice(0,r<=3?3:4),cl=['3A','3B'],v=cats.map(()=>[between(2,15),between(2,15)]);
+   const ci=rnd(cats.length),k=rnd(2);let hl=[],ans,kind=r<=3?'read':r<=6?pick(['row','col']):'diff';
+   if(kind==='diff'){while(v[ci][0]===v[ci][1])v[ci][1]=between(2,15);}
+   if(kind==='read'){ans=v[ci][k];q.prompt=`<span>How many children in <b>${cl[k]}</b> chose <b>${cats[ci]}</b>?</span><span class="note">Find the row, then the column.</span>`;hl=[[ci,k]];q.explain=`Read across the ${cats[ci]} row to the ${cl[k]} column: ${ans}.`;}
+   else if(kind==='row'){ans=v[ci][0]+v[ci][1];q.prompt=`<span>How many children chose <b>${cats[ci]}</b> altogether?</span><span class="note">Add both classes.</span>`;hl=[[ci,0],[ci,1]];q.explain=`${v[ci][0]} + ${v[ci][1]} = ${ans}.`;}
+   else if(kind==='col'){ans=v.reduce((s,x)=>s+x[k],0);q.prompt=`<span>How many children are in <b>${cl[k]}</b> altogether?</span><span class="note">Add the whole column.</span>`;hl=cats.map((_,i)=>[i,k]);q.explain=`${v.map(x=>x[k]).join(' + ')} = ${ans}.`;}
+   else{const big=v[ci][0]>v[ci][1]?0:1;ans=Math.abs(v[ci][0]-v[ci][1]);q.prompt=`<span>How many more children in <b>${cl[big]}</b> than <b>${cl[1-big]}</b> chose <b>${cats[ci]}</b>?</span>`;hl=[[ci,0],[ci,1]];q.explain=`${v[ci][big]} − ${v[ci][1-big]} = ${ans}.`;}
+   q.answer=ans;q.options=opts(ans,[ans+1,ans-1,ans+2,kind==='diff'?v[ci][0]+v[ci][1]:ans+10]);q.say=fmt;
+   q.draw=()=>{const x0=30,w=[120,65,65],rh=Math.min(36,180/(cats.length+1)),y0=48;text(T[0],160,30,14,C.muted,600);
+     for(let i=0;i<=cats.length;i++)for(let j=0;j<3;j++){const x=x0+(j?w[0]+(j-1)*w[1]:0),y=y0+i*rh,on=i>0&&j>0&&q.k&&hl.some(h=>h[0]===i-1&&h[1]===j-1);
+       rrect(x,y,w[j],rh,0,i===0?'rgba(91,155,255,.25)':on?'rgba(245,196,81,.55)':'rgba(230,237,247,.05)',C.edge,1.5);
+       text(i===0?(j?cl[j-1]:''):(j?String(v[i-1][j-1]):cats[i-1]),x+w[j]/2,y+rh/2+1,i===0?14:15,on?'#14213d':C.fg,i===0||j?700:500);}
+     if(q.k)text('= '+ans,160,y0+(cats.length+1)*rh+30,22,C.ok,700);};
+   q.reveal=async()=>{q.k=1;sStep(1);await sleep(1100);};return q;}}
+};
+const NQ3_TEACH={
+ numwords:[{title:'Tens and ones in words',text:'Say the <b>tens</b>, then the <b>ones</b>. Join them with a hyphen: 42 is <b>forty-two</b>.',draw:t=>{pvChart(42,30,60,260,{vals:countUp(t,3,800)});caption('forty-two');}},
+  {title:'Hundreds in words',text:'Say the <b>hundreds</b>, then <b>and</b>, then the tens and ones. 342 is <b>three hundred and forty-two</b>.',draw:t=>{pvChart(342,30,60,260,{vals:countUp(t,3,800)});caption('three hundred and forty-two');}},
+  {title:'Zero holds the place',text:'Six hundred and five has <b>no tens</b>, so we write a 0 in the tens place: <b>605</b>.',draw:t=>{pvChart(605,30,60,260,{hl:1});caption('six hundred and five = 605');}}],
+ estimate:[{title:'What is an estimate?',text:'An <b>estimate</b> is a sensible guess. Round the numbers so they are easy to add.',draw:t=>{text('412 + 289',160,80,30,C.fg,700);if(countUp(t,2,900)>=1){text('412 → 400',100,140,17,C.gold,700);text('289 → 300',220,140,17,C.gold,700);}if(countUp(t,2,900)>=2)text('≈ 700',160,200,24,C.ok,700);}},
+  {title:'Round, then calculate',text:'Round to the nearest <b>100</b> for 3-digit numbers, or the nearest <b>10</b> for 2-digit numbers. 598 − 207 ≈ 600 − 200 = <b>400</b>.',draw:t=>{text('598 − 207',160,80,30,C.fg,700);text('≈ 600 − 200 = 400',160,160,20,C.ok,700);}},
+  {title:'Is it sensible?',text:'Compare the answer with your estimate. If it is a long way off, check it again.',draw:t=>{text('312 + 289 = 901 ?',160,80,24,C.fg,700);text('estimate: 300 + 300 = 600',160,140,16,C.gold,700);text('901 is not sensible',160,196,18,C.warn,700);}}],
+ combos:[{title:'Making combinations',text:'2 tops and 3 pairs of shorts. Each top can go with <b>every</b> pair of shorts.',draw:t=>{const k=countUp(t,6,500);for(let i=0;i<2;i++)for(let j=0;j<3;j++){if(i*3+j<k)line([92,104+i*52],[228,78+j*52],C.gold,2);}for(let i=0;i<2;i++)rrect(40,86+i*52,52,36,8,'#e0485f');for(let j=0;j<3;j++)rrect(228,60+j*52,52,36,8,'#2f6fdf');caption(k+' outfits');}},
+  {title:'Work systematically',text:'Go in order: top A with each pair, then top B with each pair. Then you will not miss any or count any twice.',draw:t=>{['A1','A2','A3','B1','B2','B3'].slice(0,countUp(t,6,500)).forEach((s,i)=>text(s,60+(i%3)*100,100+Math.floor(i/3)*50,22,C.gold,700));}},
+  {title:'Multiply to find them all',text:'2 tops × 3 shorts = <b>6</b> outfits. Multiply the two numbers.',draw:t=>{text('2 × 3 = 6',160,130,34,C.ok,700);}}],
+ tables:[{title:'Rows and columns',text:'A <b>table</b> has rows that go across and columns that go down. The top row tells you what each column means.',draw:t=>{const k=Math.floor(t/1200)%2;for(let i=0;i<4;i++)for(let j=0;j<3;j++)rrect(30+(j?120+(j-1)*65:0),50+i*36,j?65:120,36,0,i===0?'rgba(91,155,255,.25)':(k?j===1:i===2)?'rgba(245,196,81,.5)':'rgba(230,237,247,.05)',C.edge,1.5);caption(k?'a column goes down':'a row goes across');}},
+  {title:'Find where they meet',text:'Find the <b>row</b>, then the <b>column</b>. The answer is in the box where they meet.',draw:t=>{const v=[['','3A','3B'],['apple','8','5'],['banana','12','9'],['grapes','4','7']];v.forEach((r,i)=>r.forEach((s,j)=>{rrect(30+(j?120+(j-1)*65:0),50+i*36,j?65:120,36,0,i===0?'rgba(91,155,255,.25)':i===2&&j===2?'rgba(245,196,81,.6)':'rgba(230,237,247,.05)',C.edge,1.5);text(s,30+(j?120+(j-1)*65+32:60),68+i*36,15,i===2&&j===2?'#14213d':C.fg,700);}));caption('banana, 3B = 9');}},
+  {title:'Two-step questions',text:'Some questions need two steps: <b>find</b> the numbers, then <b>add</b> or <b>subtract</b>. 12 + 9 = 21 chose banana.',draw:t=>{text('12 + 9 = 21',160,120,30,C.ok,700);text('12 − 9 = 3 more in 3A',160,180,18,C.gold,700);}}]
+};
+Object.assign(GAMES,NQ3_GAMES);Object.assign(TEACH,NQ3_TEACH);
+
+/*</NQ3>*/
+/* ---------- learn first engine ---------- */
+function speak(s){try{const u=new SpeechSynthesisUtterance((s.title+'. '+s.text).replace(/<[^>]+>/g,'').replace(/&gt;/g,'greater than').replace(/&lt;/g,'less than'));u.lang='en-GB';u.rate=.9;speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}}
+function startTeach(kind){st.mode='teach';st.kind=kind;st.ti=0;st.locked=false;showTeach();}
+function showTeach(){const L=TEACH[st.kind],s=L[st.ti],last=st.ti===L.length-1;st.t0=performance.now();
+  setHud('Learn first',GAMES[st.kind].name+' · '+(st.ti+1)+' / '+L.length);setPrompt(`<span class="big">${s.title}</span><span>${s.text}</span>`);
+  setButtons([{label:st.ti?'Back':'Skip to game',value:'back'},{label:'Read to me',value:'read'},{label:last?'Start the game':'Next',value:'next',cls:last?'run':''}],v=>{
+    if(v==='read')return speak(s);if(v==='back'){if(st.ti){st.ti--;showTeach();}else startQuiz(st.kind);return;}if(last)startQuiz(st.kind);else{st.ti++;showTeach();}},3);}
+
+/* ---------- quiz engine ---------- */
+function startQuiz(kind){try{speechSynthesis.cancel();}catch(e){}st.kind=kind;st.round=0;st.score=0;st.hearts=3;nextQ();}
+function quizHud(){setHud(pips(st.hearts),`Question ${st.round} / 8 · Score ${st.score}`);}
+function nextQ(){if(st.round>=8||st.hearts<=0)return endQuiz();st.round++;st.mode='quiz';st.q=GAMES[st.kind].make(st.round);st.locked=false;quizHud();setPrompt(st.q.prompt);setButtons(st.q.options,answer,st.q.cols||2);}
+async function answer(v){if(st.locked)return;st.locked=true;const q=st.q,ok=v===q.answer;st.btns.forEach(b=>{if(b.dataset.v===String(v))b.classList.add('sel');});
+  setPrompt(q.prompt+'<span class="note">Watch…</span>');await q.reveal();
+  if(ok){st.score++;sGood();setPrompt(`<span class="big good">Correct</span><span>${q.explain}</span>`);}else{st.hearts--;sBad();shake();setPrompt(`<span class="big bad">Not quite</span><span>The answer is <b>${q.say(q.answer)}</b>. ${q.explain}</span>`);}
+  quizHud();setButtons([{label:st.round>=8||st.hearts<=0?'See my score':'Next question',value:'n',cls:'run wide'}],()=>nextQ(),1);}
+function endQuiz(){st.mode='over';st.stars=st.score>=7?3:st.score>=5?2:st.score>=3?1:0;st.overTitle=st.hearts>0?'Round complete':'Out of lives';
+  saveBest(st.kind,st.score);if(st.hearts>0)sWin();else sBad();setHud(GAMES[st.kind].name,st.stars+' / 3 stars');
+  setPrompt(st.stars===3?'<span class="big good">Brilliant number work</span><span>Try a different game next.</span>':'<span class="big">Keep practising</span><span>Play again to earn more stars. The answers always show you how.</span>');
+  setButtons([{label:'Play again',value:'a',cls:'run'},{label:'Learn again',value:'l'},{label:'Menu',value:'m'}],v=>v==='a'?startQuiz(st.kind):v==='l'?startTeach(st.kind):menu(),3);}
+function star(x,y,r,c){ctx.fillStyle=c;ctx.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i%2?r*.45:r;ctx.lineTo(x+rr*Math.cos(a),y+rr*Math.sin(a));}ctx.closePath();ctx.fill();}
+function overScene(){text(st.overTitle,160,50,22,C.fg,600);text('SCORE',160,96,12,C.muted,500);text(st.score+' / 8',160,130,40,C.fg,600);for(let i=0;i<3;i++)star(110+i*50,196,18,i<st.stars?C.gold:C.off);text('Best score: '+best[st.kind]+' / 8',160,254,13,C.muted,500);}
+
+/* ---------- menu ---------- */
+function menu(){st.mode='menu';st.locked=false;setHud('Choose a game',Object.keys(GAMES).length+' games');
+  setPrompt('<span class="big">Choose a game</span><span>Each game starts with a short lesson. Place value, + and −, × and ÷, and statistics.</span>');
+  const b=k=>best[k]!=null?`<small>Best ${best[k]} / 8</small>`:`<small>${GAMES[k].unit}</small>`;
+  setButtons(Object.keys(GAMES).map(k=>({label:GAMES[k].name+b(k),value:k})),v=>startTeach(v),2);}
+function menuScene(t){pvChart(472,40,24,240,{hl:Math.floor(t/900)%3});const X=NLine(0,100,10,190,[0,50,100]);arrowDown(X(30+Math.round(((Math.sin(t/900)+1)/2)*4)*10),180);text('Place value · + and − · Charts',160,262,14,C.muted,500);}
+
+/* ---------- render ---------- */
+function render(t){bg();try{if(st.mode==='menu')menuScene(t);else if(st.mode==='quiz'&&st.q)st.q.draw(t);else if(st.mode==='teach')TEACH[st.kind][st.ti].draw(Math.max(0,t-st.t0));else if(st.mode==='over')overScene();}catch(e){console.error(e);}requestAnimationFrame(render);}
+$('btnMenu').addEventListener('click',()=>{if(!st.locked||st.mode==='over'){sClick();menu();}});
+$('btnSound').addEventListener('click',()=>{muted=!muted;$('btnSound').textContent=muted?'Sound: off':'Sound: on';if(!muted)sClick();});
+document.addEventListener('keydown',e=>{const k=e.key;if(k==='ArrowLeft'){move(-1,0);e.preventDefault();}else if(k==='ArrowRight'){move(1,0);e.preventDefault();}else if(k==='ArrowUp'){move(0,-1);e.preventDefault();}else if(k==='ArrowDown'){move(0,1);e.preventDefault();}else if(k==='Escape'){if(!st.locked||st.mode==='over')menu();}});
+window.__NQ={GAMES,TEACH,colWork};
+(function(){const h=location.hash.slice(1);if(TEACH[h])startTeach(h);else menu();})();
+requestAnimationFrame(render);
+})();
+</script>
+
+
+</body>
+</html>
