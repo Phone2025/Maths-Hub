@@ -3,6 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Maths Hub">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#2f6fdf">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<style>html{-webkit-text-size-adjust:100%}button,a,[role=button],summary,label{touch-action:manipulation}input,select,textarea{font-size:max(16px,1em)}#drawerBtn,.drawer-btn{bottom:calc(16px + env(safe-area-inset-bottom))!important}</style>
+
 <title>Maths Hub · Practise</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Playpen+Sans:wght@400;600;700&display=swap">
@@ -1213,7 +1222,7 @@ function lessonWire(u,n){CUR_U=u;var L=LU[u][n],key='lesson-'+u+'-'+n+'-pos',i=M
     document.querySelectorAll('#ltd [data-g]').forEach(function(b){b.onclick=function(){go(+b.dataset.g);};});document.getElementById('ltPrev').disabled=i===0;document.getElementById('ltNext').disabled=i===L.length-1;}
   document.getElementById('ltPrev').onclick=function(){go(i-1);};document.getElementById('ltNext').onclick=function(){go(i+1);};
   document.getElementById('ltRead').onclick=function(){say(L[i].say||L[i].t);};
-  document.getElementById('ltFs').onclick=function(){var w=document.getElementById('ltw');try{if(document.fullscreenElement)document.exitFullscreen();else (w.requestFullscreen||w.webkitRequestFullscreen).call(w);}catch(e){}};
+  var fsb=document.getElementById('ltFs');if(!(document.fullscreenEnabled||document.webkitFullscreenEnabled))fsb.hidden=true;fsb.onclick=function(){var w=document.getElementById('ltw');try{if(document.fullscreenElement)document.exitFullscreen();else (w.requestFullscreen||w.webkitRequestFullscreen).call(w);}catch(e){}};
   if(window.__ltKey)document.removeEventListener('keydown',window.__ltKey);window.__ltKey=function(e){if(!document.getElementById('lts'))return;if(e.target&&/select|input/i.test(e.target.tagName))return;if(e.key==='ArrowRight')go(i+1);if(e.key==='ArrowLeft')go(i-1);};document.addEventListener('keydown',window.__ltKey);
   go(i);}
 
