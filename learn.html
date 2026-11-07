@@ -1527,7 +1527,7 @@ function addLessons(u,list){var U=unitL(u);list.forEach(function(L){U[L.n]=L.s;L
 /* convenience: hinge with 3,2,1 */
 function H(q,opts,ok,explain,pic){return tChoose('hinge','Hinge question',{q:q,pic:pic,opts:opts.map(function(x,i){return [x,i===ok?1:0];}),explain:explain});}
 /* convenience: simple multiple-choice we-do */
-function MC(chip,t,q,opts,ok,explain,pic,grid){return tChoose(chip,t,{q:q,pic:pic,opts:opts.map(function(x,i){return [x,i===ok?1:0];}),explain:explain,countdown:false,grid:grid});}
+function nkMC(chip,t,q,opts,ok,explain,pic,grid){return tChoose(chip,t,{q:q,pic:pic,opts:opts.map(function(x,i){return [x,i===ok?1:0];}),explain:explain,countdown:false,grid:grid});}
 /* convenience: Q&A retrieval cards */
 function RET(cards,note){return tRet(cards,note);}
 
@@ -2158,7 +2158,7 @@ addLessons('statistics',[
 {n:6,t:'Plan, gather and display',s:[tTitle(6,'To plan, gather and present real-life data as a pictogram and bar chart.'),
  tWhy('Real data helps us find out about our class and school.','plan, gather and present data.',['I can write a good question.','I can collect data with a tally.','I can present it as a pictogram and a bar chart.']),
  tVocab([['tally','A quick way to count: four lines and a gate.',TALLY(7)],['data','Information we collect.',TBL(['Colour','Votes'],[['Red',7],['Blue',5]])]]),
- MC('wedo','Which is the best survey question?','Which is the best question for a tally chart?',['How many people like apples?','What is your pet\'s name?','Which is your favourite colour: red, blue, green or yellow?'],2,'<b>C</b>. It has a few clear choices to tally.'),
+ nkMC('wedo','Which is the best survey question?','Which is the best question for a tally chart?',['How many people like apples?','What is your pet\'s name?','Which is your favourite colour: red, blue, green or yellow?'],2,'<b>C</b>. It has a few clear choices to tally.'),
  tInput('wedo','Read the tally',{prompt:'How many?',items:[[TALLY(7),7],[TALLY(12),12],[TALLY(4),4]]}),
  tTask('youdo','Your project',{list:['Plan: choose a question with 4 or 5 answer choices.','Gather: ask your class and record with tally marks.','Present: draw a pictogram AND a bar chart.','Write 3 questions about your data for a partner to answer.'],chal:'Which chart shows your data more clearly? Why?'}),
  tDone(6)]},
@@ -2202,7 +2202,7 @@ addLessons('multiply-divide',[
  tRet([['4 groups of 3 = ?','12'],['5 + 5 + 5 = ? × 5','3'],['Count in 2s to 20','2, 4, 6 … 20']]),
  tWhy('Arrays help us see multiplication facts clearly.','use arrays to recognise multiplication as repeated addition.',['I can describe an array in rows and columns.','I can write addition and multiplication facts from an array.']),
  tVocab([VARR,['row','A line of objects going across.',AR(1,5)],['column','A line of objects going down.',AR(3,1)]]),
- MC('wedo','3 beavers each cut 5 trees','There were 3 beavers. Each cut down 5 trees. How many trees altogether?',['5 groups of 3, 5 × 3 = 15','5 plus 3, 5 + 3 = 8','3 groups of 5, 3 × 5 = 15'],2,'<b>C</b>. 3 beavers, 5 trees each: 3 groups of 5. (A gives the same total, but the groups are the wrong way round.)'),
+ nkMC('wedo','3 beavers each cut 5 trees','There were 3 beavers. Each cut down 5 trees. How many trees altogether?',['5 groups of 3, 5 × 3 = 15','5 plus 3, 5 + 3 = 8','3 groups of 5, 3 × 5 = 15'],2,'<b>C</b>. 3 beavers, 5 trees each: 3 groups of 5. (A gives the same total, but the groups are the wrong way round.)'),
  tSteps('ido','Reading an array',{v:AR(3,5),steps:['There are <b>3 rows</b> of 5.','5 + 5 + 5 = 15, so 3 × 5 = 15.','There are also <b>5 columns</b> of 3.','3 + 3 + 3 + 3 + 3 = 15, so 5 × 3 = 15.']}),
  tInput('wedo','What does the array show?',{prompt:'How many altogether?',items:[[AR(2,6),12],[AR(4,4),16],[AR(5,2),10],[AR(3,4),12]]}),
  H('Which repeated addition matches 4 rows of 5?',['5 + 5 + 5 + 5','4 + 4 + 4 + 4','4 + 5'],0,'<b>A</b>. 4 rows, each with 5.',AR(4,5)),
@@ -2231,7 +2231,7 @@ addLessons('multiply-divide',[
  tVocab([['relevant','Information you need to solve the problem.',BIG('Banana 10 SAR')],['irrelevant','Information you do not need.',BIG('Sam is 8')]]),
  tSteps('ido','What do we need?',{v:BIG('Banana 10 SAR · Drink 5 SAR · Bread 35 SAR'),x:'"How many bananas can he buy?"',steps:['What is missing? We do not know how much money he has!','Add the missing information: Sam has 100 SAR.','How many 10s make 100? 100 ÷ 10 = <b>10 bananas</b>.']}),
  tInput('wedo','Shop problems',{prompt:'Banana 10 SAR · Drink 5 SAR · Bread 35 SAR',items:[['Cost of 4 bananas (SAR)',40],['Cost of 6 drinks (SAR)',30],['How many drinks for 20 SAR?',4],['1 bread and 1 drink (SAR)',40]]}),
- MC('wedo','Which information do we need?','A baker has 5 trays. Each tray has 10 rolls. The baker is 40 years old. How many rolls?',['5, 10 and 40','5 and 10','10 and 40'],1,'<b>B</b>. His age is irrelevant. 5 × 10 = 50 rolls.'),
+ nkMC('wedo','Which information do we need?','A baker has 5 trays. Each tray has 10 rolls. The baker is 40 years old. How many rolls?',['5, 10 and 40','5 and 10','10 and 40'],1,'<b>B</b>. His age is irrelevant. 5 × 10 = 50 rolls.'),
  tInput('youdo','Task',{prompt:'Solve each problem.',items:[['3 children each have 5 stickers. How many stickers?',15],['20 sweets shared between 2 children. How many each?',10],['There are 4 cars with 4 wheels each. How many wheels?',16]],chal:'Write your own word problem using the shop prices.'}),
  tDone(5)]},
 {n:6,t:'× 1 and × 0',s:[tTitle(6,'To understand what happens when we multiply by 1 and by 0.'),
@@ -2655,7 +2655,7 @@ addLessons('place-value',[
  tSteps('ido','When the arrow is between marks',{v:NL(0,1000,100,{labels:[0,100,200,1000],arrows:[[150]]}),steps:['The arrow is not on a mark, so we <b>estimate</b>.','It is halfway between 100 and 200.','Half of 100 is 50, so the arrow is about <b>150</b>.']}),
  tSteps('wedo','Use the midpoint',{v:NL(500,600,50,{labels:'all',arrows:[[530]]}),steps:['The line goes from 500 to 600.','The midpoint is <b>550</b>.','The arrow is before 550, a bit closer to 550 than 500.','A good estimate is about <b>530</b>.'],tps:'What is each interval worth? What is half an interval worth?'}),
  H('What number do you think the arrow is pointing to?',['395','365','345','325'],2,'<b>C: 345</b>. The midpoint of 300 and 400 is 350, and the arrow is just before it.',NL(300,400,50,{labels:'all',arrows:[[345]]})),
- MC('youdo','Which is closest to 250?','Which arrow is closest to <b>250</b>?',['A','B','C'],1,'<b>B</b>. 250 is halfway between 200 and 300.',NL(0,500,100,{labels:'all',arrows:[[120,'A'],[255,'B'],[410,'C']]})),
+ nkMC('youdo','Which is closest to 250?','Which arrow is closest to <b>250</b>?',['A','B','C'],1,'<b>B</b>. 250 is halfway between 200 and 300.',NL(0,500,100,{labels:'all',arrows:[[120,'A'],[255,'B'],[410,'C']]})),
  tTF('Do you agree?','Mr King has placed <b>780</b> here.<br>'+NL(0,1000,100,{labels:[0,500,1000],arrows:[[620]]}),false,'780 is between 700 and 800, closer to 800. The arrow is between 600 and 700, so it shows about 620.'),
  tDone(10)]},
 {n:11,t:'Comparing numbers',s:[tTitle(11,'To compare numbers to 1000.'),
