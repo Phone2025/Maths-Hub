@@ -302,7 +302,7 @@ const GAMES={
    const a=up?n+sz:n-sz,col=[100,10,1].indexOf(sz);q.prompt=`<span>What is <b>${sz} ${up?'more':'less'}</b> than <b>${n}</b>?</span>`;q.answer=a;
    q.options=opts(a,[n+(up?1:-1)*[1,10,100][(col+1)%3],n+(up?1:-1)*[1,10,100][(col+2)%3],up?a+sz:a-sz,n]);q.say=fmt;
    q.explain=`${sz} ${up?'more':'less'} changes the ${CW[col]} digit${(up&&D3(n)[col]===9)||(!up&&D3(n)[col]===0)?', and here it crosses into the next column':''}.`;
-   q.draw=()=>{pvChart(q.k?a:n,40,50,240,{hl:col});text(q.k?`${n} ${up?'+':'−'} ${sz} = ${a}`:`${n} ${up?'+':'−'} ${sz}`,160,200,22,q.k?C.gold:C.fg,700);};q.reveal=async()=>{q.k=1;sStep(1);await sleep(900);};return q;}},
+   q.draw=()=>{pvChart(q.k?a:n,40,50,240,{hl:(st.round<=3||q.k)?col:-1});text(q.k?`${n} ${up?'+':'−'} ${sz} = ${a}`:`${n} ${up?'+':'−'} ${sz}`,160,200,22,q.k?C.gold:C.fg,700);};q.reveal=async()=>{q.k=1;sStep(1);await sleep(900);};return q;}},
  nline:{name:'Number Line',unit:'Place value',make(){const q={cols:2},kind=pick([0,1,2]);let a,b,step,v,lab;
    if(kind===0){a=0;b=100;step=10;v=between(1,9)*10;lab=[0,50,100];}else if(kind===1){a=0;b=1000;step=100;v=between(1,9)*100;lab=[0,500,1000];}else{a=between(1,8)*100;b=a+100;step=10;v=a+between(1,9)*10;lab=[a,b];}
    q.prompt='<span>What number is the arrow pointing to?</span><span class="note">Check the start, the end and what each interval is worth.</span>';q.answer=v;
@@ -312,7 +312,7 @@ const GAMES={
  round:{name:'Round It',unit:'Place value',make(){const q={cols:2},to=Math.random()<.55?10:100;let n=to===10?between(11,98):between(110,980);if(n%to===0)n+=to===10?3:30;
    const lo=Math.floor(n/to)*to,hi=lo+to,ans=(n-lo)>=to/2?hi:lo;q.prompt=`<span>Round <b>${n}</b> to the nearest <b>${to}</b>.</span>`;q.answer=ans;q.options=opts(ans,[ans===lo?hi:lo]).sort((x,y)=>x.value-y.value);q.cols=2;q.say=fmt;
    q.explain=(n-lo)===to/2?`${n} is exactly halfway, so we round up to ${hi}.`:`${n} is closer to ${ans} than to ${ans===lo?hi:lo}.`;
-   q.draw=()=>{const X=NLine(lo,hi,to/10,170,[lo,lo+to/2,hi]);arrowDown(X(n),160,C.fg);text(String(n),X(n),112,16,C.fg,700);line([X(lo+to/2),130],[X(lo+to/2),190],C.gold,2,true);
+   q.draw=()=>{const X=NLine(lo,hi,to/10,170,[lo,lo+to/2,hi]);arrowDown(X(n),160,C.fg);text(String(n),X(n),112,16,C.fg,700);if(st.round<=4||q.k)line([X(lo+to/2),130],[X(lo+to/2),190],C.gold,2,true);
      if(q.k){hop(X(n),X(ans),170,'',C.ok);text('rounds to '+ans,160,236,18,C.ok,700);}};q.reveal=async()=>{q.k=1;sStep(1);await sleep(900);};return q;}},
  compare:{name:'Compare It',unit:'Place value',make(){const q={cols:3};let a=between(100,999),b;const r=Math.random();
    b=r<.15?a:r<.55?Math.floor(a/100)*100+between(0,99):between(100,999);if(b===a&&r>=.15)b=a+between(1,9);
@@ -340,7 +340,7 @@ const GAMES={
    else{a=between(3,9)*10+between(1,4);if(Math.random()<.4)a=between(2,9)*100+between(1,4);b=between(a%10+1,9);ans=a-b;m=Math.floor(a/10)*10;}
    q.prompt=`<span>Use bridging to work out <b>${a} ${up?'+':'−'} ${b}</b>.</span>`;q.answer=ans;q.options=opts(ans,[ans+1,ans-1,up?ans+10:ans-10]);q.say=fmt;
    const s1=Math.abs(m-a),s2=b-s1;q.explain=`${a} ${up?'+':'−'} ${s1} = ${m}, then ${m} ${up?'+':'−'} ${s2} = ${ans}.`;
-   q.draw=()=>{const lo=Math.min(a,ans)-2,hi=Math.max(a,ans)+2,X=NLine(lo,hi,1,180,[a,m,ans]);dot(X(a),180,6,C.fg);if(q.k>=1)hop(X(a),X(m),180,(up?'+':'−')+s1,C.gold);if(q.k>=2)hop(X(m),X(ans),180,(up?'+':'−')+s2,C.ok);};
+   q.draw=()=>{const lo=Math.min(a,ans)-2,hi=Math.max(a,ans)+2,X=NLine(lo,hi,1,180,q.k>=2?[a,m,ans]:[a,m]);dot(X(a),180,6,C.fg);if(q.k>=1)hop(X(a),X(m),180,(up?'+':'−')+s1,C.gold);if(q.k>=2)hop(X(m),X(ans),180,(up?'+':'−')+s2,C.ok);};
    q.reveal=async()=>{q.k=1;sStep(1);await sleep(800);q.k=2;sStep(2);await sleep(800);};return q;}},
  inverse:{name:'Inverse Check',unit:'Addition and subtraction',make(){const q={cols:2},kind=rnd(4);let w=between(4,9)*100+between(0,9)*10,p1=between(1,w/10-1)*10,p2=w-p1;
    if(Math.random()<.5){w=between(30,99);p1=between(10,w-10);p2=w-p1;}
@@ -448,7 +448,7 @@ const MD_GAMES={
  times:{name:'Times Tables',unit:'Multiplication and division',make(r){const q={cols:2},t=r<=2?pick([2,5,10]):r<=4?pick([3,4]):r<=6?8:pick([2,3,4,5,8,10]),a=between(2,12),p=a*t,miss=r>=7&&Math.random()<.6;
    q.prompt=miss?`<span>Find the missing number.</span><span><b>? × ${t} = ${p}</b></span>`:`<span>What is <b>${a} × ${t}</b>?</span>`+(r<=6?`<span class="note">Count in ${t}s: ${t}, ${2*t}, ${3*t}…</span>`:'');q.answer=miss?a:p;
    q.options=miss?opts(a,[a+1,a-1,p-t,t]):opts(p,[p+t,p-t,a+t,(a+1)*(t+1)]);q.say=fmt;q.explain=`${a} × ${t} = ${p}.`+(miss?` So ${p} ÷ ${t} = ${a}.`:'');
-   q.draw=()=>{arr(a,t,{rows:q.k||0});if(q.k===a)text(`${a} × ${t} = ${p}`,160,268,18,C.ok,700);};q.reveal=async()=>{for(let i=1;i<=a;i++){q.k=i;sStep(i);await sleep(Math.max(150,1300/a));}await sleep(300);};return q;}},
+   q.draw=()=>{if(r>2&&!q.k){text(miss?`? × ${t} = ${p}`:`${a} × ${t}`,160,140,40,C.fg,700);return;}arr(a,t,{rows:q.k||0});if(q.k===a)text(`${a} × ${t} = ${p}`,160,268,18,C.ok,700);};q.reveal=async()=>{for(let i=1;i<=a;i++){q.k=i;sStep(i);await sleep(Math.max(150,1300/a));}await sleep(300);};return q;}},
  arrays:{name:'Array Reader',unit:'Multiplication and division',make(r){const q={cols:2},R=r<=4?between(2,5):between(3,6),Cc=r<=4?between(2,6):between(3,8),p=R*Cc;let kind=r<=3?0:r<=6?1:2;if(R===Cc&&kind===1)kind=0;
    if(kind===0){q.prompt='<span>How many dots are there <b>altogether</b>?</span><span class="note">Count the dots in one row, then count in that number.</span>';q.answer=p;q.options=opts(p,[R+Cc,p+Cc,p-R]);q.say=fmt;}
    else if(kind===1){q.prompt='<span>Which number sentence matches this array?</span>';q.answer=`${R} × ${Cc} = ${p}`;q.options=sopts(q.answer,[`${R} + ${Cc} = ${R+Cc}`,`${R} × ${Cc+1} = ${R*(Cc+1)}`,`${Cc} × ${Cc} = ${Cc*Cc}`]);q.say=v=>v;}
@@ -501,7 +501,7 @@ Object.assign(GAMES,MD_GAMES);Object.assign(TEACH,MD_TEACH);
 /*<NQ2>*/
 /* ---------- extra games (NQ2): bonds to 100s, word problems ---------- */
 function bondItem(type,x,y,col){if(type==='one')dot(x+10,y+10,8,col);else if(type==='ten'){rrect(x+6,y-14,8,48,2,col);}else{rrect(x,y-6,22,22,2,col);ctx.strokeStyle='rgba(13,21,36,.35)';ctx.lineWidth=.7;for(let k=1;k<4;k++){ctx.beginPath();ctx.moveTo(x+k*5.5,y-6);ctx.lineTo(x+k*5.5,y+16);ctx.stroke();ctx.beginPath();ctx.moveTo(x,y-6+k*5.5);ctx.lineTo(x+22,y-6+k*5.5);ctx.stroke();}}}
-function bondRow(a,b,type,show,minus){const W=28,x0=160-5*W;for(let i=0;i<10;i++){const x=x0+i*W,inA=i<a,inB=!minus&&i>=a&&i<a+b,cross=minus&&i>=a-b&&i<a;
+function bondRow(a,b,type,show,minus,hide){const W=28,x0=160-5*W;if(hide&&!show&&!minus){for(let i=0;i<a;i++){const x=x0+i*W;rrect(x+1,92,W-2,64,6,null,C.edge,1);bondItem(type,x+3,114,C.gold);}rrect(x0+a*W+1,92,(10-a)*W-2,64,8,'rgba(230,237,247,.04)',C.edge,1);text('?',x0+a*W+(10-a)*W/2,124,26,C.muted,700);return;}for(let i=0;i<10;i++){const x=x0+i*W,inA=i<a,inB=!minus&&i>=a&&i<a+b,cross=minus&&i>=a-b&&i<a;
     rrect(x+1,92,W-2,64,6,null,C.edge,1);
     if(inA)bondItem(type,x+3,114,C.gold);else if(inB&&show)bondItem(type,x+3,114,C.ok);else if(!minus)bondItem(type,x+3,114,'rgba(230,237,247,.10)');
     if(cross&&show){line([x+3,96],[x+W-3,152],C.warn,3);}}}
@@ -522,7 +522,7 @@ const NQ2_GAMES={
    const ans=q.answer;q.options=opts(ans,[ans+unit,ans-unit,ans*10,unit===1?ans+2:Math.round(ans/10),10*unit-ans+unit].filter(x=>x>0));q.say=fmt;
    const nm={one:'ones',ten:'tens',hun:'hundreds'}[type];
    q.explain=r<=4||r>=7?`${a} ${nm} + ${b} ${nm} = 10 ${nm} = ${fmt(10*unit)}.`:minus?`${a} ${nm} − ${b} ${nm} = ${a-b} ${nm} = ${fmt(ans)}.`:`${a} ${nm} + ${b} ${nm} = ${a+b} ${nm} = ${fmt(ans)}.`;
-   q.draw=()=>{text({one:'ones',ten:'tens (10)',hun:'hundreds (100)'}[type],160,64,13,C.muted,600);bondRow(a,b,type,q.k,minus);if(q.k)text('= '+fmt(ans),160,200,24,C.ok,700);};
+   q.draw=()=>{text({one:'ones',ten:'tens (10)',hun:'hundreds (100)'}[type],160,64,13,C.muted,600);bondRow(a,b,type,q.k,minus,r>=3);if(q.k)text('= '+fmt(ans),160,200,24,C.ok,700);};
    q.reveal=async()=>{q.k=1;sStep(1);await sleep(1000);};return q;}},
  wordmd:{name:'Word Problems',unit:'Multiplication and division',make(r){const q={cols:2},w=pick(WORDS2),G=between(2,r<=4?5:6),E=between(2,r<=4?5:8),N=G*E,kind=pick(r<=2?['x']:r<=6?['x','share','group']:['x','share','group','scale']);
    const extra=r>=7?' '+pick(EXTRA).replace('{c}',w[1]):'';let story,ans,calc,wrong;

@@ -78,7 +78,8 @@ canvas{display:block; width:100%; height:auto; aspect-ratio:320/288; max-width:1
 .key.run small{color:var(--ok-ink); opacity:.75}
 .key.cwk{color:var(--cw)} .key.acwk{color:var(--acw); border-style:dashed}
 .key.wide{grid-column:1 / -1}
-.key .sw{display:inline-block; width:14px; height:14px; border-radius:3px; vertical-align:-1px; margin-right:8px}
+.key .sw{display:inline-block; width:28px; height:28px; vertical-align:-8px; margin-right:10px}
+.key.hint{min-height:48px; font-size:15px; color:var(--muted); background:transparent; border-style:dashed}
 button:focus-visible{outline:2px solid var(--cw); outline-offset:2px}
 @media (prefers-reduced-motion: reduce){ .panel.shake canvas{animation:none} .key{transition:none} }
 @media (max-width:400px){ .key{font-size:16px} .prompt{font-size:17px} }
@@ -260,6 +261,14 @@ function shapesScene(){
     [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([sx,sy])=>{ctx.beginPath();ctx.moveTo(x+sx*o,y+sy*(o-k));ctx.lineTo(x+sx*o,y+sy*o);ctx.lineTo(x+sx*(o-k),y+sy*o);ctx.stroke();});
   }
 }
+function arcTurn(){
+  const sign=st.arc, sw_=st.arcSweep||0; if(!sign||!sw_) return;
+  const col=sign>0?C.cw:C.acw, cx=160,cy=144,r=62, a0=st.arcFrom-Math.PI/2, a1=a0+sign*sw_;
+  ctx.strokeStyle=col; ctx.lineWidth=3.5; ctx.lineCap='round'; ctx.setLineDash(sign>0?[]:[8,6]);
+  ctx.beginPath(); ctx.arc(cx,cy,r,a0,a1,sign<0); ctx.stroke(); ctx.setLineDash([]);
+  const ex=cx+r*Math.cos(a1), ey=cy+r*Math.sin(a1), tx=-Math.sin(a1)*sign, ty=Math.cos(a1)*sign, nx=-ty, ny=tx;
+  ctx.fillStyle=col; ctx.beginPath(); ctx.moveTo(ex+tx*12,ey+ty*12); ctx.lineTo(ex+nx*8,ey+ny*8); ctx.lineTo(ex-nx*8,ey-ny*8); ctx.closePath(); ctx.fill();
+}
 function arcArrow(sign){
   if(!sign) return;
   const col=sign>0?C.cw:C.acw, cx=160,cy=144,r=60,a0=-Math.PI*5/6,a1=-Math.PI/6;
@@ -310,8 +319,8 @@ function render(t){
     if(Math.abs(st.target-st.angle)>Math.PI) st.angle=st.target;
     SHAPES.forEach((n,i)=>{ const [x,y]=SPOS[i]; shape(i,x,y); });
     arcArrow(1); robot(160,144,st.angle,1);
-  } else if(st.mode==='shapes'||st.mode==='count'){ shapesScene(); arcArrow(st.arc); robot(160,144,st.angle,1); stepBadge(); }
-  else if(st.mode==='compass'){ compassScene(); arcArrow(st.arc); robot(160,144,st.angle,1); stepBadge(); }
+  } else if(st.mode==='shapes'||st.mode==='count'){ shapesScene(); arcTurn(); robot(160,144,st.angle,1); stepBadge(); }
+  else if(st.mode==='compass'){ compassScene(); arcTurn(); robot(160,144,st.angle,1); stepBadge(); }
   else if(st.mode==='maze'){ mazeScene(); }
   else if(st.mode==='over'){ overScene(); }
   else if(st.mode==='teach'){ teachScene(t); }
@@ -338,9 +347,11 @@ function setButtons(list,handler,cols){
 function mark(){ st.btns.forEach((b,i)=>b.classList.toggle('sel',i===st.focus)); }
 function move(dx,dy){ if(!st.btns.length) return; let f=st.focus<0?0:st.focus+dx+dy*st.cols; f=Math.max(0,Math.min(st.btns.length-1,f)); st.focus=f; mark(); st.btns[f].focus(); }
 function shake(){ cardEl.classList.remove('shake'); void cardEl.offsetWidth; cardEl.classList.add('shake'); }
+const qChip=s=>s>0?'<span class="chip cw">clockwise</span>':'<span class="chip acw">anticlockwise</span>';
 const dirChip=s=>s>0?'<span class="chip cw">↻ clockwise</span>':'<span class="chip acw">↺ anticlockwise</span>';
 function turnWords(n){ return Math.random()<.5 ? `<b>${n} right angle${n>1?'s':''}</b>` : `<b>${['','a quarter','a half','a three-quarter'][n]} turn</b>`; }
-const sw=i=>`<span class="sw" style="background:${SHAPE_FILL[i]}"></span>`;
+const SHP_SVG=['<circle cx="14" cy="14" r="11"/>','<rect x="4" y="4" width="20" height="20"/>','<rect x="1" y="7" width="26" height="14"/>','<path d="M14 3 26 25H2Z"/>'];
+const sw=i=>`<svg class="sw" viewBox="0 0 28 28" aria-hidden="true"><g fill="${SHAPE_FILL[i]}">${SHP_SVG[i]}</g></svg>`;
 
 
 /* ---------- learn first: short teaching before each game ---------- */
@@ -427,36 +438,53 @@ function menu(){
 }
 
 /* ---------- quiz games ---------- */
+function turnWhy(n,sign){
+  if(n===2) return '2 right angles is a <b>half turn</b>, so you face the opposite way. Clockwise or anticlockwise, you end up in the same place.';
+  if(n===3) return `3 right angles is a <b>three-quarter turn</b>. It lands in the same place as <b>1 right angle ${sign>0?'anticlockwise':'clockwise'}</b>.`;
+  return '1 right angle is a <b>quarter turn</b>: you face the next one round.';
+}
 function makeQ(kind,round){
   const s=rnd(4), n=NS[round-1], sign=Math.random()<.5?1:-1, f=(s+n*sign+8)%4;
+  if(kind==='shapes'&&round>=7){ const m=Math.random()<.5?1:3, sg=Math.random()<.5?1:-1, ff=(s+m*sg+8)%4, other=4-m;
+    return {s,n:other,sign:-sg,answer:other,turnOther:true,
+      prompt:`<span>Ali faces the <b>${SHAPES[s]}</b> and turns <b>${m} right angle${m>1?'s':''}</b> ${qChip(sg)} to face the <b>${SHAPES[ff]}</b>.</span><span>Sam starts at the ${SHAPES[s]} too, but turns ${qChip(-sg)}.</span><span>How many right angles must Sam turn?</span>`,
+      options:[1,2,3].map(i=>({label:i+' right angle'+(i>1?'s':''),value:i})), say:i=>i+' right angle'+(i>1?'s':''),
+      why:`${m} right angle${m>1?'s':''} one way and ${other} the other way both land on the ${SHAPES[ff]}, because ${m} + ${other} = 4 right angles, a whole turn.`};}
   if(kind==='shapes') return {s,n,sign,answer:f,
-    prompt:`<span>Start facing the <b>${SHAPES[s]}</b>.</span><span>Turn ${turnWords(n)} ${dirChip(sign)}</span><span>Which shape are you facing?</span>`,
-    options:[0,1,3,2].map(i=>({label:sw(i)+SHAPES[i],value:i})), say:i=>'the '+SHAPES[i]};
+    prompt:`<span>Start facing the <b>${SHAPES[s]}</b>.</span><span>Turn ${turnWords(n)} ${qChip(sign)}.</span><span>Which shape are you facing?</span>`,
+    options:[0,1,3,2].map(i=>({label:sw(i)+SHAPES[i],value:i})), say:i=>'the '+SHAPES[i], why:turnWhy(n,sign)};
   if(kind==='compass') return {s,n,sign,answer:f,
-    prompt:`<span>You are facing <b>${DIRS[s]}</b>.</span><span>Make ${turnWords(n)} ${dirChip(sign)}</span><span>Which way are you facing now?</span>`,
-    options:[0,1,2,3].map(i=>({label:DIRS[i][0].toUpperCase()+DIRS[i].slice(1),value:i})), say:i=>DIRS[i]};
+    prompt:`<span>You are facing <b>${DIRS[s]}</b>.</span><span>Make ${turnWords(n)} ${qChip(sign)}.</span><span>Which way are you facing now?</span>`,
+    options:[0,1,2,3].map(i=>({label:DIRS[i][0].toUpperCase()+DIRS[i].slice(1),value:i})), say:i=>DIRS[i], why:turnWhy(n,sign)};
   const cs=Math.random()<.75?1:-1, cf=(s+n*cs+8)%4;
   return {s,n,sign:cs,answer:n,finish:cf,
-    prompt:`<span>Start: <b>${SHAPES[s]}</b>. Finish: <b>${SHAPES[cf]}</b> (marked in gold).</span><span>The robot turns ${dirChip(cs)}</span><span>How many right angles?</span>`,
-    options:[1,2,3].map(i=>({label:i+' right angle'+(i>1?'s':''),value:i})), say:i=>i+' right angle'+(i>1?'s':'')};
+    prompt:`<span>Start: <b>${SHAPES[s]}</b>. Finish: <b>${SHAPES[cf]}</b> (marked in gold).</span><span>The robot turns ${qChip(cs)}.</span><span>How many right angles?</span>`,
+    options:[1,2,3].map(i=>({label:i+' right angle'+(i>1?'s':''),value:i})), say:i=>i+' right angle'+(i>1?'s':''), why:turnWhy(n,cs)};
 }
 function startQuiz(kind){ st.kind=kind; st.round=0; st.score=0; st.hearts=3; nextQ(); }
 function quizHud(){ setHud(pips(st.hearts), `Question ${st.round} / 8 · Score ${st.score}`); }
 function nextQ(){
   if(st.round>=8||st.hearts<=0) return endQuiz();
   st.round++; st.mode=st.kind; st.q=makeQ(st.kind,st.round); st.locked=false; st.step='';
-  st.angle=st.target=st.q.s*Q; st.arc=st.q.sign; st.finish=st.kind==='count'?st.q.finish:null;
-  quizHud(); setPrompt(st.q.prompt);
-  setButtons(st.q.options,pick,st.q.options.length===3?1:2);
+  st.angle=st.target=st.q.s*Q; st.arc=0; st.arcSweep=0; st.arcFrom=st.q.s*Q; st.hinted=false; st.finish=st.kind==='count'?st.q.finish:null;
+  quizHud(); setPrompt(st.q.prompt); qButtons();
+}
+function qButtons(){
+  const o=st.q.options.slice(); if(!st.hinted) o.push({label:'Show me which way',value:'hint',cls:'hint wide'});
+  setButtons(o,pick,st.q.options.length===3?1:2);
 }
 async function pick(v){
-  if(st.locked) return; st.locked=true;
+  if(st.locked) return;
+  if(v==='hint'){ st.hinted=true; st.arc=st.q.turnOther?-st.q.sign:st.q.sign; st.arcSweep=st.q.turnOther?(4-st.q.n)*Q:Math.PI/3; st.arcFrom=st.q.s*Q; qButtons(); return; }
+  st.locked=true;
   const q=st.q, ok=v===q.answer;
+  st.arc=q.sign; st.arcFrom=q.s*Q; st.arcSweep=q.n*Q;
   setPrompt(q.prompt+'<span style="color:var(--muted)">Watch the turn…</span>');
   for(let i=1;i<=q.n;i++){ st.target+=q.sign*Q; st.step=String(i); beep(440+i*120,.1); await sleep(580); }
   await sleep(200); st.step='';
-  if(ok){ st.score++; sGood(); setPrompt(`<span class="big good">Correct</span><span>${q.n} right angle${q.n>1?'s':''} ${dirChip(q.sign)} lands on <b>${q.say(q.answer)}</b>.</span>`); }
-  else { st.hearts--; sBad(); shake(); setPrompt(`<span class="big bad">Not quite</span><span>The answer was <b>${q.say(q.answer)}</b>. Count the turns: ${q.n===1?'1':q.n===2?'1, 2':'1, 2, 3'}.</span>`); }
+  const e_=(q.s+q.n*q.sign+8)%4, land=q.turnOther?'':`<span>${q.n} right angle${q.n>1?'s':''} ${dirChip(q.sign)} lands on <b>${st.kind==='compass'?DIRS[e_]:'the '+SHAPES[e_]}</b>.</span>`;
+  if(ok){ st.score++; sGood(); setPrompt(`<span class="big good">Correct${st.hinted?' (with a hint)':''}</span>${land}<span>${q.why}</span>`); }
+  else { st.hearts--; sBad(); shake(); setPrompt(`<span class="big bad">Not quite</span><span>The answer was <b>${q.say(q.answer)}</b>.</span><span>${q.why}</span>`); }
   quizHud();
   setButtons([{label:st.round>=8||st.hearts<=0?'See my score':'Next question',value:'n',cls:'run wide'}],()=>nextQ(),1);
 }

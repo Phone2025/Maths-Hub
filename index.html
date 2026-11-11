@@ -14,7 +14,7 @@
 <title>Year 3 Maths Hub</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700;800&family=Playpen+Sans:wght@600;700&display=swap">
 <style>
 /* Layout: a calm learning hub. Sticky top bar, generous white space, one column of content up to 1100px; units and lessons as a grid of quiet cards; each lesson is a numbered 1-2-3 path (words, play, check). The games keep their own dark console look and open in an overlay. */
 :root{
@@ -207,6 +207,67 @@ body.low{--bg:#fbf6e9;--surface:#fffdf7;--sunk:#f3eddc;--line:#d8cfb8;--ink:#000
 body.low *{box-shadow:none!important;background-image:none!important;text-shadow:none!important}
 body.low .art,body.low .glyph,body.low .gicon,body.low .unit .ico{filter:grayscale(1);opacity:.75}
 body.low header,body.low .card,body.low .q,body.low a.unit{background:#fffdf7!important}
+
+/* ===== Title page (cover) ===== */
+body.cover header.bar,body.cover #drawerBtn{display:none!important}
+body.cover main{padding:0}
+body.cover main .inner{max-width:none}
+.cv{position:relative;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;color:#fff;overflow:hidden;background:#14213d}
+.cv>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 40%}
+.cv::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(90deg,rgba(20,33,61,.93) 0%,rgba(20,33,61,.78) 40%,rgba(20,33,61,.15) 76%,rgba(20,33,61,0) 100%)}
+.cv>*:not(img){position:relative;z-index:2}
+.cv-top{display:flex;align-items:center;gap:20px;padding:max(28px,env(safe-area-inset-top,0px)) 48px 0}
+.cv-top svg{width:112px;height:112px;flex:none}
+.cv-top b{font-size:32px}
+.cv-mid{flex:1;display:flex;align-items:center;padding:24px 48px 40px}
+.cv-box{max-width:580px;display:flex;flex-direction:column;gap:22px}
+.cv-y3{align-self:flex-start;font-size:30px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#14213d;background:#f2b400;padding:10px 26px;border-radius:999px}
+.cv h1{font-family:'Playpen Sans',var(--font);font-size:clamp(52px,8vw,80px);line-height:1.02;color:#fff}
+.cv-lead{font-size:22px;line-height:1.5;color:#dbe4f5}
+.cv-btns{display:flex;flex-wrap:wrap;gap:14px;padding-top:6px}
+.cv-go{display:inline-flex;align-items:center;gap:10px;min-height:62px;padding:0 32px;border-radius:16px;background:#2f6fdf;color:#fff;font-size:21px;font-weight:700;text-decoration:none;box-shadow:0 8px 24px rgba(47,111,223,.45)}
+.cv-go:hover{background:#2560c9}
+.cv-ad{display:inline-flex;align-items:center;gap:10px;min-height:62px;padding:0 24px;border-radius:16px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.4);color:#fff;font:600 17px var(--font);cursor:pointer}
+.cv-ad:hover{background:rgba(255,255,255,.2)}
+.cv-foot{display:flex;flex-wrap:wrap;gap:12px 28px;padding:20px 48px max(20px,env(safe-area-inset-bottom,0px));background:rgba(20,33,61,.86);font-size:15px;color:#c9d3e6}
+.cv-foot b{color:#fff}.cv-foot .r{margin-left:auto}
+body.low .cv>img{filter:saturate(.6)}
+@media (max-width:700px){.cv-top,.cv-mid,.cv-foot{padding-left:22px;padding-right:22px}.cv-top svg{width:64px;height:64px}.cv-top b{font-size:22px}.cv-y3{font-size:22px;padding:8px 20px}.cv-lead{font-size:19px}.cv-btns>*{flex:1 1 100%;justify-content:center}.cv-foot .r{margin-left:0}
+ .cv::before{background:linear-gradient(180deg,rgba(20,33,61,.7) 0%,rgba(20,33,61,.88) 55%,rgba(20,33,61,.95) 100%)}}
+/* ===== Topics page ===== */
+.tp-hero{display:flex;flex-direction:column;align-items:center;text-align:center;gap:18px;padding-top:12px}
+.tp-hero h1{font-size:clamp(32px,5vw,46px)}
+.tp-hero .lead{max-width:560px}
+.tp-search{position:relative;width:100%;max-width:640px}
+.tp-sbox{display:flex;align-items:center;gap:12px;background:var(--surface);border:2px solid var(--line);border-radius:18px;padding:0 20px;min-height:64px;box-shadow:var(--shadow)}
+.tp-sbox:focus-within{border-color:var(--accent)}
+.tp-sbox svg{width:24px;height:24px;flex:none}
+.tp-sbox input{flex:1;min-width:0;border:0;outline:none;font:400 18px var(--font);color:var(--ink);background:transparent}
+.tp-res{position:absolute;left:0;right:0;top:calc(100% + 8px);z-index:15;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:0 16px 40px rgba(20,33,61,.18);padding:6px;max-height:min(60vh,460px);overflow:auto}
+.tp-res a{display:flex;flex-direction:column;gap:2px;padding:12px 14px;border-radius:12px;color:var(--ink);text-decoration:none}
+.tp-res a:hover,.tp-res a:focus{background:var(--sunk)}
+.tp-res a small{color:var(--soft);font-size:13px}
+.tp-res a b{font-weight:600}
+.tp-res p{padding:14px;color:var(--soft)}
+.tp-hint{font-size:15px;color:var(--soft)}
+.tp-hint a{color:var(--accent);font-weight:600}
+.tp-cont{display:inline-flex;align-items:center;gap:8px;font-size:15px;font-weight:600;color:var(--accent);text-decoration:none;background:var(--accent-tint);padding:10px 16px;border-radius:999px}
+.tp-grid{display:grid;grid-template-columns:2fr 2fr 1fr;gap:28px;margin-top:48px}
+.tp-col{display:flex;flex-direction:column;gap:12px}
+.tp-col h2{font-size:14px;letter-spacing:.08em;text-transform:uppercase}
+.tp-tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tp-col.one .tp-tiles{grid-template-columns:1fr}
+.tp-tile{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:8px;text-decoration:none;color:var(--ink);min-height:118px;transition:transform .15s,box-shadow .15s}
+.tp-tile:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(20,33,61,.10)}
+.tp-tile i{width:28px;height:6px;border-radius:999px}
+.tp-tile b{font-size:17px;line-height:1.25}
+.tp-tile span{font-size:14px;color:var(--soft);line-height:1.4}
+.tp-quick{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:12px;margin-top:48px;padding-top:24px;border-top:1px solid var(--line)}
+.tp-quick span{font-size:15px;color:var(--soft)}
+.tp-quick a{display:inline-flex;align-items:center;min-height:46px;padding:0 18px;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--ink);font-weight:600;text-decoration:none}
+.tp-quick a:hover{border-color:var(--accent)}
+@media (max-width:900px){.tp-grid{grid-template-columns:1fr 1fr}.tp-col.one{grid-column:1/-1}.tp-col.one .tp-tiles{grid-template-columns:1fr 1fr}}
+@media (max-width:620px){.tp-grid{grid-template-columns:1fr}.tp-tiles,.tp-col.one .tp-tiles{grid-template-columns:1fr}.tp-tile{min-height:0}}
 </style>
 
 <header class="bar pad"><div class="inner">
@@ -244,15 +305,47 @@ window.MH_VOICES=list;window.MH_VOICE_RANK=rank;
 try{ss.getVoices();if(typeof ss.addEventListener==='function')ss.addEventListener('voiceschanged',function(){});}catch(e){}
 })();
 </script>
-<script>/* ===== Shared child-friendly navigation + grown-ups gate (hub and learn) ===== */
+<script>/* ===== Modern line icon set (shared by hub and learn) ===== */
+(function(){
+var P={
+home:'<path d="M3 10.2 12 3l9 7.2"/><path d="M5.5 8.8V19a2 2 0 0 0 2 2H10v-5.5a2 2 0 0 1 4 0V21h2.5a2 2 0 0 0 2-2V8.8"/>',
+book:'<path d="M12 6.5C10.5 5 8.2 4.3 4 4.3v14.2c4.2 0 6.5.7 8 2.2 1.5-1.5 3.8-2.2 8-2.2V4.3c-4.2 0-6.5.7-8 2.2Z"/><path d="M12 6.5v14.2"/>',
+game:'<path d="M7 7h10a5 5 0 0 1 4.9 6l-.6 3a2.8 2.8 0 0 1-4.9 1.2L15 16H9l-1.4 1.2A2.8 2.8 0 0 1 2.7 16l-.6-3A5 5 0 0 1 7 7Z"/><path d="M7.5 10.5v3M6 12h3"/><path d="M15.5 11h.01M17.5 13h.01"/>',
+pencil:'<path d="M16.5 3.5a2.4 2.4 0 0 1 3.4 3.4L8 18.8 3.5 20.5 5.2 16Z"/><path d="m14.5 5.5 4 4"/>',
+tools:'<path d="M12 3.5 15.5 9h-7Z"/><rect x="3.5" y="13" width="7.5" height="7.5" rx="1.8"/><circle cx="17" cy="16.75" r="3.75"/>',
+grown:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.2a6.5 6.5 0 0 1 3.5 5.8"/>',
+sliders:'<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>',
+chart:'<path d="M3.5 3.5v15a2 2 0 0 0 2 2h15"/><path d="M8 16v-4M12.5 16V7.5M17 16v-6"/>',
+present:'<rect x="2.5" y="3.5" width="19" height="12.5" rx="2"/><path d="M12 16v3.5M8 20.5h8"/>',
+words:'<path d="M4 7V5h16v2M9 19h6M12 5v14"/>',
+speak:'<path d="M4 9.5h3.2L12 5.5v13l-4.8-4H4a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1Z"/><path d="M15.5 9a4.2 4.2 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/>',
+chat:'<path d="M20.5 12a8 8 0 0 1-11.8 7L3.5 20.5 5 15.6A8 8 0 1 1 20.5 12Z"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01"/>',
+star:'<path d="m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9Z"/>',
+target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+check:'<circle cx="12" cy="12" r="9"/><path d="m8.3 12.3 2.5 2.5 5-5.1"/>',
+arrow:'<path d="M5 12h14M13 6l6 6-6 6"/>',
+lock:'<rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>',
+repeat:'<path d="M17 2.5 20.5 6 17 9.5"/><path d="M3.5 11.5V10a4 4 0 0 1 4-4h13M7 21.5 3.5 18 7 14.5"/><path d="M20.5 12.5V14a4 4 0 0 1-4 4h-13"/>',
+eye:'<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/>',
+grin:'<circle cx="12" cy="12" r="9"/><path d="M7.5 13.5a4.5 4.5 0 0 0 9 0Z"/><path d="M9 9.2h.01M15 9.2h.01"/>',
+smile:'<circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0"/><path d="M9 9.5h.01M15 9.5h.01"/>',
+think:'<circle cx="12" cy="12" r="9"/><path d="M9 15.5h6"/><path d="M9 9.5h.01M15 9.5h.01"/>'
+};
+var FILL={check:1};
+window.MI=function(n,cls){return '<svg class="mi'+(cls?' '+cls:'')+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(P[n]||'')+'</svg>';};
+var st=document.createElement('style');st.textContent='.mi{width:1.2em;height:1.2em;vertical-align:-0.25em;flex:none;display:inline-block}.mi.ok{color:var(--ok,#1f9d63)}.mi.gold{color:var(--gold,#e8a800)}.lt-tps .mi,.lt-chal .mi{margin-right:4px}';
+(document.head||document.documentElement).appendChild(st);
+})();
+
+/* ===== Shared child-friendly navigation + grown-ups gate (hub and learn) ===== */
 (function(){
 var IS_HUB=!!document.getElementById('nav'),NAV=document.getElementById('nav')||document.getElementById('lnav');
 var P=IS_HUB?'':'index.html',L=IS_HUB?'learn.html':'';
-var ITEMS=[['home','🏠','Home',P+'#home'],['units','📚','Lessons',P+'#units'],['games','🎮','Games',P+'#games'],['practise','✏️','Practise',L+'#home'],['tools','🧰','Tools',P+'#tools']];
+var ITEMS=[['home','home','Home',P+'#home'],['units','book','Lessons',P+'#units'],['games','game','Games',P+'#games'],['practise','pencil','Practise',L+'#home'],['tools','tools','Tools',P+'#tools']];
 var css='#nav.nk,#lnav.nk{display:flex;gap:4px;flex-wrap:nowrap;align-items:stretch;margin-left:auto}'+
  '#nav.nk>a,#lnav.nk>a,.nk>#adultBtn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:66px;min-height:58px;padding:6px 10px;border-radius:16px;font:700 15px var(--font,inherit);color:var(--ink);text-decoration:none;background:none;border:0;cursor:pointer;-webkit-tap-highlight-color:transparent}'+
- '.nk .ni{font-size:25px;line-height:1}.nk>a:hover{background:var(--sunk)}#nav.nk>a.on,#lnav.nk>a.on{background:var(--accent-tint);color:var(--accent);box-shadow:inset 0 -4px 0 var(--accent)}'+
- '.nk>#adultBtn{min-width:58px;font-size:12px;font-weight:600;color:var(--soft);margin-left:6px;border-left:1px solid var(--line);border-radius:0 16px 16px 0}.nk>#adultBtn .ni{font-size:20px;opacity:.8}'+
+ '.nk .ni{font-size:25px;line-height:1;display:flex}.nk .ni .mi{width:26px;height:26px;stroke-width:2.1}.nk>a.on .ni .mi{stroke-width:2.4}.nk>a:hover{background:var(--sunk)}#nav.nk>a.on,#lnav.nk>a.on{background:var(--accent-tint);color:var(--accent);box-shadow:inset 0 -4px 0 var(--accent)}'+
+ '.nk>#adultBtn{min-width:58px;font-size:12px;font-weight:600;color:var(--soft);margin-left:6px;border-left:1px solid var(--line);border-radius:0 16px 16px 0}.nk>#adultBtn .ni{font-size:20px;opacity:.85}.nk>#adultBtn .ni .mi{width:22px;height:22px}'+
  '.nk #setBtn{display:none!important}'+
  '@media (max-width:700px){.brand span,.brand small{display:none}#nav.nk,#lnav.nk{width:100%;margin-left:0;justify-content:space-between;overflow:visible}#nav.nk>a,#lnav.nk>a{min-width:0;flex:1;padding:6px 2px;font-size:13px}.nk>#adultBtn{min-width:0;flex:.8;margin-left:2px}}'+
  'div.crumb[data-nk]{margin-bottom:12px}div.crumb[data-nk] a{display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:0 18px;border-radius:999px;background:var(--surface);border:2px solid var(--line);color:var(--ink);font-weight:700;font-size:17px;text-decoration:none}div.crumb[data-nk] a:hover{border-color:var(--accent);color:var(--accent)}'+
@@ -265,7 +358,7 @@ var st=document.createElement('style');st.textContent=css;document.head.appendCh
 /* nav */
 var setBtn=document.getElementById('setBtn');
 NAV.classList.add('nk');NAV.setAttribute('aria-label','Main menu');
-NAV.innerHTML=ITEMS.map(function(i){return '<a href="'+i[3]+'" data-r="'+(IS_HUB?(i[0]==='practise'?'__p':i[0]):'__'+i[0])+'" data-k="'+i[0]+'"><span class="ni" aria-hidden="true">'+i[1]+'</span><span class="nl">'+i[2]+'</span></a>';}).join('')+'<button id="adultBtn" type="button" aria-label="Grown-ups: settings and progress"><span class="ni" aria-hidden="true">⚙️</span><span class="nl">Grown-ups</span></button>';
+NAV.innerHTML=ITEMS.map(function(i){return '<a href="'+i[3]+'" data-r="'+(IS_HUB?(i[0]==='practise'?'__p':i[0]):'__'+i[0])+'" data-k="'+i[0]+'"><span class="ni" aria-hidden="true">'+MI(i[1])+'</span><span class="nl">'+i[2]+'</span></a>';}).join('')+'<button id="adultBtn" type="button" aria-label="Grown-ups: settings and progress"><span class="ni" aria-hidden="true">'+MI('grown')+'</span><span class="nl">Grown-ups</span></button>';
 if(setBtn){setBtn.hidden=true;NAV.appendChild(setBtn);}
 function mark(){var h=(location.hash||'#home').slice(1),k;
   if(IS_HUB){if(/^words/.test(h))k='units';else return;}else k=/^(lesson|lessons)/.test(h)?'units':'practise';
@@ -286,7 +379,7 @@ function gate(then){if(ok()){then();return;}var a=6+Math.floor(Math.random()*4),
   m.hidden=false;var inp=m.querySelector('input');setTimeout(function(){inp.focus();},50);
   function check(){if(+inp.value===a*b){try{sessionStorage.setItem(KEY,String(Date.now()));}catch(e){}close();then();}else{inp.classList.add('bad');inp.value='';inp.placeholder='Try again';}}
   m.querySelector('[data-ok]').onclick=check;inp.onkeydown=function(e){if(e.key==='Enter')check();};m.querySelector('[data-x]').onclick=close;}
-function menu(){m.innerHTML='<div class="nkb"><h2>Grown-ups</h2><button class="nkbtn" type="button" data-s>⚙️ Settings: text size, voice, low stimulation</button><a class="nkbtn" href="'+L+'#adults">📊 Class progress and next steps</a><a class="nkbtn" href="'+L+'#lessons">🖥️ Lesson slides for the board</a><a class="nkbtn" href="'+P+'#words">📖 Word wall: every key word</a><button class="nkbtn go" type="button" data-x>Close</button></div>';
+function menu(){m.innerHTML='<div class="nkb"><h2>Grown-ups</h2><button class="nkbtn" type="button" data-s>'+MI('sliders')+'Settings: text size, voice, low stimulation</button><a class="nkbtn" href="'+L+'#adults">'+MI('chart')+'Class progress and next steps</a><a class="nkbtn" href="'+L+'#lessons">'+MI('present')+'Lesson slides for the board</a><a class="nkbtn" href="'+P+'#words">'+MI('words')+'Word wall: every key word</a><button class="nkbtn go" type="button" data-x>Close</button></div>';
   m.hidden=false;m.querySelector('[data-x]').onclick=close;m.querySelectorAll('a').forEach(function(a){a.addEventListener('click',close);});
   m.querySelector('[data-s]').onclick=function(){close();if(setBtn)setBtn.click();};}
 document.getElementById('adultBtn').onclick=function(){gate(menu);};
@@ -1260,17 +1353,43 @@ function unitCard(u){
   return live(u)?'<a class="card unit live" href="#'+u.id+'">'+glyph(u,44)+'<h3>'+u.name+'</h3><p>'+u.blurb+'</p><p class="go">'+u.lessons.length+' lessons'+(checkedCount(u)?' · '+checkedCount(u)+' checked':'')+' →</p></a>'
     :'<div class="card unit soon">'+glyph(u,44)+'<h3>'+u.name+'</h3><p>'+u.blurb+'</p><span class="tag">Coming soon</span></div>';
 }
+var STRANDS=[['Number','#2f6fdf',['place-value','add-subtract','multiply-divide','fractions']],['Measurement','#1f9d63',['time','money','length','mass']],['Shape and data','#b07a00',['shape','statistics']]];
+var TBLURB={'place-value':'Read, write and compare numbers to 1,000','add-subtract':'Mental methods and the column method','multiply-divide':'Times tables, arrays and sharing','fractions':'Find, compare and add simple fractions',time:'Tell the time and work out durations',money:'Pounds and pence, totals and change',length:'Measure and add lengths, find perimeter',mass:'Read scales and measure liquids',shape:'Angles, lines and 2D and 3D shapes',statistics:'Pictograms, bar charts and tables'};
+function cover(){
+  var nl=UNITS.reduce(function(a,u){return a+u.lessons.length;},0),ng=Object.keys(GAMES).length;
+  return '<section class="cv"><img src="hero.jpg" alt="Two Year 3 pupils building numbers with base-10 blocks">'+
+   '<div class="cv-top"><svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="11" fill="#2f6fdf"/><path d="M11 29V11h18" stroke="#fff" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 18h7v-7" stroke="#f2b400" stroke-width="3" fill="none"/></svg><b>Maths Hub</b></div>'+
+   '<div class="cv-mid"><div class="cv-box"><span class="cv-y3">Year 3</span><h1>Maths Hub</h1><p class="cv-lead">Explanations, practice and games for every Year 3 maths topic. For pupils, parents and teachers.</p>'+
+   '<div class="cv-btns"><a class="cv-go" href="#home">Let\'s start <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>'+
+   '<button class="cv-ad" type="button" id="cvAdult"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>Teachers and parents</button></div></div></div>'+
+   '<div class="cv-foot"><span><b>'+UNITS.length+'</b> topics</span><span><b>'+nl+'</b> short lessons</span><span><b>'+ng+'</b> games</span><span class="r">Works on iPad, phone and computer</span></div></section>';
+}
 function home(){
   var last=store('last'), lu=last&&U(last.u), cont=lu&&lu.lessons[last.n-1];
-  return '<section class="hero"><div class="stack"><span class="eyebrow">Year 3 Maths</span><h1>Learn it, play it, check it.</h1><p class="lead">Every lesson has three steps: learn the key words, play a game that teaches you first, then check what you know.</p><div class="btnrow">'+
-    (cont?'<a class="btn primary" href="#'+lu.id+'-'+last.n+'">Carry on: '+esc(lu.name)+', Lesson '+last.n+'</a><a class="btn" href="#units">📚 Choose a lesson</a>':'<a class="btn primary" href="#units">📚 Choose a lesson</a>')+
-    '<a class="btn" href="#games">🎮 Play a game</a><a class="btn" href="#tools">🧰 Use a tool</a></div></div><div class="art">'+HERO+'</div></section>'+
-    (function(){var d=new Date(),dk=d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate();return store('warm-'+dk)?'':'<a class="warmban" href="learn.html#warmup"><span class="wi" aria-hidden="true">☀️</span><span class="wt"><b>Today\'s warm-up</b><span>5 questions you already know. About 3 minutes.</span></span><i>Start →</i></a>';})()+
-    '<section class="section"><div class="sechead"><h2>Practise and grow</h2><a class="crumb" href="learn.html#home">See all</a></div><div class="pgrid">'+[['learn.html#fluency','Number fluency','Build it, picture it, think it: 25 modules.','#2f6fdf'],['learn.html#tt','Times tables','Arrays, patterns and a fact grid.','#1f9d63'],['learn.html#daily','Daily 5','Five retrieval questions every day.','#e8a800'],['learn.html#lessons','Look back at lessons','Any lesson, slide by slide.','#8a4fd6']].map(function(z){return '<a class="pz" href="'+z[0]+'" style="border-top-color:'+z[3]+'"><h3>'+z[1]+'</h3><p>'+z[2]+'</p></a>';}).join('')+'</div></section>'+
-    '<section class="section"><div class="sechead"><h2>Units</h2><a class="crumb" href="#units">See all</a></div><div class="grid">'+UNITS.map(unitCard).join('')+'</div></section>';
+  return '<section class="tp-hero"><h1>What would you like to work on?</h1><p class="lead">Pick a topic, or search for a skill. Every topic has short explanations, practice and games.</p>'+
+   '<div class="tp-search"><label class="tp-sbox"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="tpQ" type="search" autocomplete="off" placeholder="Try “telling the time” or “column addition”" aria-label="Search for a skill"></label><div class="tp-res" id="tpRes" hidden></div></div>'+
+   '<p class="tp-hint">Not sure where to start? <a href="learn.html#daily">Try a Daily 5 check</a> and see what needs practice.</p>'+
+   (cont?'<a class="tp-cont" href="#'+lu.id+'-'+last.n+'">Carry on: '+esc(lu.name)+', Lesson '+last.n+' →</a>':'')+'</section>'+
+   '<section class="tp-grid" aria-label="Topics">'+STRANDS.map(function(st){return '<div class="tp-col'+(st[2].length<3?' one':'')+'"><h2 style="color:'+st[1]+'">'+st[0]+'</h2><div class="tp-tiles">'+st[2].map(function(id){var u=U(id);return '<a class="tp-tile" href="#'+id+'"><i style="background:'+st[1]+'"></i><b>'+esc(u.name)+'</b><span>'+esc(TBLURB[id]||u.blurb)+'</span></a>';}).join('')+'</div></div>';}).join('')+'</section>'+
+   '<section class="tp-quick" aria-label="Quick practice"><span>Quick practice:</span><a href="learn.html#warmup">Warm-up</a><a href="learn.html#daily">Daily 5</a><a href="learn.html#tt">Times tables</a><a href="#games">Games</a><a href="#tools">Maths tools</a></section>';
+}
+function homeWire(){
+  var q=document.getElementById('tpQ'),r=document.getElementById('tpRes');if(!q)return;
+  var IDX=[];UNITS.forEach(function(u){IDX.push({h:'#'+u.id,t:u.name,s:'Topic · '+u.lessons.length+' lessons',k:(u.name+' '+u.blurb+' '+(TBLURB[u.id]||'')).toLowerCase()});
+    u.lessons.forEach(function(L,i){var ws=(u.words||[]).filter(function(w){return inL(w,i+1);}).map(function(w){return w[1];}).join(' ');IDX.push({h:'#'+u.id+'-'+(i+1),t:L.short,s:u.name+' · Lesson '+(i+1),k:(L.short+' '+L.lo+' '+u.name+' '+ws).toLowerCase()});});});
+  function run(){var v=q.value.trim().toLowerCase();if(v.length<2){r.hidden=true;return;}
+    var STOP={the:1,a:1,an:1,of:1,and:1,to:1,how:1,'do':1,i:1,on:1,'in':1,with:1,telling:1,tell:1,my:1,find:1};
+    var terms=v.split(/[^a-z0-9]+/).filter(function(t){return t&&!STOP[t];});if(!terms.length)terms=[v];
+    var hits=IDX.map(function(e){var sc=0,got=0,tl=e.t.toLowerCase();terms.forEach(function(t){var hit=false,re=new RegExp('\\b'+t.replace(/[^a-z0-9]/g,'')+'\\b');
+      if(e.k.indexOf(t)>=0){sc+=1;hit=true;}if(re.test(e.k)){sc+=2;}if(tl.indexOf(t)>=0){sc+=2;}if(re.test(tl)){sc+=3;}if(hit)got++;});
+      if(e.s.indexOf('Topic')===0)sc+=2;return [got===terms.length?sc:0,e];}).filter(function(x){return x[0]>0;}).sort(function(a,b){return b[0]-a[0];}).slice(0,8);
+    r.innerHTML=hits.length?hits.map(function(x){return '<a href="'+x[1].h+'"><b>'+esc(x[1].t)+'</b><small>'+esc(x[1].s)+'</small></a>';}).join(''):'<p>Nothing found. Try a shorter word, like “time” or “add”.</p>';r.hidden=false;}
+  q.oninput=run;q.onfocus=run;
+  q.onkeydown=function(e){if(e.key==='Enter'){var a=r.querySelector('a');if(a){location.hash=a.getAttribute('href');}}if(e.key==='Escape'){r.hidden=true;}};
+  document.addEventListener('click',function(e){if(!e.target.closest||!e.target.closest('.tp-search'))r.hidden=true;});
 }
 function units(){
-  return '<div class="crumb"><a href="#home">Home</a> / Units</div><section class="stack top"><span class="eyebrow">Year 3 Maths</span><h1>Lessons</h1><p class="lead">Each unit follows the order it is taught in class. Open a unit to see every lesson\'s key words, a short check and a game: ideal for pre-teaching before a lesson or for revisiting learning at home.</p><div class="btnrow"><a class="btn" href="#words">📖 All the key words</a></div></section><section class="section"><div class="grid">'+UNITS.map(unitCard).join('')+'</div></section>';
+  return '<div class="crumb"><a href="#home">Home</a> / Units</div><section class="stack top"><span class="eyebrow">Year 3 Maths</span><h1>Lessons</h1><p class="lead">Each unit follows the order it is taught in class. Open a unit to see every lesson\'s key words, a short check and a game: ideal for pre-teaching before a lesson or for revisiting learning at home.</p><div class="btnrow"><a class="btn" href="#words">'+MI('words')+' All the key words</a></div></section><section class="section"><div class="grid">'+UNITS.map(unitCard).join('')+'</div></section>';
 }
 function lessonCard(u,L){
   var ws=u.words.filter(function(w){return inL(w,L.n);}).slice(0,4).map(function(w){return '<span class="chipw">'+esc(w[1])+'</span>';}).join('');
@@ -1344,11 +1463,11 @@ function unitQuizWire(u){var N=unitQuizN(u),items=pickUnitQs(u,N);
     var all=Object.keys(per).map(function(k){return per[k];}),focus=all.filter(function(p){return p.miss;}).sort(function(x,y){return (y.miss/y.asked)-(x.miss/x.asked)||y.miss-x.miss||x.L.n-y.L.n;}),secure=all.filter(function(p){return !p.miss;});
     store('unitquiz-focus-'+u.id,{t:Date.now(),s:s,n:N,focus:focus.map(function(p){return p.L.n;})});
     var pct=s/N,msg=s===N?'Brilliant, you know this whole unit!':pct>=.8?'Great work! Just a little more practice on the lessons below.':pct>=.5?'Good effort. Go back over the lessons below, then try the quiz again.':'Keep going. Work through the lessons below one at a time, then try again.';
-    var card=function(p){var L=p.L,g=(L.games||[])[0],sl=HASL[u.id]>=L.n;return '<div class="focus"><div class="fhead"><span class="fl">Lesson '+L.n+'</span><b>'+esc(L.short)+'</b><span class="fm">'+(p.miss===p.asked?'Missed '+(p.asked>1?'all '+p.asked:'it'):'Missed '+p.miss+' of '+p.asked)+'</span></div><p>'+esc(L.lo)+'</p><div class="btnrow"><a class="btn small primary" href="#'+u.id+'-'+L.n+'">📖 Go back to this lesson</a>'+(g?'<button class="btn small" type="button" data-fplay="'+g+'">🎮 Play '+esc(GAMES[g].name)+'</button>':'')+(sl?'<a class="btn small" href="learn.html#lesson-'+u.id+'-'+L.n+'">🖥️ Look at the slides</a>':'')+'</div></div>';};
+    var card=function(p){var L=p.L,g=(L.games||[])[0],sl=HASL[u.id]>=L.n;return '<div class="focus"><div class="fhead"><span class="fl">Lesson '+L.n+'</span><b>'+esc(L.short)+'</b><span class="fm">'+(p.miss===p.asked?'Missed '+(p.asked>1?'all '+p.asked:'it'):'Missed '+p.miss+' of '+p.asked)+'</span></div><p>'+esc(L.lo)+'</p><div class="btnrow"><a class="btn small primary" href="#'+u.id+'-'+L.n+'">'+MI('book')+' Go back to this lesson</a>'+(g?'<button class="btn small" type="button" data-fplay="'+g+'">'+MI('game')+' Play '+esc(GAMES[g].name)+'</button>':'')+(sl?'<a class="btn small" href="learn.html#lesson-'+u.id+'-'+L.n+'">'+MI('present')+' Look at the slides</a>':'')+'</div></div>';};
     var qs=document.getElementById('qs');
     qs.innerHTML='<div class="qres"><div class="score big"><div>You got <b>'+s+' out of '+N+'</b> right first time.</div><span>'+msg+'</span></div>'+
-      (focus.length?'<h2 class="qrh">🎯 Go back and focus on</h2><p class="soft">Start with the first one. It is the one you found trickiest. Do one lesson at a time.</p><div class="flist">'+focus.slice(0,3).map(card).join('')+'</div>'+(focus.length>3?'<details class="fmore"><summary>Show '+(focus.length-3)+' more lesson'+(focus.length>4?'s':'')+' to go back to</summary><div class="flist">'+focus.slice(3).map(card).join('')+'</div></details>':''):'')+
-      (secure.length?'<h2 class="qrh">⭐ You are secure in</h2><div class="btnrow">'+secure.map(function(p){return '<span class="secure">✓ Lesson '+p.L.n+': '+esc(p.L.short)+'</span>';}).join('')+'</div>':'')+
+      (focus.length?'<h2 class="qrh">'+MI('target')+' Go back and focus on</h2><p class="soft">Start with the first one. It is the one you found trickiest. Do one lesson at a time.</p><div class="flist">'+focus.slice(0,3).map(card).join('')+'</div>'+(focus.length>3?'<details class="fmore"><summary>Show '+(focus.length-3)+' more lesson'+(focus.length>4?'s':'')+' to go back to</summary><div class="flist">'+focus.slice(3).map(card).join('')+'</div></details>':''):'')+
+      (secure.length?'<h2 class="qrh">'+MI('star','gold')+' You are secure in</h2><div class="btnrow">'+secure.map(function(p){return '<span class="secure">✓ Lesson '+p.L.n+': '+esc(p.L.short)+'</span>';}).join('')+'</div>':'')+
       '<div class="btnrow" style="margin-top:8px"><button class="btn primary" type="button" id="againq">Try a new quiz</button></div></div>';
     qs.querySelectorAll('[data-fplay]').forEach(function(x){x.onclick=function(){play(x.dataset.fplay);};});
     document.getElementById('againq').onclick=function(){document.getElementById('newq').click();};
@@ -1378,7 +1497,8 @@ function games(uid){
    (uid?'<div class="pager"><a class="btn" href="#games">All games</a><a class="btn primary" href="#'+uid+'">'+esc(U(uid).name)+' lessons</a></div>':'');
 }
 function route(){
-  var h=(location.hash||'#home').slice(1), m, tab='home', u;
+  var h=(location.hash||'#start').slice(1), m, tab='home', u;
+  document.body.classList.toggle('cover',h==='start');
   if((m=h.match(/^([a-z-]+?)-quiz$/))&&U(m[1])&&live(U(m[1]))){u=U(m[1]);view.innerHTML=unitQuiz(u);unitQuizWire(u);tab='units';}
   else if((m=h.match(/^([a-z-]+?)-(\d+)$/))&&U(m[1])){u=U(m[1]);view.innerHTML=lesson(u,+m[2]);tab='units';
     if(u.lessons[+m[2]-1]){wireCards(view,u.words.filter(function(w){return inL(w,m[2]);}));quiz(u,+m[2]);}}
@@ -1387,7 +1507,8 @@ function route(){
   else if(h==='tools'){view.innerHTML=tools();tab='tools';}
   else if(h==='words'||(m=h.match(/^words-(.+)$/))){var id=m?m[1]:null;if(view.dataset.wu!==String(id))lfilt='all';view.dataset.wu=String(id);view.innerHTML=words(id);wordsWire(id);tab='words';}
   else if(h==='games'||(m=h.match(/^games-(.+)$/))&&U(m[1])){view.innerHTML=games(m&&m[1]);tab='games';}
-  else view.innerHTML=home();
+  else if(h==='start'){view.innerHTML=cover();var ca=document.getElementById('cvAdult');if(ca)ca.onclick=function(){var ab=document.getElementById('adultBtn');if(ab)ab.click();};}
+  else{view.innerHTML=home();homeWire();}
   document.querySelectorAll('#nav a').forEach(function(a){a.classList.toggle('on',a.dataset.r===tab);});
   view.querySelectorAll('[data-play]').forEach(function(b){b.onclick=function(){play(b.dataset.play);};});
   view.querySelectorAll('[data-tool]').forEach(function(b){b.onclick=function(){openTool(b.dataset.tool);};});

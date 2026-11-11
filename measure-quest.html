@@ -470,7 +470,7 @@ const MS2_GAMES={
      q.explain=ans==='am'?'It is in the morning, after midnight and before noon, so it is am.':'It is after 12 noon, so it is pm.';
      q.draw=()=>{digital(160,60,t);text(e[0],160,104,14,C.muted,600);dayStrip(160,q.k?e[1]+e[2]/60:null,!!q.k);};}
    else{const want=pick(['am','pm']),isW=e=>(e[1]<12)===(want==='am'),tgt=pick(EVENTS.filter(isW)),others=shuffle(EVENTS.filter(e=>!isW(e))).slice(0,2);
-     q.prompt=`<span>Which of these happens in the <b>${want==='am'?'morning (am)':'afternoon or evening (pm)'}</b>?</span>`;q.answer=tgt[0];q.options=shuffle([tgt,...others]).map(e=>({label:e[0]+'<small>'+h12(e[1],e[2])+'</small>',value:e[0]}));q.cols=1;q.say=v=>v;
+     q.prompt=`<span>Which of these happens in the <b>${want==='am'?'morning (am)':'afternoon or evening (pm)'}</b>?</span>`;q.answer=tgt[0];q.options=shuffle([tgt,...others]).map(e=>({label:e[0]+'<small>'+(e[1]%12===0?12:e[1]%12)+':'+String(e[2]).padStart(2,'0')+'</small>',value:e[0]}));q.cols=1;q.say=v=>v;
      q.explain=`${tgt[0]} at ${h12(tgt[1],tgt[2])} is ${want}.`;q.draw=()=>{const X=dayStrip(120,q.k?tgt[1]+tgt[2]/60:null);if(q.k)text(h12(tgt[1],tgt[2]),X(tgt[1]+tgt[2]/60),94,14,C.ok,700);};}
    q.reveal=async()=>{q.k=1;sStep(1);await sleep(1000);};return q;}},
  h24:{name:'24-Hour Clock',unit:'Time',make(r){const q={cols:2},h=r<=4?between(13,23):between(0,23),m=r<=2?0:pick([0,15,30,45,10,20,40,50]),a=h12(h,m),b=h24(h,m),to24=r<=4||r%2===0;
@@ -489,6 +489,7 @@ const MS2_GAMES={
      q.options=opts(ans,[ans+c[2],ans-c[2],k*10,ans+k,c[2]],String);q.say=v=>v+' '+(c[0]==='half'?'seconds':c[1]);q.explain=c[0]==='half'?'1 minute = 60 seconds. Half of 60 is 30.':`${k} × ${c[2]} = ${ans}, so ${k} ${c[0]} = ${ans} ${c[1]}.`;}
    q.answer=ans;
    q.draw=()=>{if(kind==='mon'){calGrid(40,70,5,7,q.k?ans:null,['M','T','W','T','F','S','S']);text('30 days has September, April, June and November',160,252,10,C.muted,600);if(q.k)text(ans+' days',160,226,22,C.ok,700);}
+     else if((kind==='week'||kind==='weeks'||kind==='year'||kind==='years')&&!q.k){rrect(110,70,100,96,12,'rgba(230,237,247,.06)',C.edge,2);rrect(110,70,100,24,12,'rgba(91,155,255,.35)');text('?',160,132,40,C.muted,700);}
      else if(kind==='week'||kind==='weeks'){calGrid(40,60,kind==='week'?1:k,7,q.k?99:null,['M','T','W','T','F','S','S']);if(q.k)text(ans+' days',160,240,22,C.ok,700);}
      else if(kind==='year'||kind==='years'){calGrid(40,60,kind==='year'?1:k,12,q.k?99:null,['J','F','M','A','M','J','J','A','S','O','N','D']);if(q.k)text(ans+(ans>100?' days':' months'),160,240,22,C.ok,700);}
      else if(kind==='min'||kind==='minutes'||kind==='half'){stopwatch(160,140,92,q.k?(kind==='half'?30:60):0);if(q.k)text(ans+' seconds',160,268,18,C.ok,700);}
